@@ -1,0 +1,5 @@
+{
+  "name": "Diab'Assistant T1",
+  "description": "An offline-first Progressive Web App to help parents of children with Type 1 Diabetes manage insulin doses, track meals, and monitor blood glucose levels. It includes a dose calculator, a logbook, and emergency protocols.",
+  "requestFramePermissions": []
+}
