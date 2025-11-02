@@ -23,5 +23,7 @@ export const DEFAULT_PATIENT_SETTINGS: Omit<Patient, 'id' | 'userId' | 'prenom' 
       { max: Infinity, addU: 3 },
     ],
     maxBolus: 15,
-    correctionDelayHours: 3
+    correctionDelayHours: 3,
+    contacts: [],
+    notes_pai: "",
 };

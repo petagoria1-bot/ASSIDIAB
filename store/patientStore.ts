@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
-import { Patient, Mesure, Repas, Injection, Food, InjectionType } from '../types';
+import { Patient, Mesure, Repas, Injection, Food, InjectionType, FavoriteMeal, MealItem, FoodItem } from '../types';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants';
 import { initialFoodData } from '../data/foodLibrary';
 
@@ -11,6 +11,7 @@ interface PatientState {
   repas: Repas[];
   injections: Injection[];
   foodLibrary: Food[];
+  favoriteMeals: FavoriteMeal[];
   isLoading: boolean;
   loadInitialData: (userId: number) => Promise<void>;
   createPatient: (prenom: string, naissance: string, userId: number) => Promise<void>;
@@ -21,6 +22,8 @@ interface PatientState {
   addFullBolus: (data: {mesure: Mesure, repas: Repas, injection: Injection}, ts?: string) => Promise<void>;
   getLastCorrection: () => Promise<Injection | undefined>;
   addOrUpdateFood: (food: Food) => Promise<void>;
+  addFavoriteMeal: (name: string, items: MealItem[]) => Promise<void>;
+  deleteFavoriteMeal: (id: string) => Promise<void>;
   clearPatientData: () => void;
 }
 
@@ -30,6 +33,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   repas: [],
   injections: [],
   foodLibrary: [],
+  favoriteMeals: [],
   isLoading: true,
   
   loadInitialData: async (userId) => {
@@ -44,14 +48,15 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     }
     
     if (patient) {
-      const [mesures, repas, injections] = await Promise.all([
+      const [mesures, repas, injections, favoriteMeals] = await Promise.all([
         db.mesures.where('patient_id').equals(patient.id).sortBy('ts'),
         db.repas.where('patient_id').equals(patient.id).sortBy('ts'),
         db.injections.where('patient_id').equals(patient.id).sortBy('ts'),
+        db.favoriteMeals.where('patient_id').equals(patient.id).toArray(),
       ]);
-      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, isLoading: false });
+      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, favoriteMeals, isLoading: false });
     } else {
-        set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, isLoading: false });
+        set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, favoriteMeals: [], isLoading: false });
     }
   },
 
@@ -165,7 +170,36 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     set({ foodLibrary: updatedLibrary });
   },
 
+  addFavoriteMeal: async (name, items) => {
+    const patient = get().patient;
+    if (!patient) return;
+
+    const foodItems: FoodItem[] = items.map(item => ({
+        nom: item.food.name,
+        carbs_g: item.carbs_g,
+        poids_g: item.poids_g,
+    }));
+    
+    const total_carbs_g = items.reduce((sum, item) => sum + item.carbs_g, 0);
+
+    const newFavorite: FavoriteMeal = {
+        id: uuidv4(),
+        patient_id: patient.id,
+        name,
+        items: foodItems,
+        total_carbs_g
+    };
+
+    await db.favoriteMeals.add(newFavorite);
+    set(state => ({ favoriteMeals: [...state.favoriteMeals, newFavorite]}));
+  },
+
+  deleteFavoriteMeal: async (id: string) => {
+    await db.favoriteMeals.delete(id);
+    set(state => ({ favoriteMeals: state.favoriteMeals.filter(fm => fm.id !== id) }));
+  },
+
   clearPatientData: () => {
-    set({ patient: null, mesures: [], repas: [], injections: [], isLoading: false });
+    set({ patient: null, mesures: [], repas: [], injections: [], favoriteMeals: [], isLoading: false });
   }
 }));

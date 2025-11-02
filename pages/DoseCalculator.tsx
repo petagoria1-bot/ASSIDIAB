@@ -2,9 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { usePatientStore } from '../store/patientStore';
-import { MealTime, Page, Mesure, Repas, Injection, DoseCalculationOutput, Food } from '../types';
+import { MealTime, Page, Mesure, Repas, Injection, DoseCalculationOutput, Food, MealItem, FoodItem } from '../types';
 import { MEAL_TIMES } from '../constants';
 import { calculateDose } from '../services/calculator';
+import QuickAddItemModal from '../components/QuickAddItemModal';
 
 const Droplets: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.49-2.2-1.25-3.25A4.42 4.42 0 0 0 11 6.05c0-2.23-1.8-4.05-4-4.05S3 3.82 3 6.05c0 1.16.49 2.2 1.25 3.25A4.42 4.42 0 0 0 3 12.25C3 14.47 4.8 16.3 7 16.3z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.54 2.52 2.55 4.5 5 5 .44 2.45-.56 4.95-2.42 6.62"></path></svg>
@@ -15,17 +16,16 @@ const Plus: React.FC<{ className?: string }> = ({ className }) => (
 const Wheat: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 22 16 8l-4-4-2 2 4 4-2.5 2.5-4.5 4.5-1.5-1.5z"></path><path d="m18 12 2-2-4.5-4.5-2 2 4.5 4.5z"></path><path d="M16 8s2-2 4-4"></path><path d="M18.5 4.5s2 2 4 4"></path></svg>
 );
+const Star: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+);
+const Trash2: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+);
 
 
 interface DoseCalculatorProps {
   setCurrentPage: (page: Page) => void;
-}
-
-interface MealItem {
-  listId: string;
-  food: Food;
-  poids_g: number; // Represents grams for solids, and ml for liquids (base unit)
-  carbs_g: number;
 }
 
 const FoodItemModal = ({
@@ -187,7 +187,7 @@ const FoodItemModal = ({
 };
 
 const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
-  const { patient, foodLibrary, addFullBolus, getLastCorrection } = usePatientStore();
+  const { patient, foodLibrary, favoriteMeals, addFullBolus, getLastCorrection, addFavoriteMeal, deleteFavoriteMeal } = usePatientStore();
   const [step, setStep] = useState(1);
   const [moment, setMoment] = useState<MealTime>('dejeuner');
   const [glycemie, setGlycemie] = useState('');
@@ -204,6 +204,8 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [calculationResult, setCalculationResult] = useState<DoseCalculationOutput | null>(null);
   const [modalConfig, setModalConfig] = useState<{ item: MealItem; isNew: boolean } | null>(null);
+  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
   
   const totalCarbs = useMemo(() => repasItems.reduce((sum, item) => sum + item.carbs_g, 0), [repasItems]);
 
@@ -315,6 +317,48 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
     setRepasItems(repasItems.filter(i => i.listId !== listId));
     setModalConfig(null);
   };
+  
+  const handleAddQuickItem = (item: MealItem) => {
+    setRepasItems(prev => [...prev, item]);
+    toast.success(`"${item.food.name}" ajouté au repas.`);
+  };
+
+  const handleSaveFavorite = () => {
+    const name = prompt("Donnez un nom à ce repas favori :");
+    if (name && name.trim() !== "") {
+        addFavoriteMeal(name, repasItems);
+        toast.success(`Repas "${name}" sauvegardé dans les favoris !`);
+    }
+  };
+
+  const handleAddFavoriteToMeal = (favMeal: { items: FoodItem[] }) => {
+    const itemsToAdd: MealItem[] = favMeal.items.map(favItem => {
+        // Find the full food item from the library
+        const foodFromLib = foodLibrary.find(f => f.name === favItem.nom);
+        // Create a transient food item if not found
+        const food: Food = foodFromLib || {
+            id: uuidv4(), name: favItem.nom, category: 'Favori',
+            carbs_per_100g_net: favItem.poids_g ? (favItem.carbs_g / favItem.poids_g) * 100 : 0,
+            unit_type: 'g', source: 'Favori', quality: 'certaine'
+        };
+        return {
+            listId: uuidv4(),
+            food: food,
+            poids_g: favItem.poids_g || 0,
+            carbs_g: favItem.carbs_g,
+        };
+    });
+    setRepasItems(prev => [...prev, ...itemsToAdd]);
+    toast.success("Repas favori ajouté !");
+  }
+
+  const handleDeleteFavorite = (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce repas favori ?")) {
+        deleteFavoriteMeal(id);
+        toast.success("Favori supprimé.");
+    }
+  }
+
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -353,8 +397,14 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const renderStep2 = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-center">Étape 2: Repas</h2>
-      <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-lg text-center">
-          <p className="font-bold text-lg text-blue-800 dark:text-blue-200">Total Glucides: {totalCarbs.toFixed(0)} g</p>
+      <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-lg text-center flex justify-between items-center">
+          <p className="font-bold text-lg text-blue-800 dark:text-blue-200">Total: {totalCarbs.toFixed(0)} g</p>
+          {repasItems.length > 0 && (
+            <button onClick={handleSaveFavorite} className="flex items-center gap-1 text-sm bg-yellow-400 text-yellow-900 px-3 py-1 rounded-md hover:bg-yellow-500">
+                <Star className="w-4 h-4" />
+                Sauvegarder
+            </button>
+          )}
       </div>
       <div>
           <h3 className="font-semibold mb-2">Mon repas:</h3>
@@ -368,20 +418,57 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
                       <span className="font-bold text-lg">{item.carbs_g.toFixed(0)} g</span>
                   </li>
               ))}
-              {repasItems.length === 0 && <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">Commencez par ajouter un aliment de la bibliothèque.</p>}
+              {repasItems.length === 0 && <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">Commencez par ajouter un aliment.</p>}
           </ul>
       </div>
       <div>
-          <h3 className="font-semibold mb-2">Ajouter un aliment:</h3>
-          <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onFocus={handleFocus} placeholder="Rechercher (ex: pomme)" className="w-full p-2 mb-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg" />
-          <ul className="space-y-1 max-h-48 overflow-y-auto">
-              {filteredFoodLibrary.map(food => (
-                  <li key={food.id} onClick={() => handleAddNewFood(food)} className="p-2 flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded-md">
-                      <span>{food.name}</span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">({(food.carbs_per_100g_net * (food.common_portion_g || 100) / 100).toFixed(0)}g)</span>
-                  </li>
-              ))}
-          </ul>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold">Ajouter au repas:</h3>
+            <button 
+                type="button" 
+                onClick={() => setIsQuickAddModalOpen(true)}
+                className="text-sm bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-md hover:bg-gray-300 dark:hover:bg-gray-700"
+            >
+                Ajout rapide
+            </button>
+          </div>
+          <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+                  <button onClick={() => setActiveTab('search')} className={`${activeTab === 'search' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}>Rechercher</button>
+                  <button onClick={() => setActiveTab('favorites')} className={`${activeTab === 'favorites' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}>Favoris</button>
+              </nav>
+          </div>
+          <div className="pt-4 min-h-[200px]">
+              {activeTab === 'search' && (
+                <div>
+                  <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onFocus={handleFocus} placeholder="Rechercher (ex: pomme)" className="w-full p-2 mb-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg" />
+                  <ul className="space-y-1 max-h-48 overflow-y-auto">
+                      {filteredFoodLibrary.map(food => (
+                          <li key={food.id} onClick={() => handleAddNewFood(food)} className="p-2 flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded-md">
+                              <span>{food.name}</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">({(food.carbs_per_100g_net * (food.common_portion_g || 100) / 100).toFixed(0)}g)</span>
+                          </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              {activeTab === 'favorites' && (
+                  <ul className="space-y-2 max-h-52 overflow-y-auto">
+                      {favoriteMeals.map(fav => (
+                          <li key={fav.id} className="p-2 flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                              <div onClick={() => handleAddFavoriteToMeal(fav)} className="cursor-pointer flex-grow">
+                                  <span className="font-semibold">{fav.name}</span>
+                                  <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">({fav.total_carbs_g.toFixed(0)}g)</span>
+                              </div>
+                              <button onClick={() => handleDeleteFavorite(fav.id)} className="text-red-500 hover:text-red-700 p-1">
+                                  <Trash2 className="w-4 h-4" />
+                              </button>
+                          </li>
+                      ))}
+                      {favoriteMeals.length === 0 && <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">Aucun repas favori sauvegardé.</p>}
+                  </ul>
+              )}
+          </div>
       </div>
       <div className="flex gap-2 pt-2">
         <button onClick={() => setStep(1)} className="w-full bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors">Précédent</button>
@@ -464,6 +551,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
                     <p>Correction (Glycémie {glycemie}g/L): +{calculationResult.addCorr_U} U</p>
                     <p className="font-bold mt-1">Total: {calculationResult.doseRepas_U.toFixed(1)} + {calculationResult.addCorr_U} = {(calculationResult.doseRepas_U + calculationResult.addCorr_U).toFixed(1)} U &rarr; {calculationResult.doseTotale} U (arrondi)</p>
                 </div>
+                {calculationResult.warning && <div className="p-3 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 rounded-lg">{calculationResult.warning}</div>}
                 <div className="mt-6 space-y-3">
                     <button onClick={handleConfirm} className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors">
                         Enregistrer au journal
@@ -484,7 +572,6 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
     return (
         <div className="space-y-6 text-center">
             <h2 className="text-xl font-bold">Étape 3: Résultat</h2>
-            {calculationResult?.warning && <div className="p-3 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 rounded-lg">{calculationResult.warning}</div>}
             <ResultAnimation />
         </div>
     );
@@ -493,6 +580,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   return (
     <div className="p-4 max-w-lg mx-auto">
       {modalConfig && <FoodItemModal modalConfig={modalConfig} onClose={() => setModalConfig(null)} onSave={handleSaveItem} onDelete={handleDeleteItem} />}
+      {isQuickAddModalOpen && <QuickAddItemModal onClose={() => setIsQuickAddModalOpen(false)} onAddItem={handleAddQuickItem} />}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}

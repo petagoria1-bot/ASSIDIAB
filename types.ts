@@ -1,4 +1,3 @@
-
 export type Unit = "gL" | "mmolL";
 export type MealTime = "petit_dej" | "dejeuner" | "gouter" | "diner";
 export type InjectionType = "rapide" | "basale" | "correction";
@@ -19,6 +18,13 @@ export interface CorrectionRule {
   addU: number;
 }
 
+export interface EmergencyContact {
+    id: string;
+    lien: string; // e.g., 'Maman', 'Papa', 'Diabétologue'
+    nom: string;
+    tel: string;
+}
+
 export interface Patient {
   id: string; // uuid
   userId: number; // foreign key to User
@@ -29,6 +35,8 @@ export interface Patient {
   corrections: CorrectionRule[];
   maxBolus: number;
   correctionDelayHours: number;
+  contacts: EmergencyContact[];
+  notes_pai: string;
 }
 
 export interface Mesure {
@@ -94,4 +102,19 @@ export interface DoseCalculationOutput {
   addCorr_U: number;
   doseTotale: number;
   warning?: string;
+}
+
+export interface MealItem {
+  listId: string;
+  food: Food;
+  poids_g: number; // Represents grams for solids, and ml for liquids (base unit)
+  carbs_g: number;
+}
+
+export interface FavoriteMeal {
+    id: string;
+    patient_id: string;
+    name: string;
+    items: FoodItem[];
+    total_carbs_g: number;
 }

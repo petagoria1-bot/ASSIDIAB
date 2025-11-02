@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { usePatientStore } from '../store/patientStore';
 
@@ -57,12 +56,23 @@ const Pai: React.FC = () => {
                         <li>Prévenir les parents pour une éventuelle dose de correction d'insuline.</li>
                     </ol>
                 </section>
+                
+                {patient.notes_pai && (
+                    <section className="mb-4">
+                        <h3 className="font-bold border-b pb-1 mb-2">Notes importantes</h3>
+                        <p className="whitespace-pre-wrap">{patient.notes_pai}</p>
+                    </section>
+                )}
 
                  <section>
                     <h3 className="font-bold border-b pb-1 mb-2">Contacts d'urgence</h3>
-                    <p><strong>Parent 1:</strong> [Numéro à ajouter]</p>
-                    <p><strong>Parent 2:</strong> [Numéro à ajouter]</p>
-                    <p><strong>Diabétologue:</strong> [Nom et numéro à ajouter]</p>
+                    {patient.contacts && patient.contacts.length > 0 ? (
+                        patient.contacts.map(contact => (
+                            <p key={contact.id}><strong>{contact.lien} ({contact.nom}):</strong> <a href={`tel:${contact.tel}`} className="text-blue-600">{contact.tel}</a></p>
+                        ))
+                    ) : (
+                        <p className="text-gray-500">Aucun contact configuré. Veuillez les ajouter dans les Réglages.</p>
+                    )}
                 </section>
             </div>
             <button 

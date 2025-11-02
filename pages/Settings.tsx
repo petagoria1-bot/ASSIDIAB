@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
-import { Patient, CorrectionRule, MealTime, Page } from '../types';
+import { Patient, CorrectionRule, MealTime, Page, EmergencyContact } from '../types';
 import toast from 'react-hot-toast';
 import { MEAL_TIMES } from '../constants';
 import { db } from '../services/db';
@@ -26,7 +27,9 @@ const FileText: React.FC<{ className?: string }> = ({ className }) => (
 const AlertTriangle: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
 );
-
+const Trash2: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+);
 
 interface SettingsProps {
   setCurrentPage: (page: Page) => void;
@@ -36,7 +39,10 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const { patient, updatePatient } = usePatientStore();
   const { logout, login, currentUser } = useAuthStore();
   
+  // FIX: Corrected syntax error from `= =` to `=`.
   const [formStrings, setFormStrings] = useState<Record<string, string>>({});
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [notesPai, setNotesPai] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
 
@@ -61,10 +67,12 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
       });
       
       setFormStrings(strings);
+      setContacts(patient.contacts || []);
+      setNotesPai(patient.notes_pai || '');
     }
   }, [patient]);
 
-  const handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
+  const handleFocus = (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setTimeout(() => {
       event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
@@ -73,6 +81,20 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormStrings(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleContactChange = (index: number, field: keyof EmergencyContact, value: string) => {
+    const newContacts = [...contacts];
+    newContacts[index] = {...newContacts[index], [field]: value};
+    setContacts(newContacts);
+  };
+
+  const addContact = () => {
+    setContacts([...contacts, { id: uuidv4(), lien: '', nom: '', tel: '' }]);
+  };
+
+  const removeContact = (id: string) => {
+    setContacts(contacts.filter(c => c.id !== id));
   };
   
   const handleShare = async () => {
@@ -229,6 +251,9 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
       toast.error('Les règles de corrections ont été automatiquement ordonnées.');
       updatedPatient.corrections = sortedCorrections;
     }
+    
+    updatedPatient.contacts = contacts.filter(c => c.lien && c.tel);
+    updatedPatient.notes_pai = notesPai;
 
     await updatePatient(updatedPatient);
     toast.success('Paramètres sauvegardés !');
@@ -314,6 +339,38 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                     <FileText className="w-5 h-5" />
                     Voir le PAI Simplifié
                 </button>
+            </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-2">Personnalisation du PAI</h2>
+            <div className="space-y-4">
+                <div>
+                    <h3 className="font-semibold mb-2">Contacts d'urgence</h3>
+                    {contacts.map((contact, index) => (
+                        <div key={contact.id} className="grid grid-cols-3 gap-2 mb-2 p-2 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                            <input type="text" value={contact.lien} onChange={(e) => handleContactChange(index, 'lien', e.target.value)} placeholder="Lien (Maman)" className="col-span-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"/>
+                            <input type="text" value={contact.nom} onChange={(e) => handleContactChange(index, 'nom', e.target.value)} placeholder="Nom" className="col-span-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"/>
+                            <button type="button" onClick={() => removeContact(contact.id)} className="bg-red-100 text-red-700 rounded-md flex items-center justify-center"><Trash2/></button>
+                            <input type="tel" value={contact.tel} onChange={(e) => handleContactChange(index, 'tel', e.target.value)} placeholder="Téléphone" className="col-span-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"/>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addContact} className="w-full text-sm text-blue-600 dark:text-blue-400 font-semibold p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50">
+                        + Ajouter un contact
+                    </button>
+                </div>
+                 <div>
+                    <label htmlFor="notes-pai" className="block font-semibold mb-2">Notes additionnelles pour le PAI</label>
+                    <textarea 
+                        id="notes-pai"
+                        rows={4}
+                        value={notesPai}
+                        onChange={(e) => setNotesPai(e.target.value)}
+                        onFocus={handleFocus}
+                        placeholder="Instructions spécifiques : allergies, emplacement du matériel, préférences de l'enfant..."
+                        className="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"
+                    ></textarea>
+                 </div>
             </div>
         </div>
 

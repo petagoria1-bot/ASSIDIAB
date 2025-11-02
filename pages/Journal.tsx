@@ -66,16 +66,16 @@ const Journal: React.FC = () => {
     
     type JournalEvent = typeof allEvents[number];
 
-    // FIX: By explicitly typing the accumulator and its initial value, we ensure `groupedByDay` has the correct type,
-    // which prevents `dayEvents` from being inferred as `unknown` and causing a crash when calling `.filter()`.
-    const groupedByDay = useMemo(() => allEvents.reduce((acc: Record<string, JournalEvent[]>, event) => {
+    // FIX: By explicitly providing a generic type argument to `reduce`, we ensure `groupedByDay` has the correct type.
+    // This prevents `dayEvents` from being inferred as `unknown` and causing a crash when calling `.filter()`.
+    const groupedByDay = useMemo(() => allEvents.reduce<Record<string, JournalEvent[]>>((acc, event) => {
         const date = new Date(event.ts).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         if (!acc[date]) {
           acc[date] = [];
         }
         acc[date].push(event);
         return acc;
-    }, {} as Record<string, JournalEvent[]>), [allEvents]);
+    }, {}), [allEvents]);
 
     const eventsById = useMemo(() => new Map(allEvents.map(e => [e.id, e])), [allEvents]);
 
