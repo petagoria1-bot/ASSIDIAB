@@ -187,7 +187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
       
       <GlucoseCard mesure={lastMesure} />
       
-      {patient && <GlucoseChart mesures={mesures} cibles={patient.cibles} />}
+      {patient && patient.cibles && <GlucoseChart mesures={mesures} cibles={patient.cibles} />}
 
       <div className="text-center">
         <button 

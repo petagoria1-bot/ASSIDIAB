@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
@@ -11,11 +12,11 @@ const Onboarding: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (prenom && naissance && currentUser) {
+    if (prenom && naissance && currentUser && typeof currentUser.id === 'number') {
       await createPatient(prenom, naissance, currentUser.id);
       toast.success(`Profil pour ${prenom} créé !`);
     } else {
-      toast.error('Veuillez remplir tous les champs.');
+      toast.error('Veuillez remplir tous les champs ou une erreur de session est survenue.');
     }
   };
 

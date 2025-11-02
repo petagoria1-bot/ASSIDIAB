@@ -23,6 +23,9 @@ const BookOpen: React.FC<{ className?: string }> = ({ className }) => (
 const FileText: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
 );
+const AlertTriangle: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+);
 
 
 interface SettingsProps {
@@ -31,29 +34,30 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const { patient, updatePatient } = usePatientStore();
-  const { logout, currentUser } = useAuthStore();
+  const { logout, login, currentUser } = useAuthStore();
   
   const [formStrings, setFormStrings] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (patient) {
       const strings: Record<string, string> = {
-        prenom: patient.prenom,
-        naissance: patient.naissance,
-        gly_min: patient.cibles.gly_min.toString(),
-        gly_max: patient.cibles.gly_max.toString(),
-        maxBolus: patient.maxBolus.toString(),
-        correctionDelayHours: patient.correctionDelayHours.toString(),
+        prenom: patient.prenom || '',
+        naissance: patient.naissance || '',
+        gly_min: (patient.cibles?.gly_min ?? '').toString(),
+        gly_max: (patient.cibles?.gly_max ?? '').toString(),
+        maxBolus: (patient.maxBolus ?? '').toString(),
+        correctionDelayHours: (patient.correctionDelayHours ?? '').toString(),
       };
 
-      for (const moment in patient.ratios) {
-        strings[`ratio_${moment}`] = patient.ratios[moment as MealTime].toString();
+      for (const moment in MEAL_TIMES) {
+        strings[`ratio_${moment}`] = (patient.ratios?.[moment as MealTime] ?? '').toString();
       }
 
-      patient.corrections.forEach((rule, index) => {
-        strings[`correction_max_${index}`] = rule.max === Infinity ? '' : rule.max.toString();
-        strings[`correction_addU_${index}`] = rule.addU.toString();
+      patient.corrections?.forEach((rule, index) => {
+        strings[`correction_max_${index}`] = rule.max === Infinity ? '' : (rule.max ?? '').toString();
+        strings[`correction_addU_${index}`] = (rule.addU ?? '').toString();
       });
       
       setFormStrings(strings);
@@ -131,15 +135,24 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
     }
   };
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!window.confirm("Attention ! L'importation d'un fichier écrasera toutes les données actuelles de l'application. Cette action est irréversible. Voulez-vous continuer ?")) {
-        event.target.value = ''; // Reset file input
-        return;
+    if (file) {
+      setImportFile(file);
     }
+    event.target.value = ''; // Reset file input so the same file can be selected again
+  };
 
+  const handleCancelImport = () => {
+    setImportFile(null);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importFile) return;
+
+    const fileToImport = importFile;
+    setImportFile(null); // Close modal and start processing
+    
     const reader = new FileReader();
     reader.onload = async (e) => {
         const importToastId = toast.loading("Importation en cours...");
@@ -160,8 +173,18 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                 await Promise.all(requiredTables.map(tableName => db.table(tableName).clear()));
                 await Promise.all(requiredTables.map(tableName => db.table(tableName).bulkAdd(data[tableName])));
             });
+            
+            const firstUser = data.users?.[0];
+            let loginSuccess = false;
+            if (firstUser?.username && firstUser?.password) {
+                loginSuccess = await login(firstUser.username, firstUser.password);
+            }
 
-            toast.success("Données importées avec succès ! L'application va se recharger.", { id: importToastId, duration: 3000 });
+            if (loginSuccess) {
+                toast.success("Données importées avec succès ! Rechargement...", { id: importToastId, duration: 2000 });
+            } else {
+                toast.success("Données importées. Veuillez vous reconnecter.", { id: importToastId, duration: 2000 });
+            }
             
             setTimeout(() => {
                 window.location.reload();
@@ -172,9 +195,9 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
             toast.error(`L'importation a échoué: ${error.message}`, { id: importToastId });
         }
     };
-    reader.readAsText(file);
-    event.target.value = ''; // Reset file input to allow re-importing the same file
+    reader.readAsText(fileToImport);
   };
+
 
   const handleSave = async () => {
     if (!patient) return;
@@ -217,6 +240,24 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
 
   return (
     <div className="p-4 max-w-lg mx-auto space-y-6">
+       {importFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-sm text-center">
+            <div className="flex justify-center mb-4">
+                <AlertTriangle className="w-16 h-16 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Confirmer l'importation</h3>
+            <p className="my-4 text-gray-600 dark:text-gray-300">
+                Attention ! L'importation de "{importFile.name}" écrasera <strong>toutes les données actuelles</strong> de l'application. Cette action est irréversible.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button onClick={handleCancelImport} className="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700">Annuler</button>
+              <button onClick={handleConfirmImport} className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">Confirmer et Écraser</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Réglages</h1>
 
       <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
@@ -297,7 +338,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                       type="file" 
                       className="hidden" 
                       accept=".json" 
-                      onChange={handleImport} 
+                      onChange={handleFileSelect} 
                     />
                 </label>
             </div>
@@ -311,11 +352,11 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
           <div className="space-y-2">
             <div>
               <label className="block text-sm font-medium">Prénom</label>
-              <input type="text" name="prenom" value={formStrings.prenom} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
+              <input type="text" name="prenom" value={formStrings.prenom || ''} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
             </div>
             <div>
               <label className="block text-sm font-medium">Date de naissance</label>
-              <input type="date" name="naissance" value={formStrings.naissance} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
+              <input type="date" name="naissance" value={formStrings.naissance || ''} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
             </div>
           </div>
         </div>
@@ -325,11 +366,11 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium">Min</label>
-              <input type="number" step="0.01" name="gly_min" value={formStrings.gly_min} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
+              <input type="number" step="0.01" name="gly_min" value={formStrings.gly_min || ''} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium">Max</label>
-              <input type="number" step="0.01" name="gly_max" value={formStrings.gly_max} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
+              <input type="number" step="0.01" name="gly_max" value={formStrings.gly_max || ''} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
             </div>
           </div>
         </div>
@@ -366,7 +407,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                         type="number"
                         step="0.01"
                         name={`correction_max_${index}`}
-                        value={formStrings[`correction_max_${index}`]}
+                        value={formStrings[`correction_max_${index}`] || ''}
                         placeholder="∞"
                         onChange={handleInputChange}
                         onFocus={handleFocus}
@@ -376,7 +417,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                         type="number"
                         step="0.5"
                         name={`correction_addU_${index}`}
-                        value={formStrings[`correction_addU_${index}`]}
+                        value={formStrings[`correction_addU_${index}`] || ''}
                         onChange={handleInputChange}
                         onFocus={handleFocus}
                         className="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 text-right"
@@ -391,11 +432,11 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
           <div className="space-y-2">
             <div>
               <label className="block text-sm font-medium">Bolus Maximum (U)</label>
-              <input type="number" name="maxBolus" value={formStrings.maxBolus} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
+              <input type="number" name="maxBolus" value={formStrings.maxBolus || ''} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
             </div>
             <div>
               <label className="block text-sm font-medium">Délai entre corrections (heures)</label>
-              <input type="number" name="correctionDelayHours" value={formStrings.correctionDelayHours} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
+              <input type="number" name="correctionDelayHours" value={formStrings.correctionDelayHours || ''} onChange={handleInputChange} onFocus={handleFocus} className="mt-1 w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600" />
             </div>
           </div>
         </div>

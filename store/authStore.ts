@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { db } from '../services/db';
 import { User } from '../types';
@@ -43,9 +44,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (existingUser) {
         throw new Error("Ce pseudo est déjà utilisé.");
       }
-      const newUser: Omit<User, 'id'> = { username, password };
-      const id = await db.users.add(newUser as User);
-      const userWithId = { ...newUser, id };
+      const newUser: User = { username, password };
+      const id = await db.users.add(newUser);
+       if (typeof id !== 'number') {
+        throw new Error("La création du compte a échoué (ID invalide).");
+      }
+      const userWithId: User = { ...newUser, id };
       
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(userWithId));
       set({ currentUser: userWithId, isAuthenticated: true, isLoading: false });

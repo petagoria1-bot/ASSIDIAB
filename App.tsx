@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { usePatientStore } from './store/patientStore';
@@ -30,7 +31,7 @@ const App: React.FC = () => {
   }, [checkSession]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && typeof currentUser.id === 'number') {
       loadInitialData(currentUser.id);
     } else {
       clearPatientData();

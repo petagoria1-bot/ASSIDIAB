@@ -1,3 +1,4 @@
+
 export type Unit = "gL" | "mmolL";
 export type MealTime = "petit_dej" | "dejeuner" | "gouter" | "diner";
 export type InjectionType = "rapide" | "basale" | "correction";
@@ -6,7 +7,7 @@ export type AlertType = "hypo" | "hyper" | "cetone" | "tech";
 export type Page = 'dashboard' | 'journal' | 'calculator' | 'emergency' | 'settings' | 'food' | 'pai';
 
 export interface User {
-  id: number;
+  id?: number;
   username: string;
   // NOTE: Storing passwords in plaintext is acceptable only for a local, offline-first PWA
   // where the data does not leave the user's device. This is not secure for web apps.

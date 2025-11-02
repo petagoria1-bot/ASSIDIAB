@@ -64,12 +64,11 @@ const Journal: React.FC = () => {
         ...injections.map(i => ({ ...i, type: 'injection' as const })),
     ].sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()), [mesures, repas, injections]);
     
-    // FIX: Define a union type for all possible events to help TypeScript's inference.
     type JournalEvent = typeof allEvents[number];
 
-    // FIX: Explicitly cast the initial value of the reduce function to ensure correct type inference for `groupedByDay`.
-    // This prevents `dayEvents` from being inferred as `unknown`.
-    const groupedByDay = useMemo(() => allEvents.reduce((acc, event) => {
+    // FIX: By explicitly typing the accumulator and its initial value, we ensure `groupedByDay` has the correct type,
+    // which prevents `dayEvents` from being inferred as `unknown` and causing a crash when calling `.filter()`.
+    const groupedByDay = useMemo(() => allEvents.reduce((acc: Record<string, JournalEvent[]>, event) => {
         const date = new Date(event.ts).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         if (!acc[date]) {
           acc[date] = [];
