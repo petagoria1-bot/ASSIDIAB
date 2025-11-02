@@ -464,9 +464,16 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
                     <p>Correction (Glycémie {glycemie}g/L): +{calculationResult.addCorr_U} U</p>
                     <p className="font-bold mt-1">Total: {calculationResult.doseRepas_U.toFixed(1)} + {calculationResult.addCorr_U} = {(calculationResult.doseRepas_U + calculationResult.addCorr_U).toFixed(1)} U &rarr; {calculationResult.doseTotale} U (arrondi)</p>
                 </div>
-                <div className="flex gap-2 mt-4">
-                    <button onClick={() => setStep(2)} className="w-full bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors">Modifier</button>
-                    <button onClick={handleConfirm} className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors">Valider</button>
+                <div className="mt-6 space-y-3">
+                    <button onClick={handleConfirm} className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                        Enregistrer au journal
+                    </button>
+                    <button onClick={() => setCurrentPage('dashboard')} className="w-full bg-gray-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors">
+                        Fermer sans enregistrer
+                    </button>
+                     <button onClick={() => setStep(2)} className="w-full text-blue-600 dark:text-blue-400 font-semibold py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        Modifier le calcul
+                    </button>
                 </div>
             </div>
         </div>
