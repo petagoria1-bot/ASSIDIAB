@@ -192,6 +192,14 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const [moment, setMoment] = useState<MealTime>('dejeuner');
   const [glycemie, setGlycemie] = useState('');
   const [cetones, setCetones] = useState('');
+  
+  const toLocalISOString = (date: Date) => {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
+    return localISOTime;
+  }
+  const [eventDateTime, setEventDateTime] = useState(toLocalISOString(new Date()));
+
   const [repasItems, setRepasItems] = useState<MealItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [calculationResult, setCalculationResult] = useState<DoseCalculationOutput | null>(null);
@@ -269,7 +277,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
           mesure: mesure as Mesure,
           repas: repas as Repas,
           injection: injection as Injection
-      });
+      }, new Date(eventDateTime).toISOString());
       toast.success(`Dose de ${calculationResult.doseTotale} U enregistrée !`);
       setCurrentPage('dashboard');
     } catch (error) {
@@ -311,6 +319,17 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const renderStep1 = () => (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-center">Étape 1: Mesure</h2>
+      <div>
+        <label htmlFor="event-time" className="block mb-2 font-semibold">Date et Heure</label>
+        <input 
+          id="event-time" 
+          type="datetime-local" 
+          value={eventDateTime} 
+          onChange={(e) => setEventDateTime(e.target.value)}
+          onFocus={handleFocus}
+          className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
+        />
+      </div>
       <div>
         <label className="block mb-2 font-semibold">Moment du repas</label>
         <select value={moment} onChange={(e) => setMoment(e.target.value as MealTime)} onFocus={handleFocus} className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">

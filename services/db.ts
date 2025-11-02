@@ -1,6 +1,6 @@
 
-// FIX: Changed the named import of Dexie to a default import. This is necessary for correct subclassing, ensuring that methods like 'version', 'transaction', and 'table' are inherited by the AppDB class.
-import Dexie, { type Table } from 'dexie';
+// FIX: Using a named import for Dexie. The default import was not working correctly for subclassing in this environment, causing methods like 'version()', 'transaction()' and 'table()' to be missing from the extended class instance.
+import { Dexie, type Table } from 'dexie';
 import { Patient, Mesure, Repas, Injection, Food, User } from '../types';
 
 export class AppDB extends Dexie {

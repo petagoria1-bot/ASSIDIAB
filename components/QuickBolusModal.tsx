@@ -5,7 +5,7 @@ import { InjectionType } from '../types';
 
 interface QuickBolusModalProps {
   onClose: () => void;
-  onConfirm: (dose: number, type: InjectionType) => void;
+  onConfirm: (dose: number, type: InjectionType, ts: string) => void;
 }
 
 const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -15,6 +15,13 @@ const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
 const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm }) => {
   const [dose, setDose] = useState('');
   const [type, setType] = useState<InjectionType>('rapide');
+  
+  const toLocalISOString = (date: Date) => {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
+    return localISOTime;
+  }
+  const [eventDateTime, setEventDateTime] = useState(toLocalISOString(new Date()));
 
   const handleConfirm = () => {
     const doseValue = parseFloat(dose.replace(',', '.'));
@@ -22,7 +29,7 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
       toast.error('Veuillez entrer une dose valide.');
       return;
     }
-    onConfirm(doseValue, type);
+    onConfirm(doseValue, type, new Date(eventDateTime).toISOString());
   };
 
   const handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -40,6 +47,17 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
         </div>
         
         <div className="space-y-4">
+          <div>
+            <label htmlFor="bolus-datetime" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date et Heure</label>
+            <input
+              type="datetime-local"
+              id="bolus-datetime"
+              value={eventDateTime}
+              onChange={(e) => setEventDateTime(e.target.value)}
+              onFocus={handleFocus}
+              className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 text-lg text-center"
+            />
+          </div>
           <div>
             <label htmlFor="bolus-dose" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dose (Unités)</label>
             <input

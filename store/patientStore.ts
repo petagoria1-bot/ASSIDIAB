@@ -15,10 +15,10 @@ interface PatientState {
   loadInitialData: (userId: number) => Promise<void>;
   createPatient: (prenom: string, naissance: string, userId: number) => Promise<void>;
   updatePatient: (patientData: Partial<Patient>) => Promise<void>;
-  addMesure: (mesure: Omit<Mesure, 'id' | 'patient_id' | 'ts'>) => Promise<void>;
-  addRepas: (repas: Omit<Repas, 'id' | 'patient_id' | 'ts'>) => Promise<Repas>;
-  addInjection: (injection: Omit<Injection, 'id' | 'patient_id' | 'ts'>) => Promise<void>;
-  addFullBolus: (data: {mesure: Mesure, repas: Repas, injection: Injection}) => Promise<void>;
+  addMesure: (mesure: Omit<Mesure, 'id' | 'patient_id' | 'ts'>, ts?: string) => Promise<void>;
+  addRepas: (repas: Omit<Repas, 'id' | 'patient_id' | 'ts'>, ts?: string) => Promise<Repas>;
+  addInjection: (injection: Omit<Injection, 'id' | 'patient_id' | 'ts'>, ts?: string) => Promise<void>;
+  addFullBolus: (data: {mesure: Mesure, repas: Repas, injection: Injection}, ts?: string) => Promise<void>;
   getLastCorrection: () => Promise<Injection | undefined>;
   addOrUpdateFood: (food: Food) => Promise<void>;
   clearPatientData: () => void;
@@ -49,7 +49,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         db.repas.where('patient_id').equals(patient.id).sortBy('ts'),
         db.injections.where('patient_id').equals(patient.id).sortBy('ts'),
       ]);
-      set({ patient, mesures: mesures.reverse(), repas, injections, foodLibrary, isLoading: false });
+      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, isLoading: false });
     } else {
         set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, isLoading: false });
     }
@@ -76,60 +76,60 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     }
   },
 
-  addMesure: async (mesureData) => {
+  addMesure: async (mesureData, ts) => {
     const patient = get().patient;
     if (!patient) return;
     const newMesure: Mesure = {
       ...mesureData,
       id: uuidv4(),
       patient_id: patient.id,
-      ts: new Date().toISOString(),
+      ts: ts || new Date().toISOString(),
     };
     await db.mesures.add(newMesure);
     set(state => ({ mesures: [newMesure, ...state.mesures] }));
   },
 
-  addRepas: async (repasData) => {
+  addRepas: async (repasData, ts) => {
     const patient = get().patient;
     if (!patient) throw new Error("Patient not found");
     const newRepas: Repas = {
       ...repasData,
       id: uuidv4(),
       patient_id: patient.id,
-      ts: new Date().toISOString(),
+      ts: ts || new Date().toISOString(),
     };
     await db.repas.add(newRepas);
-    set(state => ({ repas: [...state.repas, newRepas] }));
+    set(state => ({ repas: [newRepas, ...state.repas] }));
     return newRepas;
   },
 
-  addInjection: async (injectionData) => {
+  addInjection: async (injectionData, ts) => {
     const patient = get().patient;
     if (!patient) return;
     const newInjection: Injection = {
       ...injectionData,
       id: uuidv4(),
       patient_id: patient.id,
-      ts: new Date().toISOString(),
+      ts: ts || new Date().toISOString(),
     };
     await db.injections.add(newInjection);
     set(state => ({ injections: [newInjection, ...state.injections] }));
   },
 
-  addFullBolus: async ({ mesure, repas, injection }) => {
+  addFullBolus: async ({ mesure, repas, injection }, ts) => {
     const patient = get().patient;
     if (!patient) return;
     
-    const ts = new Date().toISOString();
+    const timestamp = ts || new Date().toISOString();
     const patient_id = patient.id;
 
-    const newMesure: Mesure = { ...mesure, id: uuidv4(), patient_id, ts };
-    const newRepas: Repas = { ...repas, id: uuidv4(), patient_id, ts };
+    const newMesure: Mesure = { ...mesure, id: uuidv4(), patient_id, ts: timestamp };
+    const newRepas: Repas = { ...repas, id: uuidv4(), patient_id, ts: timestamp };
     const newInjection: Injection = {
       ...injection,
       id: uuidv4(),
       patient_id,
-      ts,
+      ts: timestamp,
       lien_mesure_id: newMesure.id,
       lien_repas_id: newRepas.id,
     };
@@ -142,7 +142,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     
     set(state => ({
         mesures: [newMesure, ...state.mesures],
-        repas: [...state.repas, newRepas],
+        repas: [newRepas, ...state.repas],
         injections: [newInjection, ...state.injections]
     }));
   },

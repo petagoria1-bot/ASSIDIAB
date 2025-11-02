@@ -166,14 +166,14 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
   const [isBolusModalOpen, setIsBolusModalOpen] = useState(false);
   
   const lastMesure = mesures[0];
-  const lastRepas = [...repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())[0];
-  const lastInjection = [...injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())[0];
+  const lastRepas = repas[0];
+  const lastInjection = injections[0];
 
-  const handleConfirmBolus = async (dose: number, type: InjectionType) => {
+  const handleConfirmBolus = async (dose: number, type: InjectionType, ts: string) => {
     await addInjection({
       dose_U: dose,
       type: type,
-    });
+    }, ts);
     toast.success(`Bolus de ${dose}U (${type}) enregistré !`);
     setIsBolusModalOpen(false);
   };
