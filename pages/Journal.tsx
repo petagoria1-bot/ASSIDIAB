@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { Injection, Mesure, Repas } from '../types';
@@ -66,15 +67,16 @@ const Journal: React.FC = () => {
     // FIX: Define a union type for all possible events to help TypeScript's inference.
     type JournalEvent = typeof allEvents[number];
 
-    // FIX: Explicitly type the accumulator of the reduce function to prevent `dayEvents` from being inferred as `unknown`.
-    const groupedByDay = useMemo(() => allEvents.reduce<Record<string, JournalEvent[]>>((acc, event) => {
+    // FIX: Explicitly cast the initial value of the reduce function to ensure correct type inference for `groupedByDay`.
+    // This prevents `dayEvents` from being inferred as `unknown`.
+    const groupedByDay = useMemo(() => allEvents.reduce((acc, event) => {
         const date = new Date(event.ts).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         if (!acc[date]) {
           acc[date] = [];
         }
         acc[date].push(event);
         return acc;
-    }, {}), [allEvents]);
+    }, {} as Record<string, JournalEvent[]>), [allEvents]);
 
     const eventsById = useMemo(() => new Map(allEvents.map(e => [e.id, e])), [allEvents]);
 

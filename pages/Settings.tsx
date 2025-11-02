@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
-import { Patient, CorrectionRule, MealTime } from '../types';
+import { Patient, CorrectionRule, MealTime, Page } from '../types';
 import toast from 'react-hot-toast';
 import { MEAL_TIMES } from '../constants';
 import { db } from '../services/db';
@@ -17,8 +17,19 @@ const ExportIcon: React.FC<{ className?: string }> = ({ className }) => (
 const ImportIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
 );
+const BookOpen: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+);
+const FileText: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+);
 
-const Settings: React.FC = () => {
+
+interface SettingsProps {
+  setCurrentPage: (page: Page) => void;
+}
+
+const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const { patient, updatePatient } = usePatientStore();
   const { logout, currentUser } = useAuthStore();
   
@@ -240,6 +251,28 @@ const Settings: React.FC = () => {
                         Se déconnecter
                     </button>
                 </div>
+            </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-2">Personnalisation</h2>
+            <div className="space-y-3">
+                <button 
+                  type="button" 
+                  onClick={() => setCurrentPage('food')}
+                  className="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
+                    <BookOpen className="w-5 h-5" />
+                    Gérer la bibliothèque d'aliments
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setCurrentPage('pai')}
+                  className="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
+                    <FileText className="w-5 h-5" />
+                    Voir le PAI Simplifié
+                </button>
             </div>
         </div>
 

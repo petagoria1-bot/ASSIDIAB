@@ -64,7 +64,7 @@ const App: React.FC = () => {
       case 'emergency':
         return <Emergency />;
       case 'settings':
-        return <Settings />;
+        return <Settings setCurrentPage={setCurrentPage} />;
       case 'food':
         return <FoodLibrary />;
       case 'pai':

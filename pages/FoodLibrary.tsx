@@ -106,10 +106,6 @@ const FoodLibrary: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [foodToEdit, setFoodToEdit] = useState<Partial<Food> | null>(null);
 
-  const hasCustomFood = useMemo(() => 
-    foodLibrary.some(f => f.source.toLowerCase().includes('manuel')), 
-  [foodLibrary]);
-
   const handleEdit = (food: Food) => {
     setFoodToEdit(food);
     setIsModalOpen(true);
@@ -130,19 +126,17 @@ const FoodLibrary: React.FC = () => {
       {isModalOpen && <FoodEditModal foodToEdit={foodToEdit} onClose={handleCloseModal} />}
       <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Bibliothèque d'aliments</h1>
       
-      {!hasCustomFood && (
-          <div className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg mb-4 border border-blue-200 dark:border-blue-700">
-              <div className="flex items-start">
-                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-300 mr-3 mt-1 flex-shrink-0"/>
-                  <div>
-                      <h2 className="font-bold text-blue-800 dark:text-blue-200">Construisez votre base de confiance</h2>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                          Cette liste est une base de départ. Pour une précision maximale, ajoutez vos propres aliments en utilisant les valeurs de votre diététicien ou de l'application Gluci-Check de l'hôpital.
-                      </p>
-                  </div>
+      <div className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg mb-4 border border-blue-200 dark:border-blue-700">
+          <div className="flex items-start">
+              <Info className="w-6 h-6 text-blue-600 dark:text-blue-300 mr-3 mt-1 flex-shrink-0"/>
+              <div>
+                  <h2 className="font-bold text-blue-800 dark:text-blue-200">Pour une précision maximale</h2>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      La liste initiale est une base de départ. Pour garantir des calculs de dose corrects, <strong>vérifiez et ajustez les valeurs</strong> avec votre source de confiance (ex: l'application Gluci-Check, données du diététicien). Cliquez sur un aliment pour le modifier ou ajoutez les vôtres.
+                  </p>
               </div>
           </div>
-      )}
+      </div>
 
       <div className="space-y-2">
         {foodLibrary.sort((a,b) => a.name.localeCompare(b.name)).map(food => (

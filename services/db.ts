@@ -1,6 +1,6 @@
 
-// FIX: Using a default import for Dexie. The named import was not working correctly for subclassing in this environment, causing methods like 'version()', 'transaction()' and 'table()' to be missing from the extended class instance.
-import Dexie, { type Table } from 'dexie';
+// FIX: Use a named import for Dexie to ensure proper subclassing, as the default import was causing method resolution issues.
+import { Dexie, type Table } from 'dexie';
 import { Patient, Mesure, Repas, Injection, Food, User } from '../types';
 
 export class AppDB extends Dexie {
