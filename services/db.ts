@@ -1,6 +1,4 @@
-// FIX: Changed the Dexie import from a named import to a default import. The Dexie library
-// uses a default export for its main class. The incorrect import was preventing AppDB from
-// inheriting Dexie's methods like .version() and .transaction().
+// FIX: Changed the Dexie import from a named import to a default import to ensure correct class extension.
 import Dexie, { type Table } from 'dexie';
 import { Patient, Mesure, Repas, Injection, Food } from '../types';
 
