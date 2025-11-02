@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { usePatientStore } from './store/patientStore';
+import { useAuthStore } from './store/authStore';
+
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import DoseCalculator from './pages/DoseCalculator';
@@ -11,23 +12,41 @@ import Emergency from './pages/Emergency';
 import Pai from './pages/Pai';
 import Onboarding from './pages/Onboarding';
 import BottomNav from './components/BottomNav';
+import AuthPage from './pages/AuthPage';
 import { Page } from './types';
+
+const LoadingScreen = () => (
+  <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300">Chargement...</div>
+);
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const { patient, loadInitialData } = usePatientStore();
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const { isAuthenticated, isLoading: isAuthLoading, checkSession, currentUser } = useAuthStore();
+  const { patient, isLoading: isPatientLoading, loadInitialData, clearPatientData } = usePatientStore();
+  
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   useEffect(() => {
-    const init = async () => {
-      await loadInitialData();
-      setIsLoading(false);
-    };
-    init();
-  }, [loadInitialData]);
+    if (currentUser) {
+      loadInitialData(currentUser.id);
+    } else {
+      clearPatientData();
+    }
+  }, [currentUser, loadInitialData, clearPatientData]);
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300">Chargement...</div>;
+  if (isAuthLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+  
+  if (isPatientLoading) {
+    return <LoadingScreen />;
   }
 
   if (!patient) {

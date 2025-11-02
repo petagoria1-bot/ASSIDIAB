@@ -2,8 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { Food } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, X, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const Plus: React.FC<{ size: number }> = ({ size }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+);
+const X: React.FC<{ size: number }> = ({ size }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+);
+const Info: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+);
+
 
 const FoodEditModal = ({ foodToEdit, onClose }: { foodToEdit: Partial<Food> | null, onClose: () => void }) => {
     const { addOrUpdateFood } = usePatientStore();

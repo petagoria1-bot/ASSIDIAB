@@ -5,13 +5,22 @@ export type MeasurementSource = "doigt" | "capteur";
 export type AlertType = "hypo" | "hyper" | "cetone" | "tech";
 export type Page = 'dashboard' | 'journal' | 'calculator' | 'emergency' | 'settings' | 'food' | 'pai';
 
+export interface User {
+  id: number;
+  username: string;
+  // NOTE: Storing passwords in plaintext is acceptable only for a local, offline-first PWA
+  // where the data does not leave the user's device. This is not secure for web apps.
+  password?: string;
+}
+
 export interface CorrectionRule {
   max: number; // in g/L
   addU: number;
 }
 
 export interface Patient {
-  id: string;
+  id: string; // uuid
+  userId: number; // foreign key to User
   prenom: string;
   naissance: string; // YYYY-MM-DD
   cibles: { gly_min: number; gly_max: number; unit: Unit }; // in g/L

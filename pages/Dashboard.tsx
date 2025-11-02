@@ -1,9 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
-import { Page, Mesure, Repas, Injection } from '../types';
+import { Page, Mesure, Repas, Injection, InjectionType } from '../types';
 import { MEAL_TIMES } from '../constants';
-import { Droplets, Wheat } from 'lucide-react';
+import QuickBolusModal from '../components/QuickBolusModal';
+import toast from 'react-hot-toast';
+
+const Droplets: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.49-2.2-1.25-3.25A4.42 4.42 0 0 0 11 6.05c0-2.23-1.8-4.05-4-4.05S3 3.82 3 6.05c0 1.16.49 2.2 1.25 3.25A4.42 4.42 0 0 0 3 12.25C3 14.47 4.8 16.3 7 16.3z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.54 2.52 2.55 4.5 5 5 .44 2.45-.56 4.95-2.42 6.62"></path></svg>
+);
+const Wheat: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 22 16 8l-4-4-2 2 4 4-2.5 2.5-4.5 4.5-1.5-1.5z"></path><path d="m18 12 2-2-4.5-4.5-2 2 4.5 4.5z"></path><path d="M16 8s2-2 4-4"></path><path d="M18.5 4.5s2 2 4 4"></path></svg>
+);
+const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="M6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>
+);
+
 
 const GlucoseCard: React.FC<{ mesure?: Mesure }> = ({ mesure }) => {
     const getTrendArrow = () => '→'; // Placeholder for sensor trend
@@ -145,17 +157,26 @@ const InfoCard: React.FC<{ title: string; data?: Repas | Injection }> = ({ title
     )
 }
 
-// FIX: Added DashboardProps interface to define props for the Dashboard component.
 interface DashboardProps {
   setCurrentPage: (page: Page) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
-  const { patient, mesures, repas, injections } = usePatientStore();
+  const { patient, mesures, repas, injections, addInjection } = usePatientStore();
+  const [isBolusModalOpen, setIsBolusModalOpen] = useState(false);
   
   const lastMesure = mesures[0];
   const lastRepas = [...repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())[0];
   const lastInjection = [...injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())[0];
+
+  const handleConfirmBolus = async (dose: number, type: InjectionType) => {
+    await addInjection({
+      dose_U: dose,
+      type: type,
+    });
+    toast.success(`Bolus de ${dose}U (${type}) enregistré !`);
+    setIsBolusModalOpen(false);
+  };
 
   return (
     <div className="p-4 space-y-6 max-w-lg mx-auto">
@@ -177,10 +198,28 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
         </button>
       </div>
 
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Actions Rapides</h3>
+        <button 
+          onClick={() => setIsBolusModalOpen(true)}
+          className="w-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-bold py-3 px-4 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors flex items-center justify-center gap-2"
+        >
+          <SyringeIcon className="w-5 h-5" />
+          <span>Ajouter un bolus</span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <InfoCard title="Dernier Repas" data={lastRepas} />
         <InfoCard title="Dernière Dose" data={lastInjection} />
       </div>
+
+      {isBolusModalOpen && (
+        <QuickBolusModal
+            onClose={() => setIsBolusModalOpen(false)}
+            onConfirm={handleConfirmBolus}
+        />
+      )}
     </div>
   );
 };

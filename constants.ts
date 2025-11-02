@@ -1,4 +1,3 @@
-
 import { MealTime, Patient } from './types';
 
 export const MEAL_TIMES: Record<MealTime, string> = {
@@ -8,10 +7,8 @@ export const MEAL_TIMES: Record<MealTime, string> = {
   diner: "Dîner",
 };
 
-export const DEFAULT_PATIENT: Patient = {
-    id: 'default-patient',
-    prenom: '',
-    naissance: '',
+// This is now a template of settings, not a full patient object.
+export const DEFAULT_PATIENT_SETTINGS: Omit<Patient, 'id' | 'userId' | 'prenom' | 'naissance'> = {
     cibles: { gly_min: 0.80, gly_max: 1.60, unit: "gL" },
     ratios: {
       petit_dej: 7,

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
 import { Patient, Mesure, Repas, Injection, Food, InjectionType } from '../types';
-import { DEFAULT_PATIENT } from '../constants';
+import { DEFAULT_PATIENT_SETTINGS } from '../constants';
 import { initialFoodData } from '../data/foodLibrary';
 
 interface PatientState {
@@ -11,8 +11,9 @@ interface PatientState {
   repas: Repas[];
   injections: Injection[];
   foodLibrary: Food[];
-  loadInitialData: () => Promise<void>;
-  createPatient: (prenom: string, naissance: string) => Promise<void>;
+  isLoading: boolean;
+  loadInitialData: (userId: number) => Promise<void>;
+  createPatient: (prenom: string, naissance: string, userId: number) => Promise<void>;
   updatePatient: (patientData: Partial<Patient>) => Promise<void>;
   addMesure: (mesure: Omit<Mesure, 'id' | 'patient_id' | 'ts'>) => Promise<void>;
   addRepas: (repas: Omit<Repas, 'id' | 'patient_id' | 'ts'>) => Promise<Repas>;
@@ -20,6 +21,7 @@ interface PatientState {
   addFullBolus: (data: {mesure: Mesure, repas: Repas, injection: Injection}) => Promise<void>;
   getLastCorrection: () => Promise<Injection | undefined>;
   addOrUpdateFood: (food: Food) => Promise<void>;
+  clearPatientData: () => void;
 }
 
 export const usePatientStore = create<PatientState>((set, get) => ({
@@ -28,43 +30,41 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   repas: [],
   injections: [],
   foodLibrary: [],
+  isLoading: true,
   
-  loadInitialData: async () => {
-    let patient = await db.patients.get('default-patient');
+  loadInitialData: async (userId) => {
+    set({ isLoading: true });
+    let patient = await db.patients.where({ userId }).first();
+    
+    // Always load food library
+    let foodLibrary = await db.foodLibrary.toArray();
+    if (foodLibrary.length === 0) {
+        await db.foodLibrary.bulkAdd(initialFoodData);
+        foodLibrary = await db.foodLibrary.toArray();
+    }
+    
     if (patient) {
-      const [mesures, repas, injections, foodLibrary] = await Promise.all([
+      const [mesures, repas, injections] = await Promise.all([
         db.mesures.where('patient_id').equals(patient.id).sortBy('ts'),
         db.repas.where('patient_id').equals(patient.id).sortBy('ts'),
         db.injections.where('patient_id').equals(patient.id).sortBy('ts'),
-        db.foodLibrary.toArray(),
       ]);
-
-      let finalFoodLibrary = foodLibrary;
-      if(foodLibrary.length === 0) {
-        // Simple migration check: if old food items don't have 'source', reload.
-        const needsMigration = foodLibrary.length > 0 && !foodLibrary[0].source;
-        if (needsMigration) {
-            await db.foodLibrary.clear();
-            await db.foodLibrary.bulkAdd(initialFoodData);
-            finalFoodLibrary = await db.foodLibrary.toArray();
-        } else if (foodLibrary.length === 0) {
-            await db.foodLibrary.bulkAdd(initialFoodData);
-            finalFoodLibrary = await db.foodLibrary.toArray();
-        }
-      }
-
-      set({ patient, mesures: mesures.reverse(), repas, injections, foodLibrary: finalFoodLibrary });
+      set({ patient, mesures: mesures.reverse(), repas, injections, foodLibrary, isLoading: false });
     } else {
-        await db.foodLibrary.bulkAdd(initialFoodData);
-        const finalFoodLibrary = await db.foodLibrary.toArray();
-        set({foodLibrary: finalFoodLibrary});
+        set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, isLoading: false });
     }
   },
 
-  createPatient: async (prenom, naissance) => {
-    const newPatient: Patient = { ...DEFAULT_PATIENT, prenom, naissance };
+  createPatient: async (prenom, naissance, userId) => {
+    const newPatient: Patient = {
+      ...DEFAULT_PATIENT_SETTINGS,
+      id: uuidv4(),
+      userId,
+      prenom,
+      naissance
+    };
     await db.patients.add(newPatient);
-    set({ patient: newPatient });
+    set({ patient: newPatient, isLoading: false });
   },
 
   updatePatient: async (patientData) => {
@@ -164,4 +164,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     const updatedLibrary = await db.foodLibrary.toArray();
     set({ foodLibrary: updatedLibrary });
   },
+
+  clearPatientData: () => {
+    set({ patient: null, mesures: [], repas: [], injections: [], isLoading: false });
+  }
 }));
