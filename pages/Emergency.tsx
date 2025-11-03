@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 const Emergency: React.FC = () => {
@@ -25,7 +24,7 @@ const Emergency: React.FC = () => {
         steps: { title: string, text: string }[]
     ) => (
         <div>
-            <button onClick={() => setView('menu')} className="text-blue-600 dark:text-blue-400 mb-4">&larr; Retour</button>
+            <button onClick={() => setView('menu')} className="text-teal-600 dark:text-teal-400 mb-4">&larr; Retour</button>
             <h2 className={`text-2xl font-bold text-center text-white p-4 rounded-t-lg ${bgColor}`}>{title}</h2>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-b-lg shadow-md space-y-4">
                 {steps.map((step, index) => (

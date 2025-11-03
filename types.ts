@@ -87,6 +87,7 @@ export interface Food {
   quality?: 'certaine' | 'incertaine';
   common_portion_g?: number;
   common_portion_name?: string;
+  imageBase64?: string;
 }
 
 export interface DoseCalculationInput {

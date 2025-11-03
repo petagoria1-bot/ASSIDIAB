@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { InjectionType } from '../types';
@@ -42,7 +41,7 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-center text-center mb-4">
-            <SyringeIcon className="w-8 h-8 text-blue-500 mr-2" />
+            <SyringeIcon className="w-8 h-8 text-teal-500 mr-2" />
             <h3 className="text-xl font-bold">Ajouter un Bolus</h3>
         </div>
         
@@ -74,10 +73,10 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
           <div>
             <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type d'injection</span>
             <div className="flex gap-2">
-                <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
                     Repas / Rapide
                 </button>
-                <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
                     Correction
                 </button>
             </div>
@@ -86,7 +85,7 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
         
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button onClick={onClose} className="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 rounded-lg hover:bg-gray-300">Annuler</button>
-          <button onClick={handleConfirm} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">Confirmer</button>
+          <button onClick={handleConfirm} className="w-full bg-teal-600 text-white font-bold py-3 rounded-lg hover:bg-teal-700">Confirmer</button>
         </div>
       </div>
     </div>

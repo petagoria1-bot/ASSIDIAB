@@ -18,7 +18,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = currentPage === item.page;
@@ -27,7 +27,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
               <button
                 key={item.page}
                 onClick={() => setCurrentPage(item.page)}
-                className="relative -top-6 w-16 h-16 bg-blue-600 rounded-full text-white flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:focus:ring-offset-gray-800"
+                className="relative -top-6 w-16 h-16 bg-teal-500 rounded-full text-white flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-teal-600 dark:focus:ring-offset-slate-800"
                 aria-label="Calculer une dose"
               >
                 <item.icon size={32} />
@@ -39,12 +39,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
               key={item.page}
               onClick={() => setCurrentPage(item.page)}
               className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${
-                isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
               <item.icon size={24} />
-              <span className="text-xs mt-1">{item.label}</span>
+              <span className={`text-xs mt-1 ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
             </button>
           );
         })}

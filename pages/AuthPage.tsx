@@ -8,19 +8,14 @@ const AuthPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    const { login, signup, error, isLoading } = useAuthStore();
+    const { login, signup, isLoading } = useAuthStore();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isLoading) return;
 
         if (isLogin) {
-            const success = await login(username, password);
-            if (success) {
-                toast.success(`Bienvenue, ${username} !`);
-            } else {
-                toast.error(error || "Échec de la connexion.");
-            }
+            await login(username, password);
         } else {
             if (password !== confirmPassword) {
                 toast.error("Les mots de passe ne correspondent pas.");
@@ -30,12 +25,7 @@ const AuthPage: React.FC = () => {
                 toast.error("Le mot de passe doit contenir au moins 4 caractères.");
                 return;
             }
-            const success = await signup(username, password);
-            if (success) {
-                toast.success("Compte créé avec succès !");
-            } else {
-                toast.error(error || "Échec de l'inscription.");
-            }
+            await signup(username, password);
         }
     };
     
@@ -63,7 +53,7 @@ const AuthPage: React.FC = () => {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             onFocus={handleFocus}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
                             placeholder="ex: FamilleDupond"
                             required
                         />
@@ -76,7 +66,7 @@ const AuthPage: React.FC = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             onFocus={handleFocus}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
                             required
                         />
                     </div>
@@ -89,17 +79,17 @@ const AuthPage: React.FC = () => {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 onFocus={handleFocus}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
                                 required
                             />
                         </div>
                     )}
-                    <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                    <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50">
                         {isLoading ? "Chargement..." : (isLogin ? "Se connecter" : "Créer le compte")}
                     </button>
                 </form>
                 <div className="mt-4 text-center">
-                    <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+                    <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-teal-600 hover:underline dark:text-teal-400">
                         {isLogin ? "Pas de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
                     </button>
                 </div>

@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useMemo } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { Injection, Mesure, Repas } from '../types';
@@ -11,8 +13,8 @@ const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
 const Wheat: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 22 16 8l-4-4-2 2 4 4-2.5 2.5-4.5 4.5-1.5-1.5z"></path><path d="m18 12 2-2-4.5-4.5-2 2 4.5 4.5z"></path><path d="M16 8s2-2 4-4"></path><path d="M18.5 4.5s2 2 4 4"></path></svg>
 );
-const Thermometer: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+const Activity: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
 );
 const ChevronDown: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m6 9 6 6 6-6"/></svg>
@@ -33,21 +35,21 @@ const Accordion: React.FC<{
     children: React.ReactNode;
 }> = ({ title, icon, summary, isOpen, onToggle, children }) => {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <button onClick={onToggle} className="w-full p-3 flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+        <div className="bg-white dark:bg-slate-700 rounded-xl shadow-md">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
                         {icon}
                     </div>
                     <div className="text-left">
-                        <p className="font-semibold">{title}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{summary}</p>
+                        <p className="font-semibold text-slate-800 dark:text-slate-200">{title}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{summary}</p>
                     </div>
                 </div>
-                <ChevronDown className={`w-6 h-6 text-gray-500 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-6 h-6 text-slate-500 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px]' : 'max-h-0'}`}>
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-4 border-t border-slate-200 dark:border-slate-600">
                     {children}
                 </div>
             </div>
@@ -66,8 +68,9 @@ const Journal: React.FC = () => {
     
     type JournalEvent = typeof allEvents[number];
 
-    // FIX: By explicitly providing a generic type argument to `reduce`, we ensure `groupedByDay` has the correct type.
-    // This prevents `dayEvents` from being inferred as `unknown` and causing a crash when calling `.filter()`.
+    // FIX: Explicitly specify the generic type for the `reduce` function's accumulator.
+    // This ensures `groupedByDay` is correctly typed as `Record<string, JournalEvent[]>`,
+    // resolving issues where the value from the record was inferred as `unknown`.
     const groupedByDay = useMemo(() => allEvents.reduce<Record<string, JournalEvent[]>>((acc, event) => {
         const date = new Date(event.ts).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         if (!acc[date]) {
@@ -112,17 +115,17 @@ const Journal: React.FC = () => {
           case 'mesure':
             return (
                 <div className="flex items-center space-x-3">
-                    <Thermometer className="w-5 h-5 text-red-500" />
+                    <Activity className="w-5 h-5 text-red-500" />
                     <p>Glycémie: <span className="font-bold">{event.gly.toFixed(2)} g/L</span> à {time}</p>
                 </div>
             );
           case 'injection':
              return (
                 <div className="flex items-center space-x-3">
-                    <SyringeIcon className="w-5 h-5 text-blue-500" />
+                    <SyringeIcon className="w-5 h-5 text-teal-500" />
                     <div>
                         <p>Injection: <span className="font-bold">{event.dose_U} U</span> ({event.type}) à {time}</p>
-                        {event.calc_details && <p className="text-xs text-gray-500">{event.calc_details}</p>}
+                        {event.calc_details && <p className="text-xs text-slate-500">{event.calc_details}</p>}
                     </div>
                 </div>
             );
@@ -132,8 +135,10 @@ const Journal: React.FC = () => {
 
 
     return (
-    <div className="p-4 max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Journal</h1>
+    <div className="p-4">
+        <header className="mb-6">
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Journal</h1>
+        </header>
         <div className="space-y-6">
         {Object.keys(groupedByDay).length > 0 ? (
             Object.entries(groupedByDay).map(([date, dayEvents]) => {
@@ -159,8 +164,8 @@ const Journal: React.FC = () => {
 
                 return (
                     <div key={date}>
-                        <h2 className="text-md font-semibold my-3 text-gray-700 dark:text-gray-300 sticky top-0 bg-gray-50 dark:bg-gray-900 py-2">{date}</h2>
-                        <div className="space-y-2">
+                        <h2 className="text-lg font-semibold my-3 text-slate-700 dark:text-slate-300 sticky top-0 bg-slate-100 dark:bg-slate-800 py-2 -mx-4 px-4">{date}</h2>
+                        <div className="space-y-3">
                            {mealBlocks.map(block => {
                                const accordionId = `${date}-${block.repas.id}`;
                                const time = new Date(block.repas.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -177,8 +182,8 @@ const Journal: React.FC = () => {
                                         {block.mesure && renderEventDetails(block.mesure)}
                                         {block.injection && renderEventDetails(block.injection)}
                                         <div>
-                                            <p className="font-semibold">Aliments:</p>
-                                            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
+                                            <p className="font-semibold text-slate-800 dark:text-slate-200">Aliments:</p>
+                                            <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-300">
                                                 {block.repas.items.map((item, i) => (
                                                     <li key={i}>{item.nom} ({item.carbs_g.toFixed(0)}g)</li>
                                                 ))}
@@ -192,14 +197,14 @@ const Journal: React.FC = () => {
                                 <Accordion
                                     key={`${date}-autres`}
                                     title="Autres Événements"
-                                    icon={<SyringeIcon className="w-5 h-5 text-gray-500" />}
-                                    summary={`${otherEvents.length} entrée(s)`}
+                                    icon={<SyringeIcon className="w-5 h-5 text-slate-400 dark:text-slate-300"/>}
+                                    summary={`${otherEvents.length} événement(s)`}
                                     isOpen={openAccordions.has(`${date}-autres`)}
                                     onToggle={() => toggleAccordion(`${date}-autres`)}
                                 >
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {otherEvents.map(event => (
-                                            <div key={event.id} className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded-md">
+                                            <div key={event.id} className="p-2 bg-slate-50 dark:bg-slate-600/50 rounded-md">
                                                 {renderEventDetails(event)}
                                             </div>
                                         ))}
@@ -211,7 +216,10 @@ const Journal: React.FC = () => {
                 )
             })
         ) : (
-            <p className="text-center text-gray-500 mt-8">Aucune donnée pour le moment.</p>
+            <div className="text-center py-16">
+                <p className="text-slate-500 dark:text-slate-400">Aucun événement dans le journal.</p>
+                <p className="text-sm text-slate-400 mt-2">Commencez par ajouter une mesure ou un repas.</p>
+            </div>
         )}
         </div>
     </div>

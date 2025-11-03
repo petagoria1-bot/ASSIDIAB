@@ -17,7 +17,7 @@ import AuthPage from './pages/AuthPage';
 import { Page } from './types';
 
 const LoadingScreen = () => (
-  <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300">Chargement...</div>
+  <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Chargement...</div>
 );
 
 const App: React.FC = () => {
@@ -76,11 +76,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-sans">
       <Toaster position="top-center" />
-      <div className="pb-20"> 
-        {renderPage()}
-      </div>
+      <main className="max-w-lg mx-auto relative">
+        <div className="pb-24"> 
+          {renderPage()}
+        </div>
+      </main>
       <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
     </div>
   );

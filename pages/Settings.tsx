@@ -39,7 +39,6 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const { patient, updatePatient } = usePatientStore();
   const { logout, login, currentUser } = useAuthStore();
   
-  // FIX: Corrected syntax error from `= =` to `=`.
   const [formStrings, setFormStrings] = useState<Record<string, string>>({});
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [notesPai, setNotesPai] = useState('');
@@ -138,6 +137,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
             repas: await db.repas.toArray(),
             injections: await db.injections.toArray(),
             foodLibrary: await db.foodLibrary.toArray(),
+            favoriteMeals: await db.favoriteMeals.toArray(),
         };
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -184,9 +184,14 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
             
             const data = JSON.parse(text);
             
-            const requiredTables = ['users', 'patients', 'mesures', 'repas', 'injections', 'foodLibrary'];
+            const requiredTables = ['users', 'patients', 'mesures', 'repas', 'injections', 'foodLibrary', 'favoriteMeals'];
             if (!requiredTables.every(table => Array.isArray(data[table]))) {
-                throw new Error("Fichier de sauvegarde invalide ou corrompu.");
+                 // Check for older backup format
+                if (Array.isArray(data.foodLibrary) && data.favoriteMeals === undefined) {
+                    data.favoriteMeals = []; // Add missing table for older backups
+                } else {
+                    throw new Error("Fichier de sauvegarde invalide ou corrompu.");
+                }
             }
             
             logout();
@@ -197,17 +202,14 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
             });
             
             const firstUser = data.users?.[0];
-            let loginSuccess = false;
             if (firstUser?.username && firstUser?.password) {
-                loginSuccess = await login(firstUser.username, firstUser.password);
-            }
-
-            if (loginSuccess) {
-                toast.success("Données importées avec succès ! Rechargement...", { id: importToastId, duration: 2000 });
+                await login(firstUser.username, firstUser.password);
+                // The login function now handles its own toasts
             } else {
-                toast.success("Données importées. Veuillez vous reconnecter.", { id: importToastId, duration: 2000 });
+                 toast.success("Données importées. Veuillez vous reconnecter.", { id: importToastId, duration: 2000 });
             }
             
+            // Reload to apply the new state cleanly
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
@@ -297,7 +299,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                     <p><strong>Pseudo:</strong> {currentUser?.username}</p>
                     <p><strong>Mot de passe:</strong> {showPassword ? currentUser?.password : '••••••••'}</p>
                   </div>
-                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-xs text-blue-500 mt-1">
+                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-xs text-teal-500 mt-1">
                       {showPassword ? 'Cacher' : 'Montrer'} le mot de passe
                    </button>
                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
@@ -355,7 +357,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                             <input type="tel" value={contact.tel} onChange={(e) => handleContactChange(index, 'tel', e.target.value)} placeholder="Téléphone" className="col-span-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"/>
                         </div>
                     ))}
-                    <button type="button" onClick={addContact} className="w-full text-sm text-blue-600 dark:text-blue-400 font-semibold p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50">
+                    <button type="button" onClick={addContact} className="w-full text-sm text-teal-600 dark:text-teal-400 font-semibold p-2 rounded-md hover:bg-teal-50 dark:hover:bg-teal-900/50">
                         + Ajouter un contact
                     </button>
                 </div>
@@ -388,7 +390,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                     <ExportIcon className="w-4 h-4" />
                     Exporter
                 </button>
-                <label className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                <label className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition-colors flex items-center justify-center gap-2 cursor-pointer">
                     <ImportIcon className="w-4 h-4" />
                     Importer
                     <input 
@@ -498,7 +500,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
           </div>
         </div>
 
-        <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+        <button type="submit" className="w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors">
           Enregistrer les modifications
         </button>
       </form>

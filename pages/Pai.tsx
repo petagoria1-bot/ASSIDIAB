@@ -68,7 +68,7 @@ const Pai: React.FC = () => {
                     <h3 className="font-bold border-b pb-1 mb-2">Contacts d'urgence</h3>
                     {patient.contacts && patient.contacts.length > 0 ? (
                         patient.contacts.map(contact => (
-                            <p key={contact.id}><strong>{contact.lien} ({contact.nom}):</strong> <a href={`tel:${contact.tel}`} className="text-blue-600">{contact.tel}</a></p>
+                            <p key={contact.id}><strong>{contact.lien} ({contact.nom}):</strong> <a href={`tel:${contact.tel}`} className="text-teal-600">{contact.tel}</a></p>
                         ))
                     ) : (
                         <p className="text-gray-500">Aucun contact configuré. Veuillez les ajouter dans les Réglages.</p>
@@ -77,7 +77,7 @@ const Pai: React.FC = () => {
             </div>
             <button 
                 onClick={() => window.print()}
-                className="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                className="mt-6 w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors"
             >
                 Imprimer le PAI
             </button>
