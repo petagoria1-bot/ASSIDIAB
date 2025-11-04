@@ -5,7 +5,7 @@ export type MealTime = "petit_dej" | "dejeuner" | "gouter" | "diner";
 export type InjectionType = "rapide" | "basale" | "correction";
 export type MeasurementSource = "doigt" | "capteur";
 export type AlertType = "hypo" | "hyper" | "cetone" | "tech";
-export type Page = 'dashboard' | 'journal' | 'glucides' | 'emergency' | 'settings' | 'food' | 'pai';
+export type Page = 'dashboard' | 'journal' | 'glucides' | 'emergency' | 'settings' | 'food' | 'pai' | 'rapports';
 export type EventType = 'rdv' | 'note';
 
 export interface User {
@@ -130,4 +130,10 @@ export interface Event {
     type: EventType;
     title: string;
     description: string;
+}
+
+export interface AnalyzedFoodItem {
+  nom: string;
+  poids_g: number;
+  glucides_g: number;
 }

@@ -22,7 +22,7 @@ const ArrowRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width
 const CalendarIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
 const LightbulbIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"></path></svg>;
 const BarChartIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>;
-const StethoscopeIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4.8 2.3A.3.3 0 1 0 5 2a.3.3 0 0 0-.2.3V5a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9a2 2 0 0 1 2-2h1a2 2 0 0 0 2-2V2.3a.3.3 0 1 0-.5 0V5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 1-.5-.5V2.3a.3.3 0 0 0-.2-.3Z"></path><path d="M8 15a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3a2 2 0 0 0-2-2h-1a2 2 0 0 1-2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2H7a2 2 0 0 0-2 2Z"></path><circle cx="12" cy="18" r="2"></circle></svg>;
+const StethoscopeIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4.8 2.3A.3.3 0 1 0 5 2a.3.3 0 0 0-.2.3V5a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9a2 2 0 0 1 2-2h1a2 2 0 0 0 2-2V2.3a.3.3 0 1 0-.5 0V5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 0-.5.5h-1a.5.5 0 0 1-.5-.5V2.3a.3.3 0 0 0-.2-.3Z"></path><path d="M8 15a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3a2 2 0 0 0-2-2h-1a2 2 0 0 1-2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2H7a2 2 0 0 0-2 2Z"></path><circle cx="12" cy="18" r="2"></circle></svg>;
 const ClipboardIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>;
 
 
@@ -154,21 +154,17 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
       
       <Card>
         <div className="flex items-center text-text-title mb-3">
-          <BarChartIcon />
-          <h2 className="font-display font-semibold text-xl ml-2">Glycémies du jour</h2>
+            <BarChartIcon />
+            <h2 className="font-display font-semibold text-xl ml-2">Analyse des Données</h2>
         </div>
-        <div className="text-center text-sm text-text-muted py-4">
-            <svg width="100%" height="100" viewBox="0 0 300 100">
-              <path d="M 20 80 L 80 40 L 150 60 L 220 30 L 280 50" stroke="#10B981" fill="none" strokeWidth="2" />
-              <circle cx="80" cy="40" r="3" fill="#10B981" />
-              <circle cx="150" cy="60" r="3" fill="#10B981" />
-              <circle cx="220" cy="30" r="3" fill="#10B981" />
-              <circle cx="280" cy="50" r="3" fill="#10B981" />
-              <text x="20" y="95" fontSize="10" fill="#94A3B8">08:00</text>
-              <text x="140" y="95" fontSize="10" fill="#94A3B8">12:30</text>
-              <text x="260" y="95" fontSize="10" fill="#94A3B8">19:00</text>
-            </svg>
-            <p>Graphique bientôt disponible.</p>
+        <div className="text-center py-2">
+            <p className="text-sm text-text-muted mb-4">Visualisez les tendances, le temps dans la cible et les statistiques détaillées.</p>
+            <button
+                onClick={() => setCurrentPage('rapports')}
+                className="bg-emerald-main text-white font-bold py-3 px-6 rounded-button hover:bg-jade-deep-dark transition-colors shadow-md"
+            >
+                Accéder aux Rapports
+            </button>
         </div>
       </Card>
       

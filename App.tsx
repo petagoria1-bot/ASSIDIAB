@@ -15,13 +15,14 @@ import Onboarding from './pages/Onboarding';
 import BottomNav from './components/BottomNav';
 import AuthPage from './pages/AuthPage';
 import { Page } from './types';
+import Reports from './pages/Reports';
 
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen bg-off-white font-sans text-text-muted">Chargement...</div>
 );
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('glucides');
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   
   const { isAuthenticated, isLoading: isAuthLoading, checkSession, currentUser } = useAuthStore();
   const { patient, isLoading: isPatientLoading, loadInitialData, clearPatientData } = usePatientStore();
@@ -70,6 +71,8 @@ const App: React.FC = () => {
         return <FoodLibrary />;
       case 'pai':
         return <Pai />;
+      case 'rapports':
+        return <Reports setCurrentPage={setCurrentPage} />;
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />;
     }
