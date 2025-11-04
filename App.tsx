@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { usePatientStore } from './store/patientStore';
 import { useAuthStore } from './store/authStore';
-import { useSettingsStore } from './store/settingsStore';
+import { useSettingsStore, Language } from './store/settingsStore';
 
 // Fix: Corrected import paths
 import Dashboard from './pages/Dashboard';
@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading, checkSession, currentUser } = useAuthStore();
   const { patient, isLoading: isPatientLoading, loadInitialData, clearPatientData } = usePatientStore();
   const { language } = useSettingsStore();
+  const rtlLangs: Language[] = ['ar', 'ur', 'ps'];
   
   useEffect(() => {
     checkSession();
@@ -48,6 +49,7 @@ const App: React.FC = () => {
   
   useEffect(() => {
     document.documentElement.lang = language;
+    document.documentElement.dir = rtlLangs.includes(language) ? 'rtl' : 'ltr';
   }, [language]);
 
   if (isAuthLoading) {

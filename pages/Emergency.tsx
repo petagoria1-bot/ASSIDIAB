@@ -76,7 +76,7 @@ const Emergency: React.FC = () => {
         <div className="space-y-4">
           {stepKeys.map((key, index) => (
             <div key={key} className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-main text-white flex items-center justify-center font-bold mr-3">{index + 1}</div>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-main text-white flex items-center justify-center font-bold me-3">{index + 1}</div>
               <p className="text-text-main">{getStepText(key)}</p>
             </div>
           ))}

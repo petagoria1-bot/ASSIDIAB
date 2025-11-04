@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
@@ -47,7 +48,7 @@ const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfir
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
       <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-center text-center mb-4">
-            <DropletIcon className="w-8 h-8 text-emerald-main mr-2" />
+            <DropletIcon className="w-8 h-8 text-emerald-main me-2" />
             <h3 className="text-xl font-display font-semibold text-text-title">{t.quickAdd_measureTitle}</h3>
         </div>
         

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Card from './Card';
 import useTranslations from '../hooks/useTranslations';
@@ -36,7 +37,7 @@ const GlucoQuizCard: React.FC = () => {
         <Card>
             <div className="flex items-center text-text-title mb-3">
                 <LightbulbIcon className="w-7 h-7" />
-                <h2 className="font-display font-semibold text-xl ml-2">{quiz_title}</h2>
+                <h2 className="font-display font-semibold text-xl ms-2">{quiz_title}</h2>
             </div>
             <p className="font-semibold text-text-main mb-4">{question.question}</p>
             
@@ -44,7 +45,7 @@ const GlucoQuizCard: React.FC = () => {
                 {question.options.map((option, index) => {
                     const isCorrect = index === question.correctAnswerIndex;
                     const isSelected = selectedAnswer === index;
-                    let buttonClass = 'w-full text-left p-3 rounded-button border text-sm font-semibold transition-all duration-200 disabled:cursor-default';
+                    let buttonClass = 'w-full text-start p-3 rounded-button border text-sm font-semibold transition-all duration-200 disabled:cursor-default';
 
                     if (isAnswered) {
                         if (isCorrect) {

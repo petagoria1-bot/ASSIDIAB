@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import ChevronDownIcon from './icons/ChevronDownIcon';
 
@@ -52,7 +53,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, value, onChange })
             <button
               key={option.value}
               onClick={() => handleSelect(option.value)}
-              className="w-full text-left p-3 hover:bg-slate-50 flex items-center gap-3"
+              className="w-full text-start p-3 hover:bg-slate-50 flex items-center gap-3"
             >
               {option.icon}
               {option.label}

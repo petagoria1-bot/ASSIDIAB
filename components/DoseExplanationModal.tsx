@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { createPortal } from 'react-dom';
 import useTranslations from '../hooks/useTranslations';
@@ -37,8 +38,8 @@ const DoseExplanationModal: React.FC<DoseExplanationModalProps> = ({
               <MealIcon className="w-5 h-5 text-emerald-main" />
               <p className="font-semibold text-text-title">{t.doseExplanation_mealTitle}</p>
             </div>
-            <p className="text-sm text-text-muted pl-7">{t.doseExplanation_mealDetail(totalCarbs, patient.ratios[moment])}</p>
-            <p className="text-right font-bold text-lg text-emerald-main">{calculation.doseRepas_U.toFixed(1)} U</p>
+            <p className="text-sm text-text-muted ps-7">{t.doseExplanation_mealDetail(totalCarbs, patient.ratios[moment])}</p>
+            <p className="text-end font-bold text-lg text-emerald-main">{calculation.doseRepas_U.toFixed(1)} U</p>
           </div>
 
           {/* Correction Bolus */}
@@ -48,8 +49,8 @@ const DoseExplanationModal: React.FC<DoseExplanationModalProps> = ({
                  <SyringeIcon className="w-5 h-5 text-info" />
                  <p className="font-semibold text-text-title">{t.doseExplanation_correctionTitle}</p>
               </div>
-              <p className="text-sm text-text-muted pl-7">{t.doseExplanation_correctionDetail(glyPre)}</p>
-              <p className="text-right font-bold text-lg text-info">{calculation.addCorr_U} U</p>
+              <p className="text-sm text-text-muted ps-7">{t.doseExplanation_correctionDetail(glyPre)}</p>
+              <p className="text-end font-bold text-lg text-info">{calculation.addCorr_U} U</p>
             </div>
           )}
 
@@ -60,7 +61,7 @@ const DoseExplanationModal: React.FC<DoseExplanationModalProps> = ({
                  <EmergencyIcon className="w-5 h-5 text-warning" />
                  <p className="font-semibold text-amber-800">{t.doseExplanation_warningTitle}</p>
               </div>
-              <p className="text-sm text-amber-700 pl-7">{calculation.warning}</p>
+              <p className="text-sm text-amber-700 ps-7">{calculation.warning}</p>
             </div>
           )}
 

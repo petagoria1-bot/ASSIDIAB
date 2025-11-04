@@ -68,7 +68,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
   return (
     <div className={`bg-white/[.85] rounded-card p-5 shadow-glass border border-black/5 transition-all duration-300 ease-fast space-y-4`}>
       <div>
-        <h2 className="text-lg font-semibold text-text-title mb-3">Composition du repas</h2>
+        <h2 className="text-lg font-semibold text-text-title mb-3">{t.mealBuilder_title}</h2>
         <div className={`transition-all duration-300 ease-fast bg-white rounded-input border ${isFocused ? 'border-emerald-main ring-2 ring-emerald-main/30' : 'border-black/10'}`}>
           <input
             type="text"
@@ -132,7 +132,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
           </div>
         ))}
         {mealItems.length > 0 && (
-          <div className="text-right font-bold text-text-title pt-2 border-t border-slate-200 mt-4">
+          <div className="text-end font-bold text-text-title pt-2 border-t border-slate-200 mt-4">
             Total: {totalCarbs.toFixed(0)}g
           </div>
         )}

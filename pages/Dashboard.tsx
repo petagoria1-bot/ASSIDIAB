@@ -15,6 +15,8 @@ import CalculatorIcon from '../components/icons/CalculatorIcon';
 import SyringeIcon from '../components/icons/SyringeIcon';
 import GlucoseDropIcon from '../components/icons/GlucoseDropIcon';
 import EmergencyIcon from '../components/icons/EmergencyIcon';
+import CheckCircleIcon from '../components/icons/CheckCircleIcon';
+import CircleIcon from '../components/icons/CircleIcon';
 
 
 interface DashboardProps {
@@ -33,7 +35,6 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
     const { updateEventStatus } = usePatientStore();
     const eventDate = new Date(event.ts);
     const now = new Date();
-    // Create a new date for tomorrow to avoid mutating 'now'
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     const isToday = eventDate.toDateString() === now.toDateString();
     const isTomorrow = eventDate.toDateString() === tomorrow.toDateString();
@@ -43,18 +44,31 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
     if(isToday) dateLabel = t.dashboard_todayAt(time);
     if(isTomorrow) dateLabel = t.dashboard_tomorrowAt(time);
 
+    const handleStatusChange = () => {
+        const newStatus = event.status === 'pending' ? 'completed' : 'pending';
+        updateEventStatus(event.id, newStatus);
+        if (newStatus === 'completed') {
+            toast.success(t.toast_eventCompleted(event.title));
+        } else {
+            toast.success(t.toast_eventReactivated(event.title));
+        }
+    };
+
     return (
-        <div className={`p-4 rounded-lg flex items-center justify-between transition-opacity ${event.status === 'completed' ? 'opacity-50' : ''}`}>
-            <div>
-                <p className={`font-semibold ${event.status === 'completed' ? 'line-through text-text-muted' : 'text-text-title'}`}>{event.title}</p>
-                <p className="text-sm text-text-muted">{dateLabel}</p>
+        <div className={`p-3 rounded-lg flex items-center justify-between transition-all duration-300 ${event.status === 'completed' ? 'opacity-60 bg-slate-50' : 'bg-white/50'}`}>
+            <div className="flex items-center gap-3">
+                 <button onClick={handleStatusChange} className="focus:outline-none focus:ring-2 focus:ring-emerald-main/50 rounded-full" aria-label={event.status === 'pending' ? 'Mark as completed' : 'Mark as pending'}>
+                    {event.status === 'pending' ? (
+                        <CircleIcon className="w-7 h-7 text-slate-400 hover:text-emerald-main transition-colors" />
+                    ) : (
+                        <CheckCircleIcon className="w-7 h-7 text-emerald-main" />
+                    )}
+                </button>
+                <div>
+                    <p className={`font-semibold ${event.status === 'completed' ? 'line-through text-text-muted' : 'text-text-title'}`}>{event.title}</p>
+                    <p className="text-sm text-text-muted">{dateLabel}</p>
+                </div>
             </div>
-            <button
-                onClick={() => updateEventStatus(event.id, event.status === 'pending' ? 'completed' : 'pending')}
-                className="text-xs font-semibold text-emerald-main hover:underline"
-            >
-                {event.status === 'pending' ? t.dashboard_eventMarkCompleted : t.dashboard_eventMarkPending}
-            </button>
         </div>
     );
 }
@@ -136,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
          <div className="flex items-center text-text-title mb-3">
              <MedicalAgendaIllustration />
          </div>
-        <h2 className="font-display font-semibold text-xl ml-2 -mt-4 text-center">{t.dashboard_eventsTitle}</h2>
+        <h2 className="font-display font-semibold text-xl ms-2 -mt-4 text-center">{t.dashboard_eventsTitle}</h2>
          <div className="mt-2 space-y-1">
              {events.length > 0 ? (
                  events.slice(0, 3).map(event => <EventCard key={event.id} event={event} />)

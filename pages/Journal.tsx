@@ -22,7 +22,7 @@ const Journal: React.FC = () => {
       case 'mesure':
         const mesure = event as Mesure;
         return (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
                 <div className="text-xl">🩸</div>
                 <div>
                     <p className="font-semibold text-text-main">{t.journal_glycemia}: <span className="font-bold text-emerald-main">{mesure.gly.toFixed(2)} g/L</span></p>
@@ -33,7 +33,7 @@ const Journal: React.FC = () => {
       case 'repas':
         const r = event as Repas;
         return (
-             <div className="flex items-center space-x-3">
+             <div className="flex items-center space-x-3 rtl:space-x-reverse">
                 <div className="text-xl">🍽️</div>
                 <div>
                     <p className="font-semibold text-text-main">{t.mealTimes[r.moment]}: <span className="font-bold text-emerald-main">{t.journal_carbs(r.total_carbs_g)}</span></p>
@@ -45,7 +45,7 @@ const Journal: React.FC = () => {
         const injection = event as Injection;
         const typeLabel = injection.type === 'rapide' ? t.common_rapid : t.common_correction;
         return (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
                 <div className="text-xl">💉</div>
                 <div>
                     <p className="font-semibold text-text-main">{t.journal_bolus} {typeLabel}: <span className="font-bold text-emerald-main">{injection.dose_U} U</span></p>

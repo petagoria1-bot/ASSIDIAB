@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -99,7 +100,7 @@ const AuthPage: React.FC = () => {
 
         <p className="text-center text-sm text-white/90 mt-6">
           {isLogin ? t.auth_noAccount : t.auth_hasAccount}
-          <button onClick={toggleForm} className="font-semibold hover:underline ml-1">
+          <button onClick={toggleForm} className="font-semibold hover:underline ms-1">
             {isLogin ? t.auth_signupLink : t.auth_loginLink}
           </button>
         </p>

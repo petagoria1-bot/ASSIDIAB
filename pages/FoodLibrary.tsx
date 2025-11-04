@@ -55,7 +55,7 @@ const FoodLibrary: React.FC = () => {
                     <EditIcon />
                 </button>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 <p className="font-bold text-emerald-main">{food.carbs_per_100g_net}g</p>
                 <p className="text-xs text-text-muted">{t.foodLibrary_per100(food.unit_type)}</p>
               </div>
@@ -71,7 +71,7 @@ const FoodLibrary: React.FC = () => {
       
       <button 
         onClick={() => setAddModalOpen(true)} 
-        className="fixed bottom-24 right-5 bg-emerald-main text-white rounded-full p-4 shadow-lg hover:bg-jade-deep-dark transition-all duration-200 transform hover:scale-105"
+        className="fixed bottom-24 end-5 bg-emerald-main text-white rounded-full p-4 shadow-lg hover:bg-jade-deep-dark transition-all duration-200 transform hover:scale-105"
         aria-label={t.foodLibrary_addFood}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>

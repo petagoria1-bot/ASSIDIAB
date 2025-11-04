@@ -105,7 +105,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
       </header>
       
       <Card>
-        <h2 className="text-lg font-semibold text-text-title mb-3">Glycémie & Moment</h2>
+        <h2 className="text-lg font-semibold text-text-title mb-3">{t.calculator_glycemiaAndTimeTitle}</h2>
         <div className="grid grid-cols-2 gap-4">
             <div>
                 <label htmlFor="glycemie" className="block text-sm font-medium text-text-muted mb-1 text-center">{t.calculator_glycemiaLabel}</label>
@@ -120,7 +120,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
                 />
             </div>
              <div>
-                <label htmlFor="meal-time" className="block text-sm font-medium text-text-muted mb-1 text-center">Repas</label>
+                <label htmlFor="meal-time" className="block text-sm font-medium text-text-muted mb-1 text-center">{t.calculator_mealTimeLabel}</label>
                 <CustomSelect 
                     options={mealTimeOptions} 
                     value={moment} 

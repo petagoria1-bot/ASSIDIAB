@@ -332,6 +332,7 @@ const translations = {
 
     calculator_title: "Calculateur de Dose",
     calculator_glycemiaAndTimeTitle: "Glycémie & Moment",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "Glycémie (g/L)",
     calculator_mealTimeLabel: "Repas",
     calculator_resultTitle: "Dose Recommandée",
@@ -449,6 +450,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `Mesure ${gly} g/L ajoutée !`,
     toast_bolusAdded: (dose: number) => `Bolus de ${dose}U ajouté !`,
     toast_eventAdded: "Événement ajouté à l'agenda !",
+    toast_eventCompleted: (title: string) => `"${title}" marqué comme terminé !`,
+    toast_eventReactivated: (title: string) => `"${title}" réactivé.`,
     toast_calculationIncomplete: "Calcul incomplet. Impossible de sauvegarder.",
     toast_bolusSaved: (dose: number) => `Bolus de ${dose}U enregistré.`,
     toast_bolusSaveError: "Erreur lors de l'enregistrement du bolus.",
@@ -622,6 +625,7 @@ const translations = {
 
     calculator_title: "Dose Calculator",
     calculator_glycemiaAndTimeTitle: "Glucose & Time",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "Glucose (g/L)",
     calculator_mealTimeLabel: "Meal",
     calculator_resultTitle: "Recommended Dose",
@@ -739,6 +743,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `Measurement ${gly} g/L added!`,
     toast_bolusAdded: (dose: number) => `Bolus of ${dose}U added!`,
     toast_eventAdded: "Event added to agenda!",
+    toast_eventCompleted: (title: string) => `"${title}" marked as complete!`,
+    toast_eventReactivated: (title: string) => `"${title}" reactivated.`,
     toast_calculationIncomplete: "Calculation incomplete. Cannot save.",
     toast_bolusSaved: (dose: number) => `Bolus of ${dose}U saved.`,
     toast_bolusSaveError: "Error saving bolus.",
@@ -912,6 +918,7 @@ const translations = {
 
     calculator_title: "Doz Hesaplayıcı",
     calculator_glycemiaAndTimeTitle: "Glikoz ve Zaman",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "Glikoz (g/L)",
     calculator_mealTimeLabel: "Öğün",
     calculator_resultTitle: "Önerilen Doz",
@@ -1029,6 +1036,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `Ölçüm ${gly} g/L eklendi!`,
     toast_bolusAdded: (dose: number) => `${dose}Ü bolus eklendi!`,
     toast_eventAdded: "Etkinlik ajandaya eklendi!",
+    toast_eventCompleted: (title: string) => `"${title}" tamamlandı olarak işaretlendi!`,
+    toast_eventReactivated: (title: string) => `"${title}" yeniden etkinleştirildi.`,
     toast_calculationIncomplete: "Hesaplama tamamlanmadı. Kaydedilemiyor.",
     toast_bolusSaved: (dose: number) => `${dose}Ü bolus kaydedildi.`,
     toast_bolusSaveError: "Bolus kaydedilirken hata oluştu.",
@@ -1202,6 +1211,7 @@ const translations = {
 
     calculator_title: "حاسبة الجرعة",
     calculator_glycemiaAndTimeTitle: "الجلوكوز والوقت",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "الجلوكوز (جم/ل)",
     calculator_mealTimeLabel: "وجبة",
     calculator_resultTitle: "الجرعة الموصى بها",
@@ -1319,6 +1329,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `تمت إضافة القياس ${gly} جم/ل!`,
     toast_bolusAdded: (dose: number) => `تمت إضافة بلعة ${dose} وحدة!`,
     toast_eventAdded: "تمت إضافة الحدث إلى الجدول!",
+    toast_eventCompleted: (title: string) => `تم وضع علامة على "${title}" كمكتمل!`,
+    toast_eventReactivated: (title: string) => `تمت إعادة تنشيط "${title}".`,
     toast_calculationIncomplete: "الحساب غير مكتمل. لا يمكن الحفظ.",
     toast_bolusSaved: (dose: number) => `تم حفظ بلعة ${dose} وحدة.`,
     toast_bolusSaveError: "خطأ في حفظ البلعة.",
@@ -1492,6 +1504,7 @@ const translations = {
 
     calculator_title: "خوراک کیلکولیٹر",
     calculator_glycemiaAndTimeTitle: "گلوکوز اور وقت",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "گلوکوز (g/L)",
     calculator_mealTimeLabel: "کھانا",
     calculator_resultTitle: "تجویز کردہ خوراک",
@@ -1609,6 +1622,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `پیمائش ${gly} g/L شامل کی گئی!`,
     toast_bolusAdded: (dose: number) => `${dose} یونٹ کا بولس شامل کیا گیا!`,
     toast_eventAdded: "ایجنڈے میں واقعہ شامل کیا گیا!",
+    toast_eventCompleted: (title: string) => `"${title}" کو مکمل کے طور پر نشان زد کیا گیا!`,
+    toast_eventReactivated: (title: string) => `"${title}" کو دوبارہ فعال کیا گیا۔`,
     toast_calculationIncomplete: "حساب نامکمل ہے۔ محفوظ نہیں کر سکتا۔",
     toast_bolusSaved: (dose: number) => `${dose} یونٹ کا بولس محفوظ کیا گیا۔`,
     toast_bolusSaveError: "بولس محفوظ کرتے وقت خرابی۔",
@@ -1782,6 +1797,7 @@ const translations = {
 
     calculator_title: "د دوز حساب کوونکی",
     calculator_glycemiaAndTimeTitle: "ګلوکوز او وخت",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "ګلوکوز (g/L)",
     calculator_mealTimeLabel: "خواړه",
     calculator_resultTitle: "وړاندیز شوی دوز",
@@ -1899,6 +1915,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `اندازه ${gly} g/L اضافه شوه!`,
     toast_bolusAdded: (dose: number) => `د ${dose} یونټ بولس اضافه شو!`,
     toast_eventAdded: "پیښه په اجنډا کې اضافه شوه!",
+    toast_eventCompleted: (title: string) => `"${title}" د بشپړ په توګه نښه شوی!`,
+    toast_eventReactivated: (title: string) => `"${title}" بیا فعال شو.`,
     toast_calculationIncomplete: "حساب نامکمل دی. خوندي کیدی نشي.",
     toast_bolusSaved: (dose: number) => `د ${dose} یونټ بولس خوندي شو.`,
     toast_bolusSaveError: "د بولس خوندي کولو پرمهال تېروتنه.",
@@ -2072,6 +2090,7 @@ const translations = {
 
     calculator_title: "Калькулятор дози",
     calculator_glycemiaAndTimeTitle: "Глюкоза та час",
+    // Fix: Add missing translation key
     calculator_glycemiaLabel: "Глюкоза (г/л)",
     calculator_mealTimeLabel: "Прийом їжі",
     calculator_resultTitle: "Рекомендована доза",
@@ -2189,6 +2208,8 @@ const translations = {
     toast_measureAdded: (gly: number) => `Вимірювання ${gly} г/л додано!`,
     toast_bolusAdded: (dose: number) => `Болюс ${dose}Од додано!`,
     toast_eventAdded: "Подію додано до порядку денного!",
+    toast_eventCompleted: (title: string) => `"${title}" позначено як виконане!`,
+    toast_eventReactivated: (title: string) => `"${title}" знову активовано.`,
     toast_calculationIncomplete: "Розрахунок не завершено. Неможливо зберегти.",
     toast_bolusSaved: (dose: number) => `Болюс ${dose}Од збережено.`,
     toast_bolusSaveError: "Помилка збереження болюсу.",
@@ -2308,8 +2329,15 @@ const translations = {
 
 const useTranslations = () => {
     const { language } = useSettingsStore();
-    return translations[language as keyof typeof translations] || translations.fr;
+    const rtlLangs: Language[] = ['ar', 'ur', 'ps'];
+    const selectedTranslations = translations[language as keyof typeof translations] || translations.fr;
+    
+    return {
+        ...selectedTranslations,
+        isRTL: rtlLangs.includes(language)
+    };
 };
+
 
 export default useTranslations;
 export type { QuizQuestion };

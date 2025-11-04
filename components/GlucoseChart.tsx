@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Patient, Mesure, Repas, Injection } from '../types';
+import useTranslations from '../hooks/useTranslations';
 
 type ChartEvent = (Mesure | Repas | Injection) & { type: 'mesure' | 'repas' | 'injection' };
 
@@ -26,9 +28,12 @@ const InjectionIcon: React.FC<{x: number; y: number}> = ({x, y}) => (
 );
 
 const GlucoseChart: React.FC<GlucoseChartProps> = ({ events, patient }) => {
+  const t = useTranslations();
+  const isRTL = t.isRTL;
+
   const width = 500;
   const height = 250;
-  const padding = { top: 20, right: 20, bottom: 50, left: 40 };
+  const padding = { top: 20, right: isRTL ? 40 : 20, bottom: 50, left: isRTL ? 20 : 40 };
 
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
@@ -57,10 +62,10 @@ const GlucoseChart: React.FC<GlucoseChartProps> = ({ events, patient }) => {
         {[1, 2, 3].map(val => (
             <g key={val}>
                 <line x1={0} y1={glucoseToY(val)} x2={chartWidth} y2={glucoseToY(val)} stroke="#e2e8f0" strokeDasharray="2,3"/>
-                <text x={-10} y={glucoseToY(val) + 4} textAnchor="end" fontSize="10" fill="#94a3b8">{val.toFixed(1)}</text>
+                <text x={isRTL ? chartWidth + 10 : -10} y={glucoseToY(val) + 4} textAnchor={isRTL ? "start" : "end"} fontSize="10" fill="#94a3b8">{val.toFixed(1)}</text>
             </g>
         ))}
-        <text x={-10} y={-5} textAnchor="end" fontSize="10" fill="#94a3b8">{yMax.toFixed(1)} g/L</text>
+        <text x={isRTL ? chartWidth + 10 : -10} y={-5} textAnchor={isRTL ? "start" : "end"} fontSize="10" fill="#94a3b8">{yMax.toFixed(1)} g/L</text>
         
         {/* Target Range */}
         <rect 
