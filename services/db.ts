@@ -22,7 +22,7 @@ db.version(3).stores({
   injections: 'id, ts, patient_id, type',
   foodLibrary: 'id, name',
   favoriteMeals: 'id, patient_id, name',
-  events: 'id, ts, patient_id'
+  events: 'id, ts, patient_id, status'
 });
 
 // Migration from version 2 to 3 is handled automatically by Dexie

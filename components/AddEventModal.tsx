@@ -4,7 +4,7 @@ import { Event, EventType } from '../types';
 
 interface AddEventModalProps {
   onClose: () => void;
-  onConfirm: (eventData: Omit<Event, 'id' | 'patient_id'>) => void;
+  onConfirm: (eventData: Omit<Event, 'id' | 'patient_id' | 'status'>) => void;
 }
 
 const toLocalISOString = (date: Date) => {

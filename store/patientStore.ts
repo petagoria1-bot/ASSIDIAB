@@ -1,9 +1,18 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
-import { Patient, Mesure, Repas, Injection, Food, InjectionType, FavoriteMeal, MealItem, FoodItem, Event } from '../types';
+import { Patient, Mesure, Repas, Injection, Food, InjectionType, FavoriteMeal, MealItem, FoodItem, Event, EventStatus } from '../types';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants';
 import { initialFoodData } from '../data/foodLibrary';
+
+const sortEvents = (events: Event[]) => {
+    return events.sort((a, b) => {
+        if (a.status === b.status) {
+            return new Date(a.ts).getTime() - new Date(b.ts).getTime();
+        }
+        return a.status === 'pending' ? -1 : 1;
+    });
+};
 
 interface PatientState {
   patient: Patient | null;
@@ -25,7 +34,8 @@ interface PatientState {
   addOrUpdateFood: (food: Food) => Promise<void>;
   addFavoriteMeal: (name: string, items: MealItem[]) => Promise<void>;
   deleteFavoriteMeal: (id: string) => Promise<void>;
-  addEvent: (eventData: Omit<Event, 'id' | 'patient_id'>) => Promise<void>;
+  addEvent: (eventData: Omit<Event, 'id' | 'patient_id' | 'status'>) => Promise<void>;
+  updateEventStatus: (eventId: string, status: EventStatus) => Promise<void>;
   clearPatientData: () => void;
 }
 
@@ -56,9 +66,10 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         db.repas.where('patient_id').equals(patient.id).sortBy('ts'),
         db.injections.where('patient_id').equals(patient.id).sortBy('ts'),
         db.favoriteMeals.where('patient_id').equals(patient.id).toArray(),
-        db.events.where('patient_id').equals(patient.id).sortBy('ts'),
+        db.events.where('patient_id').equals(patient.id).toArray(),
       ]);
-      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, favoriteMeals, events, isLoading: false });
+      const sortedEvents = sortEvents(events);
+      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, favoriteMeals, events: sortedEvents, isLoading: false });
     } else {
         set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, favoriteMeals: [], events: [], isLoading: false });
     }
@@ -210,9 +221,18 @@ export const usePatientStore = create<PatientState>((set, get) => ({
       ...eventData,
       id: uuidv4(),
       patient_id: patient.id,
+      status: 'pending',
     };
     await db.events.add(newEvent);
-    set(state => ({ events: [...state.events, newEvent].sort((a,b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()) }));
+    set(state => ({ events: sortEvents([...state.events, newEvent]) }));
+  },
+
+  updateEventStatus: async (eventId, status) => {
+    await db.events.update(eventId, { status });
+    const updatedEvents = get().events.map(event => 
+        event.id === eventId ? { ...event, status } : event
+    );
+    set({ events: sortEvents(updatedEvents) });
   },
 
   clearPatientData: () => {

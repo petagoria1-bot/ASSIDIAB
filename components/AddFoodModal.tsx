@@ -6,15 +6,16 @@ import { Food } from '../types';
 
 interface AddFoodModalProps {
   onClose: () => void;
+  foodToEdit?: Food;
 }
 
-const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose }) => {
+const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose, foodToEdit }) => {
   const { addOrUpdateFood } = usePatientStore();
   
-  const [name, setName] = useState('');
-  const [totalCarbs, setTotalCarbs] = useState('');
-  const [fiber, setFiber] = useState('');
-  const [unitType, setUnitType] = useState<'g' | 'ml'>('g');
+  const [name, setName] = useState(foodToEdit?.name || '');
+  const [totalCarbs, setTotalCarbs] = useState(foodToEdit?.carbs_per_100g_total?.toString() || '');
+  const [fiber, setFiber] = useState(foodToEdit?.fiber_per_100g?.toString() || '');
+  const [unitType, setUnitType] = useState<'g' | 'ml'>(foodToEdit?.unit_type || 'g');
 
   const handleSave = () => {
     const totalCarbsValue = parseFloat(totalCarbs.replace(',', '.'));
@@ -33,21 +34,21 @@ const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose }) => {
       return;
     }
 
-    const netCarbs = Math.round(totalCarbsValue - fiberValue);
+    const netCarbs = Math.max(0, Math.round(totalCarbsValue - fiberValue));
 
     const newFood: Food = {
-      id: uuidv4(),
+      id: foodToEdit?.id || uuidv4(),
       name: name.trim(),
-      category: 'Aliment manuel',
+      category: foodToEdit?.category || 'Aliment manuel',
       carbs_per_100g_total: totalCarbsValue,
       fiber_per_100g: fiberValue,
       carbs_per_100g_net: netCarbs,
       unit_type: unitType,
-      source: 'Ajout manuel',
+      source: foodToEdit?.source || 'Ajout manuel',
     };
 
     addOrUpdateFood(newFood);
-    toast.success(`'${newFood.name}' a été ajouté à la bibliothèque !`);
+    toast.success(`'${newFood.name}' a été ${foodToEdit ? 'modifié' : 'ajouté'} !`);
     onClose();
   };
   
@@ -56,7 +57,9 @@ const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
       <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-xl font-display font-semibold text-text-title mb-4 text-center">Ajouter un aliment</h3>
+        <h3 className="text-xl font-display font-semibold text-text-title mb-4 text-center">
+            {foodToEdit ? "Modifier l'aliment" : "Ajouter un aliment"}
+        </h3>
         
         <div className="space-y-4">
           <div>

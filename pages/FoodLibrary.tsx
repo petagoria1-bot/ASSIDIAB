@@ -4,10 +4,17 @@ import Card from '../components/Card';
 import AddFoodModal from '../components/AddFoodModal'; // Import the new modal
 import { Food } from '../types';
 
+const EditIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+    </svg>
+);
+
 const FoodLibrary: React.FC = () => {
   const { foodLibrary } = usePatientStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAddModalOpen, setAddModalOpen] = useState(false); // State for the modal
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [editingFood, setEditingFood] = useState<Food | null>(null);
 
   const filteredFood = useMemo(() => {
     if (!searchTerm) {
@@ -19,6 +26,11 @@ const FoodLibrary: React.FC = () => {
   }, [searchTerm, foodLibrary]);
   
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+
+  const handleCloseModal = () => {
+    setAddModalOpen(false);
+    setEditingFood(null);
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -39,9 +51,11 @@ const FoodLibrary: React.FC = () => {
         {filteredFood.map(food => (
           <Card key={food.id} className="animate-fade-in-lift">
             <div className="flex justify-between items-center">
-              <div>
+              <div className="flex items-center gap-2">
                 <p className="font-semibold text-text-main">{food.name}</p>
-                <p className="text-xs text-text-muted">{food.source}</p>
+                 <button onClick={() => setEditingFood(food)} className="text-text-muted hover:text-emerald-main transition-colors">
+                    <EditIcon />
+                </button>
               </div>
               <div className="text-right">
                 <p className="font-bold text-emerald-main">{food.carbs_per_100g_net}g</p>
@@ -65,7 +79,12 @@ const FoodLibrary: React.FC = () => {
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
 
-      {isAddModalOpen && <AddFoodModal onClose={() => setAddModalOpen(false)} />}
+      {(isAddModalOpen || editingFood) && (
+        <AddFoodModal 
+            onClose={handleCloseModal} 
+            foodToEdit={editingFood || undefined} 
+        />
+      )}
     </div>
   );
 };

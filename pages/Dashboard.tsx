@@ -25,9 +25,28 @@ const BarChartIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" wid
 const StethoscopeIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4.8 2.3A.3.3 0 1 0 5 2a.3.3 0 0 0-.2.3V5a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9a2 2 0 0 1 2-2h1a2 2 0 0 0 2-2V2.3a.3.3 0 1 0-.5 0V5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 0-.5.5h-1a.5.5 0 0 1-.5-.5V2.3a.3.3 0 0 0-.2-.3Z"></path><path d="M8 15a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3a2 2 0 0 0-2-2h-1a2 2 0 0 1-2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2H7a2 2 0 0 0-2 2Z"></path><circle cx="12" cy="18" r="2"></circle></svg>;
 const ClipboardIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>;
 
+const StatusCheckbox: React.FC<{ status: 'pending' | 'completed'; onClick: () => void }> = ({ status, onClick }) => {
+    const isCompleted = status === 'completed';
+    return (
+        <button 
+            onClick={onClick} 
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${isCompleted ? 'bg-emerald-main border-emerald-main' : 'border-slate-300 hover:border-emerald-main'}`} 
+            aria-label={isCompleted ? "Marquer comme en cours" : "Marquer comme terminé"}
+            aria-checked={isCompleted}
+            role="checkbox"
+        >
+            {isCompleted && (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            )}
+        </button>
+    );
+};
+
 
 const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
-  const { patient, mesures, events, addInjection, addMesure, addEvent } = usePatientStore();
+  const { patient, mesures, events, addInjection, addMesure, addEvent, updateEventStatus } = usePatientStore();
   const [isAddItemModalOpen, setAddItemModalOpen] = useState(false);
   const [isBolusModalOpen, setBolusModalOpen] = useState(false);
   const [isEventModalOpen, setEventModalOpen] = useState(false);
@@ -63,8 +82,10 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
   }, [mesures]);
 
   const upcomingEvents = useMemo(() => {
-      const now = new Date();
-      return events.filter(e => new Date(e.ts) >= now).slice(0, 2);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    // Events are pre-sorted in the store: pending first, then by date.
+    return events.filter(e => new Date(e.ts) >= today).slice(0, 3);
   }, [events]);
   
   const formatEventDate = (ts: string) => {
@@ -183,18 +204,29 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
         </div>
         <div className="text-sm text-text-main space-y-2">
             {upcomingEvents.length > 0 ? (
-                upcomingEvents.map(event => (
-                    <div key={event.id} className="flex items-start justify-between py-2 border-b border-black/5 last:border-b-0">
-                        <div className="flex items-start gap-3">
-                           {event.type === 'rdv' ? <StethoscopeIcon className="w-5 h-5 text-emerald-main mt-0.5" /> : <ClipboardIcon className="w-5 h-5 text-emerald-main mt-0.5" />}
-                            <div>
-                                <p className="font-semibold">{event.title}</p>
-                                <p className="text-xs text-text-muted">{event.description}</p>
+                upcomingEvents.map(event => {
+                    const isCompleted = event.status === 'completed';
+                    return (
+                        <div key={event.id} className="flex items-center gap-3 py-2 border-b border-black/5 last:border-b-0">
+                            <StatusCheckbox
+                                status={event.status}
+                                onClick={() => {
+                                    const newStatus = isCompleted ? 'pending' : 'completed';
+                                    updateEventStatus(event.id, newStatus);
+                                    toast.success(newStatus === 'completed' ? 'Événement terminé !' : 'Événement réactivé !');
+                                }}
+                            />
+                            <div className="flex-grow">
+                                <div className="flex items-center gap-2">
+                                    {event.type === 'rdv' ? <StethoscopeIcon className="w-4 h-4 text-text-muted" /> : <ClipboardIcon className="w-4 h-4 text-text-muted" />}
+                                    <p className={`font-semibold transition-colors ${isCompleted ? 'line-through text-text-muted' : 'text-text-title'}`}>{event.title}</p>
+                                </div>
+                                {event.description && <p className={`text-xs transition-colors pl-6 ${isCompleted ? 'line-through text-text-muted' : 'text-text-muted'}`}>{event.description}</p>}
                             </div>
+                            <span className="text-xs text-text-muted font-medium text-right flex-shrink-0 ml-2">{formatEventDate(event.ts)}</span>
                         </div>
-                        <span className="text-xs text-text-muted font-medium text-right flex-shrink-0 ml-2">{formatEventDate(event.ts)}</span>
-                    </div>
-                ))
+                    );
+                })
             ) : (
                 <p className="text-text-muted text-center py-2">Aucun événement à venir.</p>
             )}

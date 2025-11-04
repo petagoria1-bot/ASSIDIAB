@@ -20,8 +20,25 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const [mealTime, setMealTime] = useState<MealTime>('dejeuner');
   const [calculation, setCalculation] = useState<DoseCalculationOutput | null>(null);
   const [isPackagingModalOpen, setPackagingModalOpen] = useState(false);
+  const [useNetCarbs, setUseNetCarbs] = useState(true); // Default to net carbs
 
   const totalCarbs = useMemo(() => mealItems.reduce((sum, item) => sum + item.carbs_g, 0), [mealItems]);
+
+  // Recalculate meal items carbs when the calculation mode changes
+  useEffect(() => {
+    // By removing the `if` condition and acting directly on the previous state,
+    // we ensure the recalculation always happens with the most up-to-date meal items.
+    setMealItems(prevItems =>
+        prevItems.map(item => {
+            const carbs_per_100g = useNetCarbs
+                ? item.food.carbs_per_100g_net
+                : (item.food.carbs_per_100g_total ?? item.food.carbs_per_100g_net);
+            const newCarbs = (item.poids_g / 100) * carbs_per_100g;
+            return { ...item, carbs_g: Math.round(newCarbs) };
+        })
+    );
+  }, [useNetCarbs]);
+
 
   useEffect(() => {
     const runCalculation = async () => {
@@ -107,8 +124,14 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
         <h1 className="text-3xl font-display font-bold text-white text-shadow text-center">Calcul de Dose</h1>
       </header>
       
-      <div className="animate-fade-in-lift" style={{ animationDelay: '100ms' }}>
-        <MealBuilderCard mealItems={mealItems} setMealItems={setMealItems} onOpenPackagingModal={() => setPackagingModalOpen(true)} />
+      <div className="relative z-20 animate-fade-in-lift" style={{ animationDelay: '100ms' }}>
+        <MealBuilderCard 
+            mealItems={mealItems} 
+            setMealItems={setMealItems} 
+            onOpenPackagingModal={() => setPackagingModalOpen(true)}
+            useNetCarbs={useNetCarbs}
+            setUseNetCarbs={setUseNetCarbs}
+        />
       </div>
 
       <div className="animate-fade-in-lift" style={{ animationDelay: '200ms' }}>
@@ -178,6 +201,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
         <PackagingCalculatorModal
             onClose={() => setPackagingModalOpen(false)}
             onConfirm={handleAddToMealFromPackaging}
+            useNetCarbs={useNetCarbs}
         />
       )}
     </div>

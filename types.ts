@@ -7,6 +7,7 @@ export type MeasurementSource = "doigt" | "capteur";
 export type AlertType = "hypo" | "hyper" | "cetone" | "tech";
 export type Page = 'dashboard' | 'journal' | 'glucides' | 'emergency' | 'settings' | 'food' | 'pai' | 'rapports';
 export type EventType = 'rdv' | 'note';
+export type EventStatus = 'pending' | 'completed';
 
 export interface User {
   id?: number;
@@ -130,6 +131,7 @@ export interface Event {
     type: EventType;
     title: string;
     description: string;
+    status: EventStatus;
 }
 
 export interface AnalyzedFoodItem {

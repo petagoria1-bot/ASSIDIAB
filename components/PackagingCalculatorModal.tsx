@@ -6,12 +6,14 @@ import { MealItem, Food } from '../types';
 interface PackagingCalculatorModalProps {
   onClose: () => void;
   onConfirm: (item: MealItem) => void;
+  useNetCarbs: boolean;
 }
 
-const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onClose, onConfirm }) => {
+const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onClose, onConfirm, useNetCarbs }) => {
   const [name, setName] = useState('');
   const [refCarbs, setRefCarbs] = useState('');
   const [refWeight, setRefWeight] = useState('100');
+  const [refFiber, setRefFiber] = useState('');
   const [consumedWeight, setConsumedWeight] = useState('');
   const [unit, setUnit] = useState<'g' | 'ml'>('g');
 
@@ -21,47 +23,64 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
     const refCarbsValue = parseFloat(refCarbs.replace(',', '.'));
     const refWeightValue = parseFloat(refWeight.replace(',', '.'));
     const consumedWeightValue = parseFloat(consumedWeight.replace(',', '.'));
+    const refFiberValue = refFiber ? parseFloat(refFiber.replace(',', '.')) : 0;
 
     if (
       !isNaN(refCarbsValue) && refCarbsValue >= 0 &&
       !isNaN(refWeightValue) && refWeightValue > 0 &&
-      !isNaN(consumedWeightValue) && consumedWeightValue > 0
+      !isNaN(consumedWeightValue) && consumedWeightValue > 0 &&
+      !isNaN(refFiberValue) && refFiberValue >= 0
     ) {
-      return (consumedWeightValue / refWeightValue) * refCarbsValue;
+      const totalCarbsForPortion = (consumedWeightValue / refWeightValue) * refCarbsValue;
+      if (useNetCarbs) {
+        const fiberForPortion = (consumedWeightValue / refWeightValue) * refFiberValue;
+        return totalCarbsForPortion - fiberForPortion;
+      }
+      return totalCarbsForPortion;
     }
     return null;
-  }, [refCarbs, refWeight, consumedWeight]);
+  }, [refCarbs, refWeight, consumedWeight, refFiber, useNetCarbs]);
 
   const handleConfirm = () => {
     const nameValue = name.trim();
     const consumedWeightValue = parseFloat(consumedWeight.replace(',', '.'));
+    const refCarbsValue = parseFloat(refCarbs.replace(',', '.'));
+    const refWeightValue = parseFloat(refWeight.replace(',', '.'));
+    const refFiberValue = refFiber ? parseFloat(refFiber.replace(',', '.')) : 0;
 
     if (!nameValue) {
         toast.error("Veuillez entrer un nom pour l'aliment.");
         return;
     }
-    if (calculatedCarbs === null) {
+    if (isNaN(consumedWeightValue) || isNaN(refCarbsValue) || isNaN(refWeightValue) || refWeightValue <= 0 || isNaN(refFiberValue)) {
         toast.error("Veuillez remplir tous les champs de calcul correctement.");
         return;
     }
     
-    const refCarbsValue = parseFloat(refCarbs.replace(',', '.'));
-    const refWeightValue = parseFloat(refWeight.replace(',', '.'));
-    
+    const carbs_per_100g_total = (refCarbsValue / refWeightValue) * 100;
+    const fiber_per_100g = (refFiberValue / refWeightValue) * 100;
+    const carbs_per_100g_net = carbs_per_100g_total - fiber_per_100g;
+
     const tempFood: Food = {
         id: uuidv4(),
-        name: nameValue,
+        name: `${nameValue} (calculé)`,
         category: 'Calcul ponctuel',
-        carbs_per_100g_net: Math.round((refCarbsValue / refWeightValue) * 100),
+        carbs_per_100g_total: carbs_per_100g_total,
+        fiber_per_100g: fiber_per_100g,
+        carbs_per_100g_net: carbs_per_100g_net,
         unit_type: unit,
         source: 'Emballage',
     };
 
+    const carbs_for_item = useNetCarbs ? 
+        (consumedWeightValue / 100) * carbs_per_100g_net :
+        (consumedWeightValue / 100) * carbs_per_100g_total;
+    
     const newItem: MealItem = {
         listId: uuidv4(),
         food: tempFood,
         poids_g: consumedWeightValue,
-        carbs_g: Math.round(calculatedCarbs),
+        carbs_g: Math.round(carbs_for_item),
     };
 
     onConfirm(newItem);
@@ -94,22 +113,10 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
             </button>
           </div>
 
-          <div className="text-center text-text-muted text-sm my-2">Pour la portion de référence :</div>
-          <div className="grid grid-cols-2 gap-3">
-             <div>
-                <label htmlFor="ref-carbs" className="block text-sm font-medium text-text-muted mb-1">Glucides</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  id="ref-carbs"
-                  value={refCarbs}
-                  onChange={(e) => setRefCarbs(e.target.value)}
-                  className={inputClasses}
-                  placeholder="Ex: 30"
-                />
-            </div>
-            <div>
-                <label htmlFor="ref-weight" className="block text-sm font-medium text-text-muted mb-1">Pour ({unit})</label>
+          <div className="text-center text-text-muted text-sm my-2">Infos de l'étiquette :</div>
+          <div className="grid grid-cols-3 gap-2">
+             <div className="col-span-1">
+                <label htmlFor="ref-weight" className="block text-xs font-medium text-text-muted mb-1">Pour ({unit})</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -117,7 +124,31 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
                   value={refWeight}
                   onChange={(e) => setRefWeight(e.target.value)}
                   className={inputClasses}
-                  placeholder="Ex: 100"
+                  placeholder="100"
+                />
+            </div>
+             <div className="col-span-1">
+                <label htmlFor="ref-carbs" className="block text-xs font-medium text-text-muted mb-1">Glucides</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  id="ref-carbs"
+                  value={refCarbs}
+                  onChange={(e) => setRefCarbs(e.target.value)}
+                  className={inputClasses}
+                  placeholder="30"
+                />
+            </div>
+            <div className="col-span-1">
+                <label htmlFor="ref-fiber" className="block text-xs font-medium text-text-muted mb-1">Fibres</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  id="ref-fiber"
+                  value={refFiber}
+                  onChange={(e) => setRefFiber(e.target.value)}
+                  className={inputClasses}
+                  placeholder="(opt.)"
                 />
             </div>
           </div>
@@ -138,7 +169,7 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
 
         {calculatedCarbs !== null && (
             <div className="mt-4 text-center bg-mint-soft/50 p-3 rounded-xl animate-fade-in">
-                <p className="text-sm text-text-muted">Total Glucides pour cette portion</p>
+                <p className="text-sm text-text-muted">Total Glucides ({useNetCarbs ? 'Nets' : 'Totaux'})</p>
                 <p className="font-display font-bold text-3xl text-emerald-main">
                     {calculatedCarbs.toFixed(0)}
                     <span className="text-lg font-semibold text-text-muted ml-1">g</span>
