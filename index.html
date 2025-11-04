@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<html lang="fr" class="">
+<html class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +33,20 @@
 
               'input-bg': '#F1F5F9',
               'off-white': '#F9FAFB',
-              'danger': '#EF4444',
+              'danger': '#EF4444', // red-500
+              'danger-soft': '#FEE2E2', // red-100
+              'danger-dark': '#B91C1C', // red-700
+              'warning': '#f59e0b', // amber-500
+              'info': '#3B82F6', // blue-500
+              'info-dark': '#2563EB', // blue-600
+
+              // Carb level indicators
+              'carb-low': '#10B981',
+              'carb-low-dark': '#059669',
+              'carb-medium': '#F59E0B',
+              'carb-medium-dark': '#D97706',
+              'carb-high': '#EF4444',
+              'carb-high-dark': '#DC2626',
 
               // Legacy (keep for specific elements if needed)
               'jade-deep': '#009975',
@@ -87,19 +101,21 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="importmap">
-    {
-      "imports": {
-        "react/": "https://aistudiocdn.com/react@^19.2.0/",
-        "react": "https://aistudiocdn.com/react@^19.2.0",
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-        "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
-        "zustand": "https://aistudiocdn.com/zustand@^5.0.8",
-        "dexie": "https://aistudiocdn.com/dexie@^4.2.1",
-        "react-hot-toast": "https://aistudiocdn.com/react-hot-toast@^2.6.0",
-        "@google/genai": "https://aistudiocdn.com/@google/genai@^0.20.0"
-      }
-    }
-    </script>
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "zustand": "https://aistudiocdn.com/zustand@^5.0.8",
+    "dexie": "https://aistudiocdn.com/dexie@^4.2.1",
+    "react-hot-toast": "https://aistudiocdn.com/react-hot-toast@^2.6.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.20.0",
+    "zustand/": "https://aistudiocdn.com/zustand@^5.0.8/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
+  }
+}
+</script>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { usePatientStore } from '../store/patientStore';
 import { Food } from '../types';
+import useTranslations from '../hooks/useTranslations';
 
 interface AddFoodModalProps {
   onClose: () => void;
@@ -11,6 +13,7 @@ interface AddFoodModalProps {
 
 const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose, foodToEdit }) => {
   const { addOrUpdateFood } = usePatientStore();
+  const t = useTranslations();
   
   const [name, setName] = useState(foodToEdit?.name || '');
   const [totalCarbs, setTotalCarbs] = useState(foodToEdit?.carbs_per_100g_total?.toString() || '');
@@ -22,15 +25,15 @@ const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose, foodToEdit }) => {
     const fiberValue = fiber ? parseFloat(fiber.replace(',', '.')) : 0;
 
     if (!name.trim()) {
-      toast.error("Le nom de l'aliment est requis.");
+      toast.error(t.toast_foodNameRequired);
       return;
     }
     if (isNaN(totalCarbsValue) || totalCarbsValue < 0) {
-      toast.error('Veuillez entrer une valeur de glucides valide.');
+      toast.error(t.toast_invalidCarbs);
       return;
     }
      if (isNaN(fiberValue) || fiberValue < 0) {
-      toast.error('La valeur des fibres est invalide.');
+      toast.error(t.toast_invalidFiber);
       return;
     }
 
@@ -39,53 +42,53 @@ const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose, foodToEdit }) => {
     const newFood: Food = {
       id: foodToEdit?.id || uuidv4(),
       name: name.trim(),
-      category: foodToEdit?.category || 'Aliment manuel',
+      category: foodToEdit?.category || t.addFood_manualCategory,
       carbs_per_100g_total: totalCarbsValue,
       fiber_per_100g: fiberValue,
       carbs_per_100g_net: netCarbs,
       unit_type: unitType,
-      source: foodToEdit?.source || 'Ajout manuel',
+      source: foodToEdit?.source || t.addFood_manualSource,
     };
 
     addOrUpdateFood(newFood);
-    toast.success(`'${newFood.name}' a été ${foodToEdit ? 'modifié' : 'ajouté'} !`);
+    toast.success(foodToEdit ? t.toast_foodUpdated(newFood.name) : t.toast_foodAdded(newFood.name));
     onClose();
   };
   
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
       <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-xl font-display font-semibold text-text-title mb-4 text-center">
-            {foodToEdit ? "Modifier l'aliment" : "Ajouter un aliment"}
+            {foodToEdit ? t.addFood_editTitle : t.addFood_addTitle}
         </h3>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="food-name" className="block text-sm font-medium text-text-muted mb-1">Nom de l'aliment</label>
+            <label htmlFor="food-name" className="block text-sm font-medium text-text-muted mb-1">{t.addFood_foodNameLabel}</label>
             <input
               type="text"
               id="food-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={inputClasses}
-              placeholder="Ex: Yaourt aux fruits"
+              placeholder={t.addFood_foodNamePlaceholder}
             />
           </div>
           
           <div className="flex gap-2">
             <button onClick={() => setUnitType('g')} className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-colors ${unitType === 'g' ? 'bg-emerald-main text-white' : 'bg-input-bg text-text-main'}`}>
-              pour 100 g
+              {t.addFood_per100g}
             </button>
             <button onClick={() => setUnitType('ml')} className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-colors ${unitType === 'ml' ? 'bg-emerald-main text-white' : 'bg-input-bg text-text-main'}`}>
-              pour 100 ml
+              {t.addFood_per100ml}
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
              <div>
-                <label htmlFor="total-carbs" className="block text-sm font-medium text-text-muted mb-1">Glucides totaux</label>
+                <label htmlFor="total-carbs" className="block text-sm font-medium text-text-muted mb-1">{t.addFood_totalCarbsLabel}</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -97,7 +100,7 @@ const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose, foodToEdit }) => {
                 />
             </div>
             <div>
-                <label htmlFor="fiber" className="block text-sm font-medium text-text-muted mb-1">dont Fibres</label>
+                <label htmlFor="fiber" className="block text-sm font-medium text-text-muted mb-1">{t.addFood_fiberLabel}</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -105,19 +108,21 @@ const AddFoodModal: React.FC<AddFoodModalProps> = ({ onClose, foodToEdit }) => {
                   value={fiber}
                   onChange={(e) => setFiber(e.target.value)}
                   className={inputClasses}
-                  placeholder="(Optionnel)"
+                  placeholder={`(${t.common_optional})`}
                 />
             </div>
           </div>
         </div>
         
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">Annuler</button>
-          <button onClick={handleSave} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">Enregistrer</button>
+          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
+          <button onClick={handleSave} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_save}</button>
         </div>
       </div>
     </div>
   );
+  
+  return createPortal(modalContent, document.body);
 };
 
 export default AddFoodModal;

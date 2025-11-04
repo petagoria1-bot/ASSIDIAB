@@ -1,20 +1,18 @@
+
 import React, { useState, useMemo } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import Card from '../components/Card';
 import AddFoodModal from '../components/AddFoodModal'; // Import the new modal
 import { Food } from '../types';
-
-const EditIcon: React.FC<{className?: string}> = ({className}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-    </svg>
-);
+import useTranslations from '../hooks/useTranslations';
+import EditIcon from '../components/icons/EditIcon';
 
 const FoodLibrary: React.FC = () => {
   const { foodLibrary } = usePatientStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState<Food | null>(null);
+  const t = useTranslations();
 
   const filteredFood = useMemo(() => {
     if (!searchTerm) {
@@ -35,14 +33,14 @@ const FoodLibrary: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <header className="py-4 text-center">
-        <h1 className="text-3xl font-display font-bold text-white text-shadow">Bibliothèque d'aliments</h1>
+        <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.foodLibrary_title}</h1>
       </header>
       <div className="sticky top-0 bg-white/30 backdrop-blur-sm py-2 z-10 -mx-4 px-4 shadow-sm">
         <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={`Rechercher parmi ${foodLibrary.length} aliments...`}
+            placeholder={t.foodLibrary_searchPlaceholder(foodLibrary.length)}
             className={inputClasses}
         />
       </div>
@@ -59,14 +57,14 @@ const FoodLibrary: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="font-bold text-emerald-main">{food.carbs_per_100g_net}g</p>
-                <p className="text-xs text-text-muted">pour 100{food.unit_type}</p>
+                <p className="text-xs text-text-muted">{t.foodLibrary_per100(food.unit_type)}</p>
               </div>
             </div>
           </Card>
         ))}
          {filteredFood.length === 0 && (
             <Card className="text-center">
-                <p className="text-text-muted">Aucun aliment trouvé pour "{searchTerm}".</p>
+                <p className="text-text-muted">{t.foodLibrary_noResults(searchTerm)}</p>
             </Card>
          )}
       </div>
@@ -74,7 +72,7 @@ const FoodLibrary: React.FC = () => {
       <button 
         onClick={() => setAddModalOpen(true)} 
         className="fixed bottom-24 right-5 bg-emerald-main text-white rounded-full p-4 shadow-lg hover:bg-jade-deep-dark transition-all duration-200 transform hover:scale-105"
-        aria-label="Ajouter un aliment"
+        aria-label={t.foodLibrary_addFood}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>

@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-
-const DropletIcon: React.FC = () => (
-    <svg viewBox="0 0 24 24" className="w-16 h-16 mx-auto text-white" fill="currentColor">
-        <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
-    </svg>
-);
-
+import useTranslations from '../hooks/useTranslations';
+import DropletLogoIcon from '../components/icons/DropletLogoIcon';
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +10,7 @@ const AuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { login, signup, isLoading } = useAuthStore();
+  const t = useTranslations();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +18,7 @@ const AuthPage: React.FC = () => {
       await login(username, password);
     } else {
       if (password !== confirmPassword) {
-        toast.error("Les mots de passe ne correspondent pas.");
+        toast.error(t.toast_passwordsDoNotMatch);
         return;
       }
       await signup(username, password);
@@ -42,17 +38,17 @@ const AuthPage: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient font-sans">
       <div className="w-full max-w-sm mx-auto">
         <div className="text-center mb-6">
-          <DropletIcon />
-          <h1 className="text-3xl font-display font-bold text-white mt-2">Diab'Assistant</h1>
+          <DropletLogoIcon className="w-24 h-24 mx-auto" />
+          <h1 className="text-3xl font-display font-bold text-white mt-2">{t.auth_appTitle}</h1>
         </div>
         
         <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-fade-in-lift">
           <h2 className="text-xl font-display font-semibold text-center text-text-title mb-5">
-            {isLogin ? 'Connectez-vous' : 'Créez votre profil'}
+            {isLogin ? t.auth_loginTitle : t.auth_signupTitle}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-text-muted mb-1">Pseudo</label>
+              <label htmlFor="username" className="block text-sm font-medium text-text-muted mb-1">{t.auth_username}</label>
               <input
                 id="username"
                 type="text"
@@ -63,7 +59,7 @@ const AuthPage: React.FC = () => {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-1">Mot de passe</label>
+              <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-1">{t.auth_password}</label>
               <input
                 id="password"
                 type="password"
@@ -75,7 +71,7 @@ const AuthPage: React.FC = () => {
             </div>
             {!isLogin && (
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-muted mb-1">Confirmer le mot de passe</label>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-muted mb-1">{t.auth_confirmPassword}</label>
                 <input
                   id="confirmPassword"
                   type="password"
@@ -96,15 +92,15 @@ const AuthPage: React.FC = () => {
                 : 'bg-gradient-to-r from-turquoise-light to-mint-soft text-jade-deep'
               }`}
             >
-              {isLoading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer mon profil')}
+              {isLoading ? t.common_loading : (isLogin ? t.auth_loginButton : t.auth_signupButton)}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sm text-white/90 mt-6">
-          {isLogin ? "Vous n'avez pas de compte ?" : "Vous avez déjà un compte ?"}
+          {isLogin ? t.auth_noAccount : t.auth_hasAccount}
           <button onClick={toggleForm} className="font-semibold hover:underline ml-1">
-            {isLogin ? 'Inscrivez-vous' : 'Connectez-vous'}
+            {isLogin ? t.auth_signupLink : t.auth_loginLink}
           </button>
         </p>
       </div>

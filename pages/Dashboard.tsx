@@ -1,261 +1,175 @@
-import React, { useState, useMemo, useEffect } from 'react';
+
+import React, { useMemo, useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
-import { Page, InjectionType, Event } from '../types';
+import Card from '../components/Card';
+import useTranslations from '../hooks/useTranslations';
+import { Page, Mesure, Event } from '../types';
 import QuickAddItemModal from '../components/QuickAddItemModal';
 import QuickBolusModal from '../components/QuickBolusModal';
-import AddEventModal from '../components/AddEventModal';
-import Card from '../components/Card';
 import toast from 'react-hot-toast';
+import GlucoQuizCard from '../components/GlucoQuizCard';
+import AddEventModal from '../components/AddEventModal';
+import GlucoseTrackingIllustration from '../components/illustrations/GlucoseTrackingIllustration';
+import MedicalAgendaIllustration from '../components/illustrations/MedicalAgendaIllustration';
+import CalculatorIcon from '../components/icons/CalculatorIcon';
+import SyringeIcon from '../components/icons/SyringeIcon';
+import GlucoseDropIcon from '../components/icons/GlucoseDropIcon';
+import EmergencyIcon from '../components/icons/EmergencyIcon';
+
 
 interface DashboardProps {
   setCurrentPage: (page: Page) => void;
 }
 
-// --- SVG Icons ---
-const CalculatorIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><line x1="16" y1="10" x2="12" y2="10"></line><line x1="12" y1="10" x2="8" y2="10"></line><line x1="12" y1="14" x2="12" y2="18"></line><line x1="8" y1="14" x2="8" y2="18"></line></svg>;
-const SyringeIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="m6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>;
-const DropletIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>;
-const AlertIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
-const ArrowUpRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>;
-const ArrowDownRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 7 17 17 7 17"></polyline><line x1="7" y1="7" x2="17" y2="17"></line></svg>;
-const ArrowRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
-const CalendarIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
-const LightbulbIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"></path></svg>;
-const BarChartIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>;
-const StethoscopeIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4.8 2.3A.3.3 0 1 0 5 2a.3.3 0 0 0-.2.3V5a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9a2 2 0 0 1 2-2h1a2 2 0 0 0 2-2V2.3a.3.3 0 1 0-.5 0V5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 0-.5.5h-1a.5.5 0 0 1-.5-.5V2.3a.3.3 0 0 0-.2-.3Z"></path><path d="M8 15a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3a2 2 0 0 0-2-2h-1a2 2 0 0 1-2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2H7a2 2 0 0 0-2 2Z"></path><circle cx="12" cy="18" r="2"></circle></svg>;
-const ClipboardIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>;
-
-const StatusCheckbox: React.FC<{ status: 'pending' | 'completed'; onClick: () => void }> = ({ status, onClick }) => {
-    const isCompleted = status === 'completed';
-    return (
-        <button 
-            onClick={onClick} 
-            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${isCompleted ? 'bg-emerald-main border-emerald-main' : 'border-slate-300 hover:border-emerald-main'}`} 
-            aria-label={isCompleted ? "Marquer comme en cours" : "Marquer comme terminé"}
-            aria-checked={isCompleted}
-            role="checkbox"
-        >
-            {isCompleted && (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-            )}
-        </button>
-    );
+const getGreeting = (t: any, name: string) => {
+  const hour = new Date().getHours();
+  if (hour < 12) return `${t.greeting_morning}, ${name}!`;
+  if (hour < 18) return `${t.greeting_afternoon}, ${name}!`;
+  return `${t.greeting_evening}, ${name}!`;
 };
+
+const EventCard: React.FC<{ event: Event }> = ({ event }) => {
+    const t = useTranslations();
+    const { updateEventStatus } = usePatientStore();
+    const eventDate = new Date(event.ts);
+    const now = new Date();
+    // Create a new date for tomorrow to avoid mutating 'now'
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const isToday = eventDate.toDateString() === now.toDateString();
+    const isTomorrow = eventDate.toDateString() === tomorrow.toDateString();
+    
+    const time = eventDate.toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' });
+    let dateLabel = eventDate.toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    if(isToday) dateLabel = t.dashboard_todayAt(time);
+    if(isTomorrow) dateLabel = t.dashboard_tomorrowAt(time);
+
+    return (
+        <div className={`p-4 rounded-lg flex items-center justify-between transition-opacity ${event.status === 'completed' ? 'opacity-50' : ''}`}>
+            <div>
+                <p className={`font-semibold ${event.status === 'completed' ? 'line-through text-text-muted' : 'text-text-title'}`}>{event.title}</p>
+                <p className="text-sm text-text-muted">{dateLabel}</p>
+            </div>
+            <button
+                onClick={() => updateEventStatus(event.id, event.status === 'pending' ? 'completed' : 'pending')}
+                className="text-xs font-semibold text-emerald-main hover:underline"
+            >
+                {event.status === 'pending' ? t.dashboard_eventMarkCompleted : t.dashboard_eventMarkPending}
+            </button>
+        </div>
+    );
+}
 
 
 const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
-  const { patient, mesures, events, addInjection, addMesure, addEvent, updateEventStatus } = usePatientStore();
-  const [isAddItemModalOpen, setAddItemModalOpen] = useState(false);
+  const { patient, mesures, addMesure, addInjection, events, addEvent } = usePatientStore();
+  const t = useTranslations();
+  const [isMeasureModalOpen, setMeasureModalOpen] = useState(false);
   const [isBolusModalOpen, setBolusModalOpen] = useState(false);
   const [isEventModalOpen, setEventModalOpen] = useState(false);
-  const [randomTip, setRandomTip] = useState('');
+
+  const lastMeasure: Mesure | undefined = useMemo(() => mesures[0], [mesures]);
   
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
+  const todayMeasuresCount = useMemo(() => {
+    const today = new Date().toDateString();
+    return mesures.filter(m => new Date(m.ts).toDateString() === today).length;
+  }, [mesures]);
+
+  const handleAddMeasure = (gly: number, cetone: number | undefined, ts: string) => {
+    addMesure({ gly, cetone, source: 'doigt' }, ts);
+    toast.success(t.toast_measureAdded(gly));
+    setMeasureModalOpen(false);
   };
 
-  const handleConfirmBolus = (dose: number, type: InjectionType, ts: string) => {
+  const handleAddBolus = (dose: number, type: 'rapide' | 'correction', ts: string) => {
     addInjection({ dose_U: dose, type }, ts);
-    toast.success(`Bolus de ${dose}U ajouté !`);
+    toast.success(t.toast_bolusAdded(dose));
     setBolusModalOpen(false);
   };
   
-  const { lastMesure, trend, todayMesuresCount } = useMemo(() => {
-    if (mesures.length === 0) return { lastMesure: null, trend: null, todayMesuresCount: 0 };
-    
-    const today = new Date().toDateString();
-    const todayMesures = mesures.filter(m => new Date(m.ts).toDateString() === today);
-    
-    let trend: 'up' | 'down' | 'stable' | null = null;
-    if (mesures.length > 1) {
-      const diff = mesures[0].gly - mesures[1].gly;
-      if (diff > 0.1) trend = 'up';
-      else if (diff < -0.1) trend = 'down';
-      else trend = 'stable';
-    }
-    return { lastMesure: mesures[0], trend, todayMesuresCount: todayMesures.length };
-  }, [mesures]);
-
-  const upcomingEvents = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
-    // Events are pre-sorted in the store: pending first, then by date.
-    return events.filter(e => new Date(e.ts) >= today).slice(0, 3);
-  }, [events]);
-  
-  const formatEventDate = (ts: string) => {
-    const eventDate = new Date(ts);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (eventDate.toDateString() === today.toDateString()) {
-        return `Aujourd'hui à ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-    if (eventDate.toDateString() === tomorrow.toDateString()) {
-        return `Demain à ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-    return eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ` à ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+  const handleAddEvent = (eventData: Omit<Event, 'id' | 'patient_id' | 'status'>) => {
+    addEvent(eventData);
+    toast.success(t.toast_eventAdded);
+    setEventModalOpen(false);
   }
 
-  useEffect(() => {
-    const tips = [
-        "N'oubliez pas de tourner les sites d'injection pour éviter les lipodystrophies.",
-        "Une activité physique peut influencer votre glycémie pendant plusieurs heures après l'effort.",
-        "L'hydratation est clé ! Boire de l'eau aide à réguler la glycémie.",
-        "Vérifiez toujours la date d'expiration de vos flacons d'insuline.",
-        "Un repas riche en graisses peut ralentir la digestion et causer une hyperglycémie tardive."
-    ];
-    setRandomTip(tips[Math.floor(Math.random() * tips.length)]);
-  }, []);
+  if (!patient) return null;
 
   return (
     <div className="p-4 space-y-5">
       <header className="py-4">
-        <h1 className="text-3xl font-display font-bold text-white text-shadow">
-          {getGreeting()}, {patient?.prenom} !
-        </h1>
+        <h1 className="text-3xl font-display font-bold text-white text-shadow">{getGreeting(t, patient.prenom)}</h1>
       </header>
-
-      <Card hoverEffect={false}>
-        <div className="flex justify-between items-start">
-            <div>
-                <p className="text-sm font-medium text-text-muted">Glycémie Actuelle</p>
-                {lastMesure ? (
-                    <p className="text-5xl font-display font-bold text-text-title tracking-tight">{lastMesure.gly.toFixed(2)}
-                        <span className="text-3xl text-text-muted ml-1">g/L</span>
-                    </p>
-                ) : (
-                    <p className="text-2xl font-display font-semibold text-text-muted mt-2">Aucune mesure</p>
-                )}
-            </div>
-            {trend && (
-                <div className={`p-2 rounded-full ${
-                    trend === 'up' ? 'bg-rose-100 text-rose-600' :
-                    trend === 'down' ? 'bg-sky-100 text-sky-600' :
-                    'bg-slate-100 text-slate-600'
-                }`}>
-                    {trend === 'up' && <ArrowUpRight />}
-                    {trend === 'down' && <ArrowDownRight />}
-                    {trend === 'stable' && <ArrowRight />}
-                </div>
-            )}
-        </div>
-        {lastMesure && (
-            <div className="text-xs text-text-muted mt-2 flex justify-between">
-                <span>{new Date(lastMesure.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</span>
-                <span>{todayMesuresCount} contrôle{todayMesuresCount > 1 ? 's' : ''} aujourd'hui</span>
-            </div>
-        )}
-      </Card>
       
-      <div className="grid grid-cols-4 gap-3 text-center">
-        {[
-          { label: 'Calcul', icon: <CalculatorIcon />, action: () => setCurrentPage('glucides') },
-          { label: 'Bolus', icon: <SyringeIcon />, action: () => setBolusModalOpen(true) },
-          { label: 'Mesure', icon: <DropletIcon />, action: () => setAddItemModalOpen(true) },
-          { label: 'Urgence', icon: <AlertIcon />, action: () => setCurrentPage('emergency') },
-        ].map(item => (
-            <div key={item.label}>
-                <button
-                    onClick={item.action}
-                    className="w-full h-16 bg-white/70 backdrop-blur-sm rounded-card shadow-glass flex items-center justify-center text-emerald-main hover:bg-white transition-colors"
-                >
-                    {item.icon}
-                </button>
-                <span className="text-xs font-semibold text-white/90 mt-1 block">{item.label}</span>
-            </div>
-        ))}
-      </div>
-      
-      <Card>
-        <div className="flex items-center text-text-title mb-3">
-            <BarChartIcon />
-            <h2 className="font-display font-semibold text-xl ml-2">Analyse des Données</h2>
-        </div>
-        <div className="text-center py-2">
-            <p className="text-sm text-text-muted mb-4">Visualisez les tendances, le temps dans la cible et les statistiques détaillées.</p>
-            <button
-                onClick={() => setCurrentPage('rapports')}
-                className="bg-emerald-main text-white font-bold py-3 px-6 rounded-button hover:bg-jade-deep-dark transition-colors shadow-md"
-            >
-                Accéder aux Rapports
-            </button>
-        </div>
-      </Card>
-      
-      <Card>
-        <div className="flex items-center text-text-title mb-3">
-          <LightbulbIcon />
-          <h2 className="font-display font-semibold text-xl ml-2">Bon à savoir</h2>
-        </div>
-        <p className="text-sm text-text-main">{randomTip}</p>
-      </Card>
-      
-      <Card>
-        <div className="flex items-center text-text-title mb-3">
-          <CalendarIcon />
-          <h2 className="font-display font-semibold text-xl ml-2">Prochains Événements</h2>
-        </div>
-        <div className="text-sm text-text-main space-y-2">
-            {upcomingEvents.length > 0 ? (
-                upcomingEvents.map(event => {
-                    const isCompleted = event.status === 'completed';
-                    return (
-                        <div key={event.id} className="flex items-center gap-3 py-2 border-b border-black/5 last:border-b-0">
-                            <StatusCheckbox
-                                status={event.status}
-                                onClick={() => {
-                                    const newStatus = isCompleted ? 'pending' : 'completed';
-                                    updateEventStatus(event.id, newStatus);
-                                    toast.success(newStatus === 'completed' ? 'Événement terminé !' : 'Événement réactivé !');
-                                }}
-                            />
-                            <div className="flex-grow">
-                                <div className="flex items-center gap-2">
-                                    {event.type === 'rdv' ? <StethoscopeIcon className="w-4 h-4 text-text-muted" /> : <ClipboardIcon className="w-4 h-4 text-text-muted" />}
-                                    <p className={`font-semibold transition-colors ${isCompleted ? 'line-through text-text-muted' : 'text-text-title'}`}>{event.title}</p>
-                                </div>
-                                {event.description && <p className={`text-xs transition-colors pl-6 ${isCompleted ? 'line-through text-text-muted' : 'text-text-muted'}`}>{event.description}</p>}
-                            </div>
-                            <span className="text-xs text-text-muted font-medium text-right flex-shrink-0 ml-2">{formatEventDate(event.ts)}</span>
-                        </div>
-                    );
-                })
+      <Card className="animate-fade-in-lift">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-semibold text-text-muted">{t.dashboard_currentGlucose}</p>
+            {lastMeasure ? (
+              <p className="text-4xl font-display font-bold text-emerald-main">{lastMeasure.gly.toFixed(2)} <span className="text-xl text-text-muted">g/L</span></p>
             ) : (
-                <p className="text-text-muted text-center py-2">Aucun événement à venir.</p>
+              <p className="text-lg font-semibold text-text-muted">{t.dashboard_noMeasure}</p>
             )}
-           <button onClick={() => setEventModalOpen(true)} className="w-full text-sm text-emerald-main font-semibold mt-2 py-2 bg-emerald-main/10 hover:bg-emerald-main/20 rounded-lg transition-colors">
-               + Ajouter un événement
-           </button>
+             <p className="text-xs text-text-muted/80 mt-1">{t.dashboard_todayChecks(todayMeasuresCount)}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <button onClick={() => setCurrentPage('glucides')} className="flex flex-col items-center justify-center p-2 bg-mint-soft/50 rounded-lg hover:bg-mint-soft transition-colors space-y-1">
+              <CalculatorIcon className="w-8 h-8"/>
+              <span className="text-xs font-semibold text-jade-deep">{t.dashboard_action_calculate}</span>
+            </button>
+            <button onClick={() => setBolusModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-mint-soft/50 rounded-lg hover:bg-mint-soft transition-colors space-y-1">
+              <SyringeIcon className="w-8 h-8"/>
+              <span className="text-xs font-semibold text-jade-deep">{t.dashboard_action_bolus}</span>
+            </button>
+            <button onClick={() => setMeasureModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-mint-soft/50 rounded-lg hover:bg-mint-soft transition-colors space-y-1">
+               <GlucoseDropIcon className="w-8 h-8"/>
+              <span className="text-xs font-semibold text-jade-deep">{t.dashboard_action_measure}</span>
+            </button>
+            <button onClick={() => setCurrentPage('emergency')} className="flex flex-col items-center justify-center p-2 bg-danger-soft/50 rounded-lg hover:bg-danger-soft transition-colors space-y-1">
+               <EmergencyIcon className="w-8 h-8"/>
+              <span className="text-xs font-semibold text-danger-dark">{t.dashboard_action_emergency}</span>
+            </button>
+          </div>
         </div>
       </Card>
       
-      {isAddItemModalOpen && (
-        <QuickAddItemModal 
-          onClose={() => setAddItemModalOpen(false)} 
-          onConfirm={(gly, cetone, ts) => {
-            addMesure({ gly, cetone, source: 'doigt'}, ts);
-            toast.success(`Mesure de ${gly} g/L ajoutée !`);
-            setAddItemModalOpen(false);
-          }} 
-        />
+      <Card className="animate-fade-in-lift">
+         <div className="flex items-center text-text-title mb-3">
+             <MedicalAgendaIllustration />
+         </div>
+        <h2 className="font-display font-semibold text-xl ml-2 -mt-4 text-center">{t.dashboard_eventsTitle}</h2>
+         <div className="mt-2 space-y-1">
+             {events.length > 0 ? (
+                 events.slice(0, 3).map(event => <EventCard key={event.id} event={event} />)
+             ) : (
+                 <p className="text-center text-sm text-text-muted p-4">{t.dashboard_noEvents}</p>
+             )}
+         </div>
+         <button onClick={() => setEventModalOpen(true)} className="w-full mt-3 text-emerald-main text-sm font-bold py-2 rounded-button hover:bg-mint-soft transition-colors">
+             {t.dashboard_addEvent}
+         </button>
+      </Card>
+      
+      <Card className="cursor-pointer hover:shadow-glass-hover animate-fade-in-lift" onClick={() => setCurrentPage('rapports')}>
+         <GlucoseTrackingIllustration />
+        <h2 className="font-display font-semibold text-xl text-center text-text-title">{t.dashboard_dataAnalysisTitle}</h2>
+        <p className="text-sm text-text-muted text-center mt-1">{t.dashboard_dataAnalysisText}</p>
+        <button className="w-full mt-3 bg-emerald-main text-white text-sm font-bold py-2 rounded-button hover:bg-jade-deep-dark transition-colors">
+          {t.dashboard_dataAnalysisButton}
+        </button>
+      </Card>
+
+      <div className="animate-fade-in-lift">
+        <GlucoQuizCard />
+      </div>
+
+      {isMeasureModalOpen && (
+        <QuickAddItemModal onClose={() => setMeasureModalOpen(false)} onConfirm={handleAddMeasure} />
       )}
-      {isBolusModalOpen && <QuickBolusModal onClose={() => setBolusModalOpen(false)} onConfirm={handleConfirmBolus} />}
-      {isEventModalOpen && (
-        <AddEventModal 
-            onClose={() => setEventModalOpen(false)}
-            onConfirm={(eventData) => {
-                addEvent(eventData);
-                toast.success("Événement ajouté !");
-                setEventModalOpen(false);
-            }}
-        />
+      {isBolusModalOpen && (
+        <QuickBolusModal onClose={() => setBolusModalOpen(false)} onConfirm={handleAddBolus} />
+      )}
+       {isEventModalOpen && (
+        <AddEventModal onClose={() => setEventModalOpen(false)} onConfirm={handleAddEvent} />
        )}
     </div>
   );

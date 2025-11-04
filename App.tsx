@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { usePatientStore } from './store/patientStore';
 import { useAuthStore } from './store/authStore';
+import { useSettingsStore } from './store/settingsStore';
 
 // Fix: Corrected import paths
 import Dashboard from './pages/Dashboard';
@@ -16,16 +18,21 @@ import BottomNav from './components/BottomNav';
 import AuthPage from './pages/AuthPage';
 import { Page } from './types';
 import Reports from './pages/Reports';
+import useTranslations from './hooks/useTranslations';
 
-const LoadingScreen = () => (
-  <div className="flex items-center justify-center h-screen bg-off-white font-sans text-text-muted">Chargement...</div>
-);
+const LoadingScreen: React.FC = () => {
+  const t = useTranslations();
+  return (
+    <div className="flex items-center justify-center h-screen bg-off-white font-sans text-text-muted">{t.common_loading}...</div>
+  );
+};
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   
   const { isAuthenticated, isLoading: isAuthLoading, checkSession, currentUser } = useAuthStore();
   const { patient, isLoading: isPatientLoading, loadInitialData, clearPatientData } = usePatientStore();
+  const { language } = useSettingsStore();
   
   useEffect(() => {
     checkSession();
@@ -38,6 +45,10 @@ const App: React.FC = () => {
       clearPatientData();
     }
   }, [currentUser, loadInitialData, clearPatientData]);
+  
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   if (isAuthLoading) {
     return <LoadingScreen />;

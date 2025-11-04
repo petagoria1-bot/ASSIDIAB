@@ -1,12 +1,15 @@
+
 import React from 'react';
 import { usePatientStore } from '../store/patientStore';
-import { Mesure, Repas, Injection } from '../types';
+import { Mesure, Repas, Injection, MealTime } from '../types';
 import Card from '../components/Card';
+import useTranslations from '../hooks/useTranslations';
 
 type JournalEvent = (Mesure | Repas | Injection) & { eventType: 'mesure' | 'repas' | 'injection' };
 
 const Journal: React.FC = () => {
   const { mesures, repas, injections } = usePatientStore();
+  const t = useTranslations();
 
   const combinedEvents: JournalEvent[] = [
     ...mesures.map(m => ({ ...m, eventType: 'mesure' as const })),
@@ -22,30 +25,31 @@ const Journal: React.FC = () => {
             <div className="flex items-center space-x-3">
                 <div className="text-xl">🩸</div>
                 <div>
-                    <p className="font-semibold text-neutral-body dark:text-dark-body">Glycémie: <span className="font-bold text-primary dark:text-dark-primary-light">{mesure.gly.toFixed(2)} g/L</span></p>
-                    {mesure.cetone && <p className="text-sm text-neutral-subtext dark:text-dark-subtext">Cétone: {mesure.cetone.toFixed(1)} mmol/L</p>}
+                    <p className="font-semibold text-text-main">{t.journal_glycemia}: <span className="font-bold text-emerald-main">{mesure.gly.toFixed(2)} g/L</span></p>
+                    {mesure.cetone && <p className="text-sm text-text-muted">{t.journal_ketone}: {mesure.cetone.toFixed(1)} mmol/L</p>}
                 </div>
             </div>
         );
       case 'repas':
-        const repas = event as Repas;
+        const r = event as Repas;
         return (
              <div className="flex items-center space-x-3">
                 <div className="text-xl">🍽️</div>
                 <div>
-                    <p className="font-semibold text-neutral-body dark:text-dark-body">{repas.moment}: <span className="font-bold text-primary dark:text-dark-primary-light">{repas.total_carbs_g.toFixed(0)}g</span> de glucides</p>
-                    {repas.note && <p className="text-sm text-neutral-subtext dark:text-dark-subtext italic">"{repas.note}"</p>}
+                    <p className="font-semibold text-text-main">{t.mealTimes[r.moment]}: <span className="font-bold text-emerald-main">{t.journal_carbs(r.total_carbs_g)}</span></p>
+                    {r.note && <p className="text-sm text-text-muted italic">"{r.note}"</p>}
                 </div>
             </div>
         );
       case 'injection':
         const injection = event as Injection;
+        const typeLabel = injection.type === 'rapide' ? t.common_rapid : t.common_correction;
         return (
             <div className="flex items-center space-x-3">
                 <div className="text-xl">💉</div>
                 <div>
-                    <p className="font-semibold text-neutral-body dark:text-dark-body">Bolus {injection.type}: <span className="font-bold text-primary dark:text-dark-primary-light">{injection.dose_U} U</span></p>
-                    {injection.calc_details && <p className="text-sm text-neutral-subtext dark:text-dark-subtext">{injection.calc_details}</p>}
+                    <p className="font-semibold text-text-main">{t.journal_bolus} {typeLabel}: <span className="font-bold text-emerald-main">{injection.dose_U} U</span></p>
+                    {injection.calc_details && <p className="text-sm text-text-muted">{injection.calc_details}</p>}
                 </div>
             </div>
         );
@@ -55,30 +59,31 @@ const Journal: React.FC = () => {
   };
   
   let lastDate: string | null = null;
+  const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
   return (
     <div className="p-4 space-y-4">
-      <header className="mb-4">
-        <h1 className="text-3xl font-display font-bold text-neutral-title dark:text-dark-title">Journal de bord</h1>
+      <header className="py-4 text-center">
+        <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.journal_title}</h1>
       </header>
       
       {combinedEvents.length === 0 ? (
         <Card className="text-center">
-          <p className="text-neutral-subtext dark:text-dark-subtext">Aucun événement enregistré pour le moment.</p>
+          <p className="text-text-muted">{t.journal_empty}</p>
         </Card>
       ) : (
-        combinedEvents.map((event, index) => {
-          const eventDate = new Date(event.ts).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        combinedEvents.map((event) => {
+          const eventDate = new Date(event.ts).toLocaleDateString(t.locale, dateOptions);
           const showDateHeader = eventDate !== lastDate;
           lastDate = eventDate;
           
           return (
             <React.Fragment key={event.id}>
-              {showDateHeader && <h2 className="text-lg font-semibold text-neutral-title dark:text-dark-title pt-4 pb-2">{eventDate}</h2>}
+              {showDateHeader && <h2 className="text-lg font-semibold text-text-title pt-4 pb-2">{eventDate}</h2>}
               <Card className="flex justify-between items-center">
                 {renderEvent(event)}
-                <span className="text-xs text-neutral-subtext/80 dark:text-dark-subtext/80 self-start">
-                    {new Date(event.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                <span className="text-xs text-text-muted/80 self-start">
+                    {new Date(event.ts).toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </Card>
             </React.Fragment>

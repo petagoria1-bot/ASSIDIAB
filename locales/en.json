@@ -1,0 +1,13 @@
+{
+  "settings_title": "Settings",
+  "settings_language": "Language",
+  "settings_profile": "Profile",
+  "nav_home": "Home",
+  "nav_journal": "Logbook",
+  "nav_calculator": "Calculator",
+  "nav_emergency": "Emergency",
+  "nav_settings": "Settings",
+  "greeting_morning": "Good morning",
+  "greeting_afternoon": "Good afternoon",
+  "greeting_evening": "Good evening"
+}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { InjectionType } from '../types';
+import useTranslations from '../hooks/useTranslations';
 
 interface QuickBolusModalProps {
   onClose: () => void;
@@ -14,6 +16,7 @@ const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
 const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm }) => {
   const [dose, setDose] = useState('');
   const [type, setType] = useState<InjectionType>('rapide');
+  const t = useTranslations();
   
   const toLocalISOString = (date: Date) => {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
@@ -25,7 +28,7 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
   const handleConfirm = () => {
     const doseValue = parseFloat(dose.replace(',', '.'));
     if (isNaN(doseValue) || doseValue <= 0) {
-      toast.error('Veuillez entrer une dose valide.');
+      toast.error(t.toast_invalidDose);
       return;
     }
     onConfirm(doseValue, type, new Date(eventDateTime).toISOString());
@@ -39,17 +42,17 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
   
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center";
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
       <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-center text-center mb-4">
             <SyringeIcon className="w-8 h-8 text-emerald-main mr-2" />
-            <h3 className="text-xl font-display font-semibold text-text-title">Ajouter un Bolus</h3>
+            <h3 className="text-xl font-display font-semibold text-text-title">{t.quickAdd_bolusTitle}</h3>
         </div>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="bolus-datetime" className="block text-sm font-medium text-text-muted mb-1">Date et Heure</label>
+            <label htmlFor="bolus-datetime" className="block text-sm font-medium text-text-muted mb-1">{t.common_datetime}</label>
             <input
               type="datetime-local"
               id="bolus-datetime"
@@ -60,7 +63,7 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
             />
           </div>
           <div>
-            <label htmlFor="bolus-dose" className="block text-sm font-medium text-text-muted mb-1">Dose (Unités)</label>
+            <label htmlFor="bolus-dose" className="block text-sm font-medium text-text-muted mb-1">{t.quickAdd_doseLabel}</label>
             <input
               type="number"
               inputMode="decimal"
@@ -73,25 +76,27 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
             />
           </div>
           <div>
-            <span className="block text-sm font-medium text-text-muted mb-2">Type d'injection</span>
+            <span className="block text-sm font-medium text-text-muted mb-2">{t.quickAdd_injectionType}</span>
             <div className="flex gap-2">
                 <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
-                    Repas / Rapide
+                    {t.quickAdd_rapid}
                 </button>
                 <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
-                    Correction
+                    {t.common_correction}
                 </button>
             </div>
           </div>
         </div>
         
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">Annuler</button>
-          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">Confirmer</button>
+          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
+          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_confirm}</button>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default QuickBolusModal;
