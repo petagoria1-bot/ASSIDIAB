@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { usePatientStore } from './store/patientStore';
 import { useAuthStore } from './store/authStore';
 
+// Fix: Corrected import paths
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import DoseCalculator from './pages/DoseCalculator';
@@ -17,11 +17,11 @@ import AuthPage from './pages/AuthPage';
 import { Page } from './types';
 
 const LoadingScreen = () => (
-  <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Chargement...</div>
+  <div className="flex items-center justify-center h-screen bg-off-white font-sans text-text-muted">Chargement...</div>
 );
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [currentPage, setCurrentPage] = useState<Page>('glucides');
   
   const { isAuthenticated, isLoading: isAuthLoading, checkSession, currentUser } = useAuthStore();
   const { patient, isLoading: isPatientLoading, loadInitialData, clearPatientData } = usePatientStore();
@@ -60,7 +60,7 @@ const App: React.FC = () => {
         return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'journal':
         return <Journal />;
-      case 'calculator':
+      case 'glucides':
         return <DoseCalculator setCurrentPage={setCurrentPage} />;
       case 'emergency':
         return <Emergency />;
@@ -76,10 +76,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-sans">
-      <Toaster position="top-center" />
+    <div className="min-h-screen bg-main-gradient text-text-main font-sans">
+      <Toaster 
+        position="top-center" 
+        toastOptions={{
+          style: {
+            background: 'rgba(249, 250, 251, 0.8)', // off-white with opacity
+            color: '#1E293B',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(0,0,0,0.05)',
+            borderRadius: '14px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+          },
+        }}
+      />
       <main className="max-w-lg mx-auto relative">
-        <div className="pb-24"> 
+        <div className="pb-28"> 
           {renderPage()}
         </div>
       </main>

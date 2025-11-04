@@ -1,226 +1,234 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePatientStore } from '../store/patientStore';
-import { Page, Mesure, Repas, Injection, InjectionType } from '../types';
-import { MEAL_TIMES } from '../constants';
+import { Page, InjectionType, Event } from '../types';
+import QuickAddItemModal from '../components/QuickAddItemModal';
 import QuickBolusModal from '../components/QuickBolusModal';
+import AddEventModal from '../components/AddEventModal';
+import Card from '../components/Card';
 import toast from 'react-hot-toast';
-
-const Droplets: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.49-2.2-1.25-3.25A4.42 4.42 0 0 0 11 6.05c0-2.23-1.8-4.05-4-4.05S3 3.82 3 6.05c0 1.16.49 2.2 1.25 3.25A4.42 4.42 0 0 0 3 12.25C3 14.47 4.8 16.3 7 16.3z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.54 2.52 2.55 4.5 5 5 .44 2.45-.56 4.95-2.42 6.62"></path></svg>
-);
-const Wheat: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 22 16 8l-4-4-2 2 4 4-2.5 2.5-4.5 4.5-1.5-1.5z"></path><path d="m18 12 2-2-4.5-4.5-2 2 4.5 4.5z"></path><path d="M16 8s2-2 4-4"></path><path d="M18.5 4.5s2 2 4 4"></path></svg>
-);
-const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="M6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>
-);
-
-
-const GlucoseCard: React.FC<{ mesure?: Mesure }> = ({ mesure }) => {
-    const getTrendArrow = () => '→'; // Placeholder for sensor trend
-    const value = mesure ? mesure.gly.toFixed(2) : '--';
-    const unit = 'g/L';
-
-    const getColor = () => {
-        if (!mesure) return 'text-slate-500';
-        if (mesure.gly < 0.8) return 'text-red-500';
-        if (mesure.gly > 1.6) return 'text-yellow-500';
-        return 'text-green-500';
-    }
-
-    return (
-        <div className="bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg flex items-center justify-between">
-            <div>
-                <p className="text-sm text-slate-500 dark:text-slate-300">Dernière Glycémie</p>
-                <p className={`text-4xl font-bold ${getColor()}`}>{value} <span className="text-lg">{unit}</span></p>
-                <p className="text-xs text-slate-400">{mesure ? new Date(mesure.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Pas de mesure'}</p>
-            </div>
-            <div className="text-4xl text-slate-400">{getTrendArrow()}</div>
-        </div>
-    );
-};
-
-const GlucoseChart: React.FC<{ mesures: Mesure[], cibles: { gly_min: number, gly_max: number } }> = ({ mesures, cibles }) => {
-    const now = new Date().getTime();
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
-    const chartData = mesures
-        .filter(m => new Date(m.ts).getTime() > oneDayAgo)
-        .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
-
-    if (chartData.length < 2) {
-        return (
-            <div className="bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg flex items-center justify-center h-48">
-                <p className="text-slate-500 dark:text-slate-400">Pas assez de données pour afficher le graphique.</p>
-            </div>
-        );
-    }
-    
-    const width = 300;
-    const height = 150;
-    const padding = { top: 20, right: 20, bottom: 30, left: 30 };
-
-    const minGly = 0;
-    const maxGly = Math.max(...chartData.map(d => d.gly), cibles.gly_max) * 1.1;
-    const startTime = new Date(chartData[0].ts).getTime();
-    const endTime = new Date(chartData[chartData.length - 1].ts).getTime();
-    const timeRange = Math.max(endTime - startTime, 1);
-    
-    const scaleX = (time: number) => padding.left + ((time - startTime) / timeRange) * (width - padding.left - padding.right);
-    const scaleY = (gly: number) => padding.top + (height - padding.top - padding.bottom) * (1 - (gly - minGly) / (maxGly - minGly));
-
-    const linePath = chartData
-        .map((d, i) => {
-            const x = scaleX(new Date(d.ts).getTime());
-            const y = scaleY(d.gly);
-            return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)},${y.toFixed(2)}`;
-        })
-        .join(' ');
-
-    const getPointColor = (gly: number) => {
-        if (gly < cibles.gly_min) return 'fill-red-500';
-        if (gly > cibles.gly_max) return 'fill-yellow-500';
-        return 'fill-green-500';
-    }
-
-    const yAxisLabels = Array.from(new Set([minGly, cibles.gly_min, cibles.gly_max, Math.round(maxGly)]));
-    
-    return (
-        <div className="bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg">
-            <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">Glycémie des 24h</h3>
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-label="Graphique des glycémies des 24 dernières heures">
-                <rect 
-                    x={padding.left}
-                    y={scaleY(cibles.gly_max)} 
-                    width={width - padding.left - padding.right} 
-                    height={scaleY(cibles.gly_min) - scaleY(cibles.gly_max)}
-                    className="fill-green-500/10"
-                />
-                {yAxisLabels.map(label => (
-                    <g key={label}>
-                        <line x1={padding.left} y1={scaleY(label)} x2={width - padding.right} y2={scaleY(label)} className="stroke-slate-200 dark:stroke-slate-600" strokeWidth="0.5" />
-                        <text x={padding.left - 5} y={scaleY(label) + 3} className="text-[8px] fill-slate-500 dark:fill-slate-400" textAnchor="end">{label.toFixed(2)}</text>
-                    </g>
-                ))}
-                <text x={padding.left} y={height - 5} className="text-[8px] fill-slate-500 dark:fill-slate-400" textAnchor="start">{new Date(startTime).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</text>
-                <text x={width - padding.right} y={height - 5} className="text-[8px] fill-slate-500 dark:fill-slate-400" textAnchor="end">{new Date(endTime).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</text>
-                <path d={linePath} className="stroke-teal-500 fill-none" strokeWidth="2" />
-                {chartData.map(d => (
-                    <circle 
-                        key={d.id} 
-                        cx={scaleX(new Date(d.ts).getTime())} 
-                        cy={scaleY(d.gly)} 
-                        r="3" 
-                        className={getPointColor(d.gly)}
-                    >
-                      <title>{`Glycémie: ${d.gly.toFixed(2)} g/L à ${new Date(d.ts).toLocaleTimeString('fr-FR')}`}</title>
-                    </circle>
-                ))}
-            </svg>
-        </div>
-    );
-}
-
-const InfoCard: React.FC<{ title: string; data?: Repas | Injection }> = ({ title, data }) => {
-    let content = <p className="text-slate-500 dark:text-slate-400 text-sm">Aucune donnée</p>;
-    let icon = null;
-
-    if (data) {
-        const time = new Date(data.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        if ('total_carbs_g' in data) {
-            icon = <Wheat className="w-8 h-8 text-yellow-600" />;
-            content = (
-                <div>
-                    <p className="font-bold text-xl text-slate-800 dark:text-slate-200">{data.total_carbs_g.toFixed(0)} g</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{time} - {MEAL_TIMES[data.moment]}</p>
-                </div>
-            );
-        } else if ('dose_U' in data) {
-            icon = <Droplets className="w-8 h-8 text-teal-500" />;
-            content = (
-                <div>
-                    <p className="font-bold text-xl text-slate-800 dark:text-slate-200">{data.dose_U} U</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{time} - {data.type}</p>
-                </div>
-            );
-        }
-    }
-
-    return (
-        <div className="bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg">
-            <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 text-sm">{title}</h3>
-            <div className="flex items-center space-x-3">
-                {icon}
-                {content}
-            </div>
-        </div>
-    )
-}
 
 interface DashboardProps {
   setCurrentPage: (page: Page) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
-  const { patient, mesures, repas, injections, addInjection } = usePatientStore();
-  const [isBolusModalOpen, setIsBolusModalOpen] = useState(false);
-  
-  const lastMesure = mesures[0];
-  const lastRepas = repas[0];
-  const lastInjection = injections[0];
+// --- SVG Icons ---
+const CalculatorIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><line x1="16" y1="10" x2="12" y2="10"></line><line x1="12" y1="10" x2="8" y2="10"></line><line x1="12" y1="14" x2="12" y2="18"></line><line x1="8" y1="14" x2="8" y2="18"></line></svg>;
+const SyringeIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="m6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>;
+const DropletIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>;
+const AlertIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+const ArrowUpRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>;
+const ArrowDownRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 7 17 17 7 17"></polyline><line x1="7" y1="7" x2="17" y2="17"></line></svg>;
+const ArrowRight: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
+const CalendarIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
+const LightbulbIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"></path></svg>;
+const BarChartIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>;
+const StethoscopeIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4.8 2.3A.3.3 0 1 0 5 2a.3.3 0 0 0-.2.3V5a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9a2 2 0 0 1 2-2h1a2 2 0 0 0 2-2V2.3a.3.3 0 1 0-.5 0V5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 1-.5-.5V2.3a.3.3 0 0 0-.2-.3Z"></path><path d="M8 15a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3a2 2 0 0 0-2-2h-1a2 2 0 0 1-2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2H7a2 2 0 0 0-2 2Z"></path><circle cx="12" cy="18" r="2"></circle></svg>;
+const ClipboardIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>;
 
-  const handleConfirmBolus = async (dose: number, type: InjectionType, ts: string) => {
-    await addInjection({
-      dose_U: dose,
-      type: type,
-    }, ts);
-    toast.success(`Bolus de ${dose}U (${type}) enregistré !`);
-    setIsBolusModalOpen(false);
+
+const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
+  const { patient, mesures, events, addInjection, addMesure, addEvent } = usePatientStore();
+  const [isAddItemModalOpen, setAddItemModalOpen] = useState(false);
+  const [isBolusModalOpen, setBolusModalOpen] = useState(false);
+  const [isEventModalOpen, setEventModalOpen] = useState(false);
+  const [randomTip, setRandomTip] = useState('');
+  
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
   };
 
+  const handleConfirmBolus = (dose: number, type: InjectionType, ts: string) => {
+    addInjection({ dose_U: dose, type }, ts);
+    toast.success(`Bolus de ${dose}U ajouté !`);
+    setBolusModalOpen(false);
+  };
+  
+  const { lastMesure, trend, todayMesuresCount } = useMemo(() => {
+    if (mesures.length === 0) return { lastMesure: null, trend: null, todayMesuresCount: 0 };
+    
+    const today = new Date().toDateString();
+    const todayMesures = mesures.filter(m => new Date(m.ts).toDateString() === today);
+    
+    let trend: 'up' | 'down' | 'stable' | null = null;
+    if (mesures.length > 1) {
+      const diff = mesures[0].gly - mesures[1].gly;
+      if (diff > 0.1) trend = 'up';
+      else if (diff < -0.1) trend = 'down';
+      else trend = 'stable';
+    }
+    return { lastMesure: mesures[0], trend, todayMesuresCount: todayMesures.length };
+  }, [mesures]);
+
+  const upcomingEvents = useMemo(() => {
+      const now = new Date();
+      return events.filter(e => new Date(e.ts) >= now).slice(0, 2);
+  }, [events]);
+  
+  const formatEventDate = (ts: string) => {
+    const eventDate = new Date(ts);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (eventDate.toDateString() === today.toDateString()) {
+        return `Aujourd'hui à ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    if (eventDate.toDateString() === tomorrow.toDateString()) {
+        return `Demain à ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    return eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ` à ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  useEffect(() => {
+    const tips = [
+        "N'oubliez pas de tourner les sites d'injection pour éviter les lipodystrophies.",
+        "Une activité physique peut influencer votre glycémie pendant plusieurs heures après l'effort.",
+        "L'hydratation est clé ! Boire de l'eau aide à réguler la glycémie.",
+        "Vérifiez toujours la date d'expiration de vos flacons d'insuline.",
+        "Un repas riche en graisses peut ralentir la digestion et causer une hyperglycémie tardive."
+    ];
+    setRandomTip(tips[Math.floor(Math.random() * tips.length)]);
+  }, []);
+
   return (
-    <div className="relative">
-      <header className="bg-teal-50 dark:bg-teal-900/20 p-4 pt-8 rounded-b-3xl h-40">
-        <h1 className="text-2xl font-bold text-teal-800 dark:text-teal-100">Bonjour, {patient?.prenom}</h1>
-        <p className="text-teal-600 dark:text-teal-300">Voici votre résumé journalier.</p>
+    <div className="p-4 space-y-5">
+      <header className="py-4">
+        <h1 className="text-3xl font-display font-bold text-white text-shadow">
+          {getGreeting()}, {patient?.prenom} !
+        </h1>
       </header>
+
+      <Card hoverEffect={false}>
+        <div className="flex justify-between items-start">
+            <div>
+                <p className="text-sm font-medium text-text-muted">Glycémie Actuelle</p>
+                {lastMesure ? (
+                    <p className="text-5xl font-display font-bold text-text-title tracking-tight">{lastMesure.gly.toFixed(2)}
+                        <span className="text-3xl text-text-muted ml-1">g/L</span>
+                    </p>
+                ) : (
+                    <p className="text-2xl font-display font-semibold text-text-muted mt-2">Aucune mesure</p>
+                )}
+            </div>
+            {trend && (
+                <div className={`p-2 rounded-full ${
+                    trend === 'up' ? 'bg-rose-100 text-rose-600' :
+                    trend === 'down' ? 'bg-sky-100 text-sky-600' :
+                    'bg-slate-100 text-slate-600'
+                }`}>
+                    {trend === 'up' && <ArrowUpRight />}
+                    {trend === 'down' && <ArrowDownRight />}
+                    {trend === 'stable' && <ArrowRight />}
+                </div>
+            )}
+        </div>
+        {lastMesure && (
+            <div className="text-xs text-text-muted mt-2 flex justify-between">
+                <span>{new Date(lastMesure.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</span>
+                <span>{todayMesuresCount} contrôle{todayMesuresCount > 1 ? 's' : ''} aujourd'hui</span>
+            </div>
+        )}
+      </Card>
       
-      <div className="px-4 space-y-6 -mt-16">
-        <GlucoseCard mesure={lastMesure} />
-        
-        {patient && patient.cibles && <GlucoseChart mesures={mesures} cibles={patient.cibles} />}
-
-        <div className="text-center">
-          <button 
-            onClick={() => setCurrentPage('calculator')}
-            className="w-full bg-teal-500 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:bg-teal-600 transition-transform transform hover:scale-105 text-lg"
-          >
-            Calculer une dose
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg">
-          <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">Actions Rapides</h3>
-          <button 
-            onClick={() => setIsBolusModalOpen(true)}
-            className="w-full bg-slate-100 dark:bg-slate-600 text-teal-800 dark:text-teal-200 font-bold py-3 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors flex items-center justify-center gap-2"
-          >
-            <SyringeIcon className="w-5 h-5" />
-            <span>Ajouter un bolus</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <InfoCard title="Dernier Repas" data={lastRepas} />
-          <InfoCard title="Dernière Dose" data={lastInjection} />
-        </div>
+      <div className="grid grid-cols-4 gap-3 text-center">
+        {[
+          { label: 'Calcul', icon: <CalculatorIcon />, action: () => setCurrentPage('glucides') },
+          { label: 'Bolus', icon: <SyringeIcon />, action: () => setBolusModalOpen(true) },
+          { label: 'Mesure', icon: <DropletIcon />, action: () => setAddItemModalOpen(true) },
+          { label: 'Urgence', icon: <AlertIcon />, action: () => setCurrentPage('emergency') },
+        ].map(item => (
+            <div key={item.label}>
+                <button
+                    onClick={item.action}
+                    className="w-full h-16 bg-white/70 backdrop-blur-sm rounded-card shadow-glass flex items-center justify-center text-emerald-main hover:bg-white transition-colors"
+                >
+                    {item.icon}
+                </button>
+                <span className="text-xs font-semibold text-white/90 mt-1 block">{item.label}</span>
+            </div>
+        ))}
       </div>
-
-      {isBolusModalOpen && (
-        <QuickBolusModal
-            onClose={() => setIsBolusModalOpen(false)}
-            onConfirm={handleConfirmBolus}
+      
+      <Card>
+        <div className="flex items-center text-text-title mb-3">
+          <BarChartIcon />
+          <h2 className="font-display font-semibold text-xl ml-2">Glycémies du jour</h2>
+        </div>
+        <div className="text-center text-sm text-text-muted py-4">
+            <svg width="100%" height="100" viewBox="0 0 300 100">
+              <path d="M 20 80 L 80 40 L 150 60 L 220 30 L 280 50" stroke="#10B981" fill="none" strokeWidth="2" />
+              <circle cx="80" cy="40" r="3" fill="#10B981" />
+              <circle cx="150" cy="60" r="3" fill="#10B981" />
+              <circle cx="220" cy="30" r="3" fill="#10B981" />
+              <circle cx="280" cy="50" r="3" fill="#10B981" />
+              <text x="20" y="95" fontSize="10" fill="#94A3B8">08:00</text>
+              <text x="140" y="95" fontSize="10" fill="#94A3B8">12:30</text>
+              <text x="260" y="95" fontSize="10" fill="#94A3B8">19:00</text>
+            </svg>
+            <p>Graphique bientôt disponible.</p>
+        </div>
+      </Card>
+      
+      <Card>
+        <div className="flex items-center text-text-title mb-3">
+          <LightbulbIcon />
+          <h2 className="font-display font-semibold text-xl ml-2">Bon à savoir</h2>
+        </div>
+        <p className="text-sm text-text-main">{randomTip}</p>
+      </Card>
+      
+      <Card>
+        <div className="flex items-center text-text-title mb-3">
+          <CalendarIcon />
+          <h2 className="font-display font-semibold text-xl ml-2">Prochains Événements</h2>
+        </div>
+        <div className="text-sm text-text-main space-y-2">
+            {upcomingEvents.length > 0 ? (
+                upcomingEvents.map(event => (
+                    <div key={event.id} className="flex items-start justify-between py-2 border-b border-black/5 last:border-b-0">
+                        <div className="flex items-start gap-3">
+                           {event.type === 'rdv' ? <StethoscopeIcon className="w-5 h-5 text-emerald-main mt-0.5" /> : <ClipboardIcon className="w-5 h-5 text-emerald-main mt-0.5" />}
+                            <div>
+                                <p className="font-semibold">{event.title}</p>
+                                <p className="text-xs text-text-muted">{event.description}</p>
+                            </div>
+                        </div>
+                        <span className="text-xs text-text-muted font-medium text-right flex-shrink-0 ml-2">{formatEventDate(event.ts)}</span>
+                    </div>
+                ))
+            ) : (
+                <p className="text-text-muted text-center py-2">Aucun événement à venir.</p>
+            )}
+           <button onClick={() => setEventModalOpen(true)} className="w-full text-sm text-emerald-main font-semibold mt-2 py-2 bg-emerald-main/10 hover:bg-emerald-main/20 rounded-lg transition-colors">
+               + Ajouter un événement
+           </button>
+        </div>
+      </Card>
+      
+      {isAddItemModalOpen && (
+        <QuickAddItemModal 
+          onClose={() => setAddItemModalOpen(false)} 
+          onConfirm={(gly, cetone, ts) => {
+            addMesure({ gly, cetone, source: 'doigt'}, ts);
+            toast.success(`Mesure de ${gly} g/L ajoutée !`);
+            setAddItemModalOpen(false);
+          }} 
         />
       )}
+      {isBolusModalOpen && <QuickBolusModal onClose={() => setBolusModalOpen(false)} onConfirm={handleConfirmBolus} />}
+      {isEventModalOpen && (
+        <AddEventModal 
+            onClose={() => setEventModalOpen(false)}
+            onConfirm={(eventData) => {
+                addEvent(eventData);
+                toast.success("Événement ajouté !");
+                setEventModalOpen(false);
+            }}
+        />
+       )}
     </div>
   );
 };

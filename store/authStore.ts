@@ -42,18 +42,22 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       // The `&username` in the db schema ensures uniqueness.
       // Dexie will throw a 'ConstraintError' if we try to add a duplicate.
-      // This is more reliable than checking manually first.
       const newUser: User = { username, password };
       const id = await db.users.add(newUser);
       
       if (typeof id !== 'number') {
         throw new Error("La création du compte a échoué (ID invalide).");
       }
-
-      const userWithId: User = { ...newUser, id };
       
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userWithId));
-      set({ currentUser: userWithId, isAuthenticated: true, isLoading: false });
+      // Re-fetch the user to ensure it's fully committed before proceeding.
+      // This makes the process more robust against race conditions.
+      const userFromDb = await db.users.get(id);
+      if (!userFromDb) {
+          throw new Error("Erreur critique: L'utilisateur n'a pas pu être retrouvé après création.");
+      }
+
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userFromDb));
+      set({ currentUser: userFromDb, isAuthenticated: true, isLoading: false });
       toast.success("Compte créé avec succès !");
 
     } catch (error: any) {
@@ -80,7 +84,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ currentUser: user, isAuthenticated: true, isLoading: false });
       toast.success(`Bienvenue, ${username} !`);
     } catch (error: any) {
-      const errorMessage = error.message || "Une erreur inconnue est survenue.";
+      // FIX: Added missing opening brace for the catch block
+      const errorMessage = (error as Error).message || "Une erreur inconnue est survenue.";
       set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
     }

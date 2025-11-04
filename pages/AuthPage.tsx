@@ -2,100 +2,114 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
+const DropletIcon: React.FC = () => (
+    <svg viewBox="0 0 24 24" className="w-16 h-16 mx-auto text-white" fill="currentColor">
+        <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+    </svg>
+);
+
+
 const AuthPage: React.FC = () => {
-    const [isLogin, setIsLogin] = useState(true);
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { login, signup, isLoading } = useAuthStore();
 
-    const { login, signup, isLoading } = useAuthStore();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLogin) {
+      await login(username, password);
+    } else {
+      if (password !== confirmPassword) {
+        toast.error("Les mots de passe ne correspondent pas.");
+        return;
+      }
+      await signup(username, password);
+    }
+  };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (isLoading) return;
+  const toggleForm = () => {
+    setIsLogin(!isLogin);
+    setUsername('');
+    setPassword('');
+    setConfirmPassword('');
+  }
+  
+  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
 
-        if (isLogin) {
-            await login(username, password);
-        } else {
-            if (password !== confirmPassword) {
-                toast.error("Les mots de passe ne correspondent pas.");
-                return;
-            }
-            if(password.length < 4){
-                toast.error("Le mot de passe doit contenir au moins 4 caractères.");
-                return;
-            }
-            await signup(username, password);
-        }
-    };
-    
-    const handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
-        setTimeout(() => {
-            event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-            <div className="p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-sm w-full">
-                <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-2">
-                    {isLogin ? "Connexion" : "Créer un compte"}
-                </h1>
-                <p className="text-center text-gray-500 dark:text-gray-400 mb-6">
-                    {isLogin ? "Accédez à votre assistant personnel." : "Rejoignez la communauté."}
-                </p>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Pseudo</label>
-                        <input
-                            type="text"
-                            id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            onFocus={handleFocus}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                            placeholder="ex: FamilleDupond"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mot de passe</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            onFocus={handleFocus}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                            required
-                        />
-                    </div>
-                    {!isLogin && (
-                        <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmer le mot de passe</label>
-                            <input
-                                type="password"
-                                id="confirmPassword"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                onFocus={handleFocus}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                                required
-                            />
-                        </div>
-                    )}
-                    <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50">
-                        {isLoading ? "Chargement..." : (isLogin ? "Se connecter" : "Créer le compte")}
-                    </button>
-                </form>
-                <div className="mt-4 text-center">
-                    <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-teal-600 hover:underline dark:text-teal-400">
-                        {isLogin ? "Pas de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient font-sans">
+      <div className="w-full max-w-sm mx-auto">
+        <div className="text-center mb-6">
+          <DropletIcon />
+          <h1 className="text-3xl font-display font-bold text-white mt-2">Diab'Assistant</h1>
         </div>
-    );
+        
+        <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-fade-in-lift">
+          <h2 className="text-xl font-display font-semibold text-center text-text-title mb-5">
+            {isLogin ? 'Connectez-vous' : 'Créez votre profil'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-text-muted mb-1">Pseudo</label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-1">Mot de passe</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className={inputClasses}
+              />
+            </div>
+            {!isLogin && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-muted mb-1">Confirmer le mot de passe</label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className={inputClasses}
+                />
+              </div>
+            )}
+            
+            <button 
+              type="submit" 
+              disabled={isLoading} 
+              className={`w-full text-white font-bold text-lg py-3 rounded-button mt-2 transition-all duration-300 disabled:opacity-50 shadow-md hover:shadow-lg ${
+                isLogin 
+                ? 'bg-gradient-to-r from-jade-deep-dark to-emerald-main' 
+                : 'bg-gradient-to-r from-turquoise-light to-mint-soft text-jade-deep'
+              }`}
+            >
+              {isLoading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer mon profil')}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-white/90 mt-6">
+          {isLogin ? "Vous n'avez pas de compte ?" : "Vous avez déjà un compte ?"}
+          <button onClick={toggleForm} className="font-semibold hover:underline ml-1">
+            {isLogin ? 'Inscrivez-vous' : 'Connectez-vous'}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
 };
 
 export default AuthPage;

@@ -8,7 +8,7 @@ interface QuickBolusModalProps {
 }
 
 const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="M6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="m6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>
 );
 
 const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm }) => {
@@ -36,29 +36,31 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
       event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
   };
+  
+  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-center text-center mb-4">
-            <SyringeIcon className="w-8 h-8 text-teal-500 mr-2" />
-            <h3 className="text-xl font-bold">Ajouter un Bolus</h3>
+            <SyringeIcon className="w-8 h-8 text-emerald-main mr-2" />
+            <h3 className="text-xl font-display font-semibold text-text-title">Ajouter un Bolus</h3>
         </div>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="bolus-datetime" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date et Heure</label>
+            <label htmlFor="bolus-datetime" className="block text-sm font-medium text-text-muted mb-1">Date et Heure</label>
             <input
               type="datetime-local"
               id="bolus-datetime"
               value={eventDateTime}
               onChange={(e) => setEventDateTime(e.target.value)}
               onFocus={handleFocus}
-              className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 text-lg text-center"
+              className={inputClasses}
             />
           </div>
           <div>
-            <label htmlFor="bolus-dose" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dose (Unités)</label>
+            <label htmlFor="bolus-dose" className="block text-sm font-medium text-text-muted mb-1">Dose (Unités)</label>
             <input
               type="number"
               inputMode="decimal"
@@ -66,17 +68,17 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
               value={dose}
               onChange={(e) => setDose(e.target.value)}
               onFocus={handleFocus}
-              className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 text-lg text-center"
+              className={inputClasses}
               placeholder="ex: 4.5"
             />
           </div>
           <div>
-            <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type d'injection</span>
+            <span className="block text-sm font-medium text-text-muted mb-2">Type d'injection</span>
             <div className="flex gap-2">
-                <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
                     Repas / Rapide
                 </button>
-                <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
                     Correction
                 </button>
             </div>
@@ -84,8 +86,8 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
         </div>
         
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button onClick={onClose} className="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 rounded-lg hover:bg-gray-300">Annuler</button>
-          <button onClick={handleConfirm} className="w-full bg-teal-600 text-white font-bold py-3 rounded-lg hover:bg-teal-700">Confirmer</button>
+          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">Annuler</button>
+          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">Confirmer</button>
         </div>
       </div>
     </div>

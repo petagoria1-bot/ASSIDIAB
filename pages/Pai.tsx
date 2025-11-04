@@ -1,86 +1,67 @@
 import React from 'react';
 import { usePatientStore } from '../store/patientStore';
+import Card from '../components/Card';
+import { MEAL_TIMES } from '../constants';
 
 const Pai: React.FC = () => {
     const { patient } = usePatientStore();
 
     if (!patient) {
-        return <div className="p-4 text-center">Aucun patient configuré.</div>;
+        return <div className="p-4"><p>Chargement des données du patient...</p></div>;
     }
 
-    const calculateAge = (birthDate: string) => {
-        const today = new Date();
-        const birth = new Date(birthDate);
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
-        return age;
-    };
-    
     return (
-        <div className="p-4 max-w-lg mx-auto">
-            <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">PAI Simplifié</h1>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg" id="pai-content">
-                <h2 className="text-xl font-bold text-center mb-4">Projet d'Accueil Individualisé - Diabète Type 1</h2>
-                
-                <section className="mb-4">
-                    <h3 className="font-bold border-b pb-1 mb-2">Informations sur l'enfant</h3>
-                    <p><strong>Prénom:</strong> {patient.prenom}</p>
+        <div className="p-4 space-y-4">
+            <header className="mb-4 text-center">
+                <h1 className="text-3xl font-display font-bold text-neutral-title dark:text-dark-title">PAI de {patient.prenom}</h1>
+                <p className="text-neutral-subtext dark:text-dark-subtext">Protocole d'Accueil Individualisé</p>
+            </header>
+
+            <Card>
+                <h2 className="text-xl font-semibold text-neutral-title dark:text-dark-title mb-3">Informations Générales</h2>
+                <div className="space-y-1">
+                    <p><strong>Nom:</strong> {patient.prenom}</p>
                     <p><strong>Date de naissance:</strong> {new Date(patient.naissance).toLocaleDateString('fr-FR')}</p>
-                    <p><strong>Âge:</strong> {calculateAge(patient.naissance)} ans</p>
-                </section>
+                </div>
+            </Card>
 
-                <section className="mb-4">
-                    <h3 className="font-bold border-b pb-1 mb-2">Objectifs de glycémie</h3>
-                    <p>La cible de glycémie est entre <strong>{patient.cibles.gly_min} g/L</strong> et <strong>{patient.cibles.gly_max} g/L</strong>.</p>
-                </section>
+            <Card>
+                <h2 className="text-xl font-semibold text-neutral-title dark:text-dark-title mb-3">Objectifs Glycémiques</h2>
+                <p>Cible: <strong>{patient.cibles.gly_min.toFixed(2)} - {patient.cibles.gly_max.toFixed(2)} g/L</strong></p>
+            </Card>
 
-                <section className="mb-4">
-                    <h3 className="font-bold border-b pb-1 mb-2">Conduite à tenir - Hypoglycémie (&lt; 0.70 g/L)</h3>
-                    <ol className="list-decimal list-inside space-y-1">
-                        <li>Donner immédiatement 15g de sucre rapide (3 morceaux de sucre ou un jus de fruit).</li>
-                        <li>Attendre 15 minutes.</li>
-                        <li>Re-contrôler la glycémie. Si toujours basse, redonner 15g de sucre.</li>
-                        <li>Prévenir les parents.</li>
-                    </ol>
-                </section>
+            <Card>
+                <h2 className="text-xl font-semibold text-neutral-title dark:text-dark-title mb-3">Ratios Insuline/Glucides</h2>
+                <p className="text-sm text-neutral-subtext dark:text-dark-subtext mb-2">Pour 1 unité d'insuline rapide</p>
+                <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(patient.ratios).map(([key, value]) => (
+                        <div key={key} className="bg-neutral-bg dark:bg-dark-bg/50 p-2 rounded-lg text-center">
+                            <p className="text-xs font-medium">{MEAL_TIMES[key as keyof typeof MEAL_TIMES]}</p>
+                            <p className="font-bold">{value} g</p>
+                        </div>
+                    ))}
+                </div>
+            </Card>
 
-                <section className="mb-4">
-                    <h3 className="font-bold border-b pb-1 mb-2">Conduite à tenir - Hyperglycémie (&gt; 2.50 g/L)</h3>
-                    <ol className="list-decimal list-inside space-y-1">
-                        <li>Faire boire de l'eau.</li>
-                        <li>Laisser l'enfant aller aux toilettes autant que nécessaire.</li>
-                        <li>Contrôler les cétones si un appareil est disponible.</li>
-                        <li>Prévenir les parents pour une éventuelle dose de correction d'insuline.</li>
-                    </ol>
-                </section>
-                
-                {patient.notes_pai && (
-                    <section className="mb-4">
-                        <h3 className="font-bold border-b pb-1 mb-2">Notes importantes</h3>
-                        <p className="whitespace-pre-wrap">{patient.notes_pai}</p>
-                    </section>
-                )}
+            <Card>
+                <h2 className="text-xl font-semibold text-neutral-title dark:text-dark-title mb-3">Schéma de Correction</h2>
+                <p className="text-sm text-neutral-subtext dark:text-dark-subtext mb-2">Unités à ajouter en fonction de la glycémie</p>
+                <ul className="list-disc list-inside space-y-1">
+                    {patient.corrections.sort((a, b) => a.max - b.max).map((rule, index) => (
+                         <li key={index}>
+                            {index === 0 ? `Si ≤ ${rule.max.toFixed(2)} g/L` : `Si > ${patient.corrections[index-1].max.toFixed(2)} et ≤ ${rule.max.toFixed(2)} g/L`}:
+                            <strong> +{rule.addU} U</strong>
+                         </li>
+                    ))}
+                </ul>
+                <p className="text-xs text-neutral-subtext dark:text-dark-subtext mt-3">Ne pas recoriger avant <strong>{patient.correctionDelayHours} heures</strong>.</p>
+            </Card>
+            
+            <Card>
+                <h2 className="text-xl font-semibold text-neutral-title dark:text-dark-title mb-3">Notes</h2>
+                <p className="text-neutral-body dark:text-dark-body whitespace-pre-wrap">{patient.notes_pai || "Aucune note."}</p>
+            </Card>
 
-                 <section>
-                    <h3 className="font-bold border-b pb-1 mb-2">Contacts d'urgence</h3>
-                    {patient.contacts && patient.contacts.length > 0 ? (
-                        patient.contacts.map(contact => (
-                            <p key={contact.id}><strong>{contact.lien} ({contact.nom}):</strong> <a href={`tel:${contact.tel}`} className="text-teal-600">{contact.tel}</a></p>
-                        ))
-                    ) : (
-                        <p className="text-gray-500">Aucun contact configuré. Veuillez les ajouter dans les Réglages.</p>
-                    )}
-                </section>
-            </div>
-            <button 
-                onClick={() => window.print()}
-                className="mt-6 w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors"
-            >
-                Imprimer le PAI
-            </button>
         </div>
     );
 };
