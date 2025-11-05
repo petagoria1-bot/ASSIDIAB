@@ -20,7 +20,7 @@ export const useSettingsStore = create<SettingsState>()(
       toggleTranslateFood: () => set((state) => ({ translateFood: !state.translateFood })),
     }),
     {
-      name: 'diab-assistant-settings', // name of the item in the storage (must be unique)
+      name: 'diab-assis-settings', // name of the item in the storage (must be unique)
       storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
     }
   )

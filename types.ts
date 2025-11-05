@@ -1,7 +1,7 @@
 // Fix: Removed self-import of 'Page' which conflicted with its own declaration.
 
 export type Unit = "gL" | "mmolL";
-export type MealTime = "petit_dej" | "dejeuner" | "gouter" | "diner";
+export type MealTime = "petit_dej" | "dejeuner" | "gouter" | "diner" | "collation";
 export type InjectionType = "rapide" | "basale" | "correction";
 export type MeasurementSource = "doigt" | "capteur";
 export type AlertType = "hypo" | "hyper" | "cetone" | "tech";
@@ -10,11 +10,8 @@ export type EventType = 'rdv' | 'note';
 export type EventStatus = 'pending' | 'completed';
 
 export interface User {
-  id?: number;
-  username: string;
-  // NOTE: Storing passwords in plaintext is acceptable only for a local, offline-first PWA
-  // where the data does not leave the user's device. This is not secure for web apps.
-  password?: string;
+  uid: string; // Firebase UID
+  email: string | null;
 }
 
 export interface CorrectionRule {
@@ -29,9 +26,16 @@ export interface EmergencyContact {
     tel: string;
 }
 
+export interface Caregiver {
+    userUid: string;
+    email: string;
+    role: 'owner' | 'caregiver';
+    status: 'active' | 'pending';
+}
+
 export interface Patient {
   id: string; // uuid
-  userId: number; // foreign key to User
+  userUid: string; // foreign key to User UID (Firebase)
   prenom: string;
   naissance: string; // YYYY-MM-DD
   cibles: { gly_min: number; gly_max: number; unit: Unit }; // in g/L
@@ -41,6 +45,7 @@ export interface Patient {
   correctionDelayHours: number;
   contacts: EmergencyContact[];
   notes_pai: string;
+  caregivers: Caregiver[];
 }
 
 export interface Mesure {

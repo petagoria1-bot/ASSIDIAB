@@ -1,0 +1,21 @@
+import React from 'react';
+
+interface IconProps {
+  className?: string;
+}
+
+const NoonIcon: React.FC<IconProps> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="128" cy="128" r="48" />
+    <line x1="128" y1="56" x2="128" y2="32" />
+    <line x1="128" y1="200" x2="128" y2="224" />
+    <line x1="56" y1="128" x2="32" y2="128" />
+    <line x1="200" y1="128" x2="224" y2="128" />
+    <line x1="81.1" y1="81.1" x2="64.5" y2="64.5" />
+    <line x1="174.9" y1="174.9" x2="191.5" y2="191.5" />
+    <line x1="81.1" y1="174.9" x2="64.5" y2="191.5" />
+    <line x1="174.9" y1="81.1" x2="191.5" y2="64.5" />
+  </svg>
+);
+
+export default NoonIcon;

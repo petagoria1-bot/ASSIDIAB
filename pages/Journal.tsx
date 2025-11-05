@@ -11,19 +11,39 @@ import WalkIcon from '../components/icons/WalkIcon';
 import NoteIcon from '../components/icons/NoteIcon';
 import DateNavigator from '../components/DateNavigator';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
-import CalculatorIcon from '../components/icons/CalculatorIcon';
 import QuickAddItemModal from '../components/QuickAddItemModal';
+import AddSnackModal from '../components/AddSnackModal';
+import PlusIcon from '../components/icons/PlusIcon';
+import MealGroupCard from '../components/MealGroupCard';
+import TimeSlotCard from '../components/TimeSlotCard';
+import AddEventChoiceModal from '../components/AddEventChoiceModal';
+import BreakfastIcon from '../components/icons/BreakfastIcon';
+import LunchIcon from '../components/icons/LunchIcon';
+import DinnerIcon from '../components/icons/DinnerIcon';
+import SnackIcon from '../components/icons/SnackIcon';
 
-type RoutineTaskType = 'routine-mesure' | 'routine-injection';
-interface RoutineTask {
+
+interface MealGroupEvent {
     id: string;
     ts: string;
-    eventType: RoutineTaskType;
-    mealTime: MealTime;
-    label: string;
-    actionLabel: string;
+    eventType: 'meal_group';
+    repas: Repas;
+    injection?: Injection;
+    mesure?: Mesure;
 }
-type JournalEvent = (Mesure | Repas | Injection | RoutineTask | { id: string; ts: string; type: string, details: any }) & { eventType: 'mesure' | 'repas' | 'injection' | 'activity' | 'note' | RoutineTaskType };
+
+interface TimeSlotEvent {
+    id: string;
+    ts: string;
+    eventType: 'timeslot';
+    mealTime: MealTime;
+    time: string;
+    title: string;
+    icon: React.ReactNode;
+}
+
+
+type JournalEvent = (Mesure | Repas | Injection | MealGroupEvent | TimeSlotEvent | { id: string; ts: string; type: string, details: any }) & { eventType: 'mesure' | 'repas' | 'injection' | 'activity' | 'note' | 'meal_group' | 'timeslot' };
 type ViewMode = 'day' | 'week' | 'month';
 
 const EventCard: React.FC<{ event: JournalEvent }> = ({ event }) => {
@@ -38,23 +58,52 @@ const EventCard: React.FC<{ event: JournalEvent }> = ({ event }) => {
             case 'mesure':
                 return {
                     icon: <GlucoseDropIcon className="w-6 h-6 text-emerald-main" />,
-                    color: 'border-emerald-main',
+                    borderColor: 'border-emerald-main',
                     title: t.history_glucose_title,
                     value: `${(event as Mesure).gly.toFixed(2)} g/L`,
                     details: (event as Mesure).cetone ? `${t.journal_ketone}: ${(event as Mesure).cetone?.toFixed(1)} mmol/L` : null,
                 };
-            case 'repas':
+            case 'repas': {
+                const repasEvent = event as Repas;
+                const { moment } = repasEvent;
+                let icon, borderColor;
+                switch (moment) {
+                    case 'petit_dej':
+                        icon = <BreakfastIcon className="w-6 h-6 text-honey-yellow" />;
+                        borderColor = 'border-honey-yellow';
+                        break;
+                    case 'dejeuner':
+                        icon = <LunchIcon className="w-6 h-6 text-coral" />;
+                        borderColor = 'border-coral';
+                        break;
+                    case 'gouter':
+                        icon = <SnackIcon className="w-6 h-6 text-warning" />;
+                        borderColor = 'border-warning';
+                        break;
+                    case 'diner':
+                        icon = <DinnerIcon className="w-6 h-6 text-icon-inactive" />;
+                        borderColor = 'border-slate-400';
+                        break;
+                    case 'collation':
+                        icon = <SnackIcon className="w-6 h-6 text-warning" />;
+                        borderColor = 'border-warning';
+                        break;
+                    default:
+                        icon = <MealIcon className="w-6 h-6 text-coral" />;
+                        borderColor = 'border-coral';
+                }
                 return {
-                    icon: <MealIcon className="w-6 h-6 text-coral" />,
-                    color: 'border-coral',
-                    title: t.mealTimes[(event as Repas).moment] || t.history_meal_title,
-                    value: `${Math.round((event as Repas).total_carbs_g)}${t.history_carbs_unit} de glucides`,
-                    details: (event as Repas).note ? `"${(event as Repas).note}"` : null,
+                    icon,
+                    borderColor,
+                    title: t.mealTimes[moment] || t.history_meal_title,
+                    value: `${Math.round(repasEvent.total_carbs_g)}${t.history_carbs_unit} de glucides`,
+                    details: repasEvent.note ? `"${repasEvent.note}"` : null,
                 };
+            }
             case 'injection':
                  return {
                     icon: <SyringeIcon className="w-6 h-6 text-jade-deep" />,
-                    color: 'border-jade-deep',
+                    borderColor: 'border-jade-deep',
                     title: (event as Injection).type === 'correction' ? t.common_correction : t.history_bolus_title,
                     value: `${(event as Injection).dose_U} ${t.history_insulin_unit}`,
                     details: (event as Injection).calc_details,
@@ -62,7 +111,7 @@ const EventCard: React.FC<{ event: JournalEvent }> = ({ event }) => {
             case 'activity':
                  return {
                     icon: <WalkIcon className="w-6 h-6 text-info" />,
-                    color: 'border-info',
+                    borderColor: 'border-info',
                     title: t.history_activity_title,
                     value: `${event.details.duration} ${t.history_activity_unit}`,
                     details: event.details.type,
@@ -70,7 +119,7 @@ const EventCard: React.FC<{ event: JournalEvent }> = ({ event }) => {
             case 'note':
                  return {
                     icon: <NoteIcon className="w-6 h-6 text-honey-yellow" />,
-                    color: 'border-honey-yellow',
+                    borderColor: 'border-honey-yellow',
                     title: t.history_note_title,
                     value: `"${event.details.text}"`,
                     details: null,
@@ -83,7 +132,7 @@ const EventCard: React.FC<{ event: JournalEvent }> = ({ event }) => {
     if (!eventConfig) return null;
 
     return (
-        <div className={`relative bg-white p-3 rounded-lg shadow-sm border-l-4 ${eventConfig.color} animate-fade-in-lift`}>
+        <div className={`relative bg-white p-3 rounded-lg shadow-sm border ${eventConfig.borderColor} shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] animate-fade-in-lift`}>
             <div className="flex justify-between items-start">
                 <div className="flex-1">
                     <p className="text-xs font-semibold text-text-muted">{eventConfig.title}</p>
@@ -115,25 +164,6 @@ const EventCard: React.FC<{ event: JournalEvent }> = ({ event }) => {
     );
 };
 
-const RoutineTaskCard: React.FC<{ event: RoutineTask, onAction: (task: RoutineTask) => void }> = ({ event, onAction }) => {
-    const { eventType, label, actionLabel } = event;
-    const icon = eventType === 'routine-mesure' ? <GlucoseDropIcon className="w-6 h-6 text-text-muted" /> : <CalculatorIcon className="w-6 h-6 text-text-muted" />;
-
-    return (
-        <div className="relative bg-white/70 backdrop-blur-sm p-3 rounded-lg border-2 border-dashed border-slate-300 animate-fade-in-lift">
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    {icon}
-                    <p className="font-semibold text-text-muted">{label}</p>
-                </div>
-                <button onClick={() => onAction(event)} className="font-bold bg-white text-emerald-main text-sm py-2 px-4 rounded-button hover:bg-emerald-main/10 transition-colors shadow-sm border border-emerald-main/20">
-                    {actionLabel}
-                </button>
-            </div>
-        </div>
-    );
-};
-
 
 const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurrentPage }) => {
   const { mesures, repas, injections, addMesure } = usePatientStore();
@@ -141,217 +171,273 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
   const t = useTranslations();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isMeasureModalOpen, setMeasureModalOpen] = useState(false);
 
-  const { groupedEvents, hasEvents } = useMemo(() => {
-    let finalEvents: JournalEvent[] = [
-      ...mesures.map(m => ({ ...m, eventType: 'mesure' as const })),
-      ...repas.map(r => ({ ...r, eventType: 'repas' as const })),
-      ...injections.map(i => ({ ...i, eventType: 'injection' as const })),
-    ];
+  const [choiceModalState, setChoiceModalState] = useState<{ open: boolean; beforeTs: string; afterTs: string; } | null>(null);
+  const [snackModalState, setSnackModalState] = useState<{ beforeTs: string; afterTs: string; } | null>(null);
+  const [measureModalState, setMeasureModalState] = useState<{ open: boolean; ts: string; } | null>(null);
 
-    const isViewingToday = new Date().toDateString() === currentDate.toDateString();
-
-    if (viewMode === 'day' && isViewingToday) {
-        const today = new Date(currentDate);
-        
-        const tasks: Omit<RoutineTask, 'id'>[] = [
-            { ts: new Date(today.setHours(8, 0, 0, 0)).toISOString(), eventType: 'routine-mesure', mealTime: 'petit_dej', label: t.journal_task_measureBreakfast, actionLabel: t.journal_task_addMeasure },
-            { ts: new Date(today.setHours(8, 5, 0, 0)).toISOString(), eventType: 'routine-injection', mealTime: 'petit_dej', label: t.journal_task_bolusBreakfast, actionLabel: t.journal_task_calculateBolus },
-            { ts: new Date(today.setHours(12, 30, 0, 0)).toISOString(), eventType: 'routine-mesure', mealTime: 'dejeuner', label: t.journal_task_measureLunch, actionLabel: t.journal_task_addMeasure },
-            { ts: new Date(today.setHours(12, 35, 0, 0)).toISOString(), eventType: 'routine-injection', mealTime: 'dejeuner', label: t.journal_task_bolusLunch, actionLabel: t.journal_task_calculateBolus },
-            { ts: new Date(today.setHours(19, 0, 0, 0)).toISOString(), eventType: 'routine-mesure', mealTime: 'diner', label: t.journal_task_measureDinner, actionLabel: t.journal_task_addMeasure },
-            { ts: new Date(today.setHours(19, 5, 0, 0)).toISOString(), eventType: 'routine-injection', mealTime: 'diner', label: t.journal_task_bolusDinner, actionLabel: t.journal_task_calculateBolus },
-        ];
-        
-        const timeWindows = {
-            petit_dej: { start: 6, end: 11 },
-            dejeuner: { start: 11, end: 16 },
-            diner: { start: 17, end: 22 },
-        };
-
-        const pendingTasks = tasks.filter(task => {
-            const window = timeWindows[task.mealTime];
-            const isTaskCompleted = finalEvents.some(event => {
-                const eventHour = new Date(event.ts).getHours();
-                if (eventHour < window.start || eventHour >= window.end) return false;
-
-                if (task.eventType === 'routine-mesure' && event.eventType === 'mesure') return true;
-                // Fix: Add type assertion to access 'moment' property on Repas type.
-                // The compiler cannot automatically narrow the type of 'event' within the complex union.
-                if (task.eventType === 'routine-injection' && (event.eventType === 'injection' || (event.eventType === 'repas' && (event as Repas).moment === task.mealTime))) return true;
-                
-                return false;
-            });
-            return !isTaskCompleted;
-        });
-
-        finalEvents.push(...pendingTasks.map(task => ({...task, id: task.label })));
-    }
-
-
-    let filteredEvents = finalEvents;
-    if (viewMode !== 'day' || !isViewingToday) {
-        let startDate: Date, endDate: Date;
-        const now = new Date(currentDate);
-        now.setHours(0, 0, 0, 0);
-        switch (viewMode) {
-            case 'day':
-                startDate = new Date(now);
-                endDate = new Date(now);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            case 'week':
-                const firstDayOfWeek = new Date(now);
-                const day = firstDayOfWeek.getDay();
-                const diff = firstDayOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-                firstDayOfWeek.setDate(diff);
-                startDate = new Date(firstDayOfWeek);
-                endDate = new Date(firstDayOfWeek);
-                endDate.setDate(endDate.getDate() + 6);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            case 'month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                endDate.setHours(23, 59, 59, 999);
-                break;
+  const { timelineEvents, hasEvents } = useMemo(() => {
+    const eventsForPeriod = [...mesures, ...repas, ...injections].filter(e => {
+        const eventDate = new Date(e.ts);
+        if (viewMode === 'day') {
+            const dayStart = new Date(currentDate); dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(currentDate); dayEnd.setHours(23, 59, 59, 999);
+            return eventDate >= dayStart && eventDate <= dayEnd;
         }
-        filteredEvents = finalEvents.filter(event => {
-            const eventDate = new Date(event.ts);
-            return eventDate >= startDate && eventDate <= endDate;
-        });
-    }
-
-    const isFirstTimeUser = mesures.length === 0 && repas.length === 0 && injections.length === 0;
-
-    if (filteredEvents.length === 0 && isFirstTimeUser && isViewingToday && viewMode === 'day') {
-        filteredEvents = [
-            { id: 'mock-activity-1', ts: new Date(Date.now() - 4 * 3600 * 1000).toISOString(), type: 'activity', eventType: 'activity' as const, details: { duration: 30, type: t.mock_activity_type_walk }},
-            { id: 'mock-note-1', ts: new Date(Date.now() - 10 * 3600 * 1000).toISOString(), type: 'note', eventType: 'note' as const, details: { text: t.mock_note_details }},
-        ] as JournalEvent[];
-    }
-    
-    const hasAnyEvents = filteredEvents.length > 0;
-    const sortedEvents = filteredEvents.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-    
-    const groups: { [key: string]: JournalEvent[] } = {};
-    sortedEvents.forEach(event => {
-        const date = new Date(event.ts).toDateString();
-        if (!groups[date]) groups[date] = [];
-        groups[date].push(event);
+        if (viewMode === 'week') {
+            const startOfWeek = new Date(currentDate); startOfWeek.setHours(0,0,0,0);
+            startOfWeek.setDate(startOfWeek.getDate() - (startOfWeek.getDay() === 0 ? 6 : startOfWeek.getDay() - 1));
+            const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(endOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999);
+            return eventDate >= startOfWeek && eventDate <= endOfWeek;
+        }
+        if (viewMode === 'month') {
+            return eventDate.getFullYear() === currentDate.getFullYear() && eventDate.getMonth() === currentDate.getMonth();
+        }
+        return false;
     });
 
-    return { 
-        groupedEvents: Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime()), 
-        hasEvents: hasAnyEvents 
-    };
-  }, [mesures, repas, injections, t, viewMode, currentDate]);
-  
-  const handleTaskAction = (task: RoutineTask) => {
-    if (task.eventType === 'routine-mesure') {
-        setMeasureModalOpen(true);
-    } else if (task.eventType === 'routine-injection') {
-        setCalculatorMealTime(task.mealTime);
-        setCurrentPage('glucides');
+    if (viewMode !== 'day' || eventsForPeriod.length === 0 && viewMode !== 'day') {
+        const allEvents = eventsForPeriod
+            .map(e => ({ ...e, eventType: 'gly' in e ? 'mesure' : 'total_carbs_g' in e ? 'repas' : 'injection' } as JournalEvent))
+            .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+        return { timelineEvents: allEvents, hasEvents: eventsForPeriod.length > 0 };
     }
+    
+    // Day View Logic with Grouping
+    const dayToDisplay = new Date(currentDate);
+    const getTimeSlotDate = (hours: number): Date => {
+        const slotDate = new Date(dayToDisplay); slotDate.setHours(hours, 0, 0, 0); return slotDate;
+    };
+
+    const timeSlots: TimeSlotEvent[] = [
+        { id: 'slot-petit_dej', ts: getTimeSlotDate(8).toISOString(), eventType: 'timeslot', mealTime: 'petit_dej', time: '08:00', title: t.mealTimes.petit_dej, icon: <BreakfastIcon className="w-8 h-8 text-honey-yellow" /> },
+        { id: 'slot-dejeuner', ts: getTimeSlotDate(12).toISOString(), eventType: 'timeslot', mealTime: 'dejeuner', time: '12:00', title: t.mealTimes.dejeuner, icon: <LunchIcon className="w-8 h-8 text-warning" /> },
+        { id: 'slot-gouter', ts: getTimeSlotDate(16).toISOString(), eventType: 'timeslot', mealTime: 'gouter', time: '16:00', title: t.mealTimes.gouter, icon: <SnackIcon className="w-8 h-8 text-coral" /> },
+        { id: 'slot-diner', ts: getTimeSlotDate(20).toISOString(), eventType: 'timeslot', mealTime: 'diner', time: '20:00', title: t.mealTimes.diner, icon: <DinnerIcon className="w-8 h-8 text-icon-inactive" /> },
+    ];
+    
+    const mesuresMap = new Map(eventsForPeriod.filter((e): e is Mesure => 'gly' in e).map(m => [m.id, m]));
+    const repasMap = new Map(eventsForPeriod.filter((e): e is Repas => 'total_carbs_g' in e).map(r => [r.id, r]));
+    const injectionsMap = new Map(eventsForPeriod.filter((e): e is Injection => 'dose_U' in e).map(i => [i.id, i]));
+    const linkedIds = new Set<string>();
+    const allMealGroups: MealGroupEvent[] = [];
+
+    // 1. Group full boluses (injection-driven)
+    for (const injection of injectionsMap.values()) {
+        if (injection.lien_repas_id && repasMap.has(injection.lien_repas_id)) {
+            const currentRepas = repasMap.get(injection.lien_repas_id)!;
+            const currentMesure = injection.lien_mesure_id ? mesuresMap.get(injection.lien_mesure_id) : undefined;
+            if (linkedIds.has(injection.id)) continue;
+
+            allMealGroups.push({ id: currentRepas.id, ts: currentRepas.ts, eventType: 'meal_group', repas: currentRepas, injection, mesure: currentMesure });
+            linkedIds.add(injection.id);
+            linkedIds.add(currentRepas.id);
+            if (currentMesure) linkedIds.add(currentMesure.id);
+        }
+    }
+
+    // 2. Group meals/snacks with nearby measurements
+    const remainingRepas = Array.from(repasMap.values()).filter(r => !linkedIds.has(r.id));
+    const unlinkedMesures = Array.from(mesuresMap.values()).filter(m => !linkedIds.has(m.id));
+
+    for (const currentRepas of remainingRepas) {
+        const repasTime = new Date(currentRepas.ts).getTime();
+        const TIME_WINDOW_MS = 60 * 60 * 1000; // 60 minutes window
+
+        let closestMesure: Mesure | undefined = undefined;
+        let minDiff = TIME_WINDOW_MS;
+
+        for (const currentMesure of unlinkedMesures) {
+            if (linkedIds.has(currentMesure.id)) continue;
+            const mesureTime = new Date(currentMesure.ts).getTime();
+            const diff = Math.abs(repasTime - mesureTime);
+
+            if (diff <= minDiff) {
+                minDiff = diff;
+                closestMesure = currentMesure;
+            }
+        }
+        
+        if (closestMesure) {
+            allMealGroups.push({ id: currentRepas.id, ts: currentRepas.ts, eventType: 'meal_group', repas: currentRepas, mesure: closestMesure, injection: undefined as any });
+            linkedIds.add(currentRepas.id);
+            linkedIds.add(closestMesure.id);
+        }
+    }
+
+    // 3. Distribute groups into timeslots or as standalone
+    const mealGroupsByMealTime = new Map<MealTime, MealGroupEvent[]>();
+    const standaloneGroups: MealGroupEvent[] = [];
+    allMealGroups.forEach(group => {
+        const moment = group.repas.moment;
+        if (moment === 'collation' || moment === 'gouter') {
+            standaloneGroups.push(group);
+        } else {
+            if (!mealGroupsByMealTime.has(moment)) mealGroupsByMealTime.set(moment, []);
+            mealGroupsByMealTime.get(moment)!.push(group);
+        }
+    });
+
+    const slotsWithContent = timeSlots.map(slot => ({ ...slot, content: mealGroupsByMealTime.get(slot.mealTime) || [] }));
+
+    const otherEvents = eventsForPeriod
+        .filter(e => !linkedIds.has(e.id))
+        .map(e => ({ ...e, eventType: 'gly' in e ? 'mesure' as const : 'total_carbs_g' in e ? 'repas' as const : 'injection' as const } as JournalEvent));
+
+    const finalEvents = [...slotsWithContent, ...standaloneGroups, ...otherEvents]
+        .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+    return { timelineEvents: finalEvents, hasEvents: true };
+}, [mesures, repas, injections, t, viewMode, currentDate]);
+
+  const handleAddAction = (mealTime: MealTime) => {
+    setCalculatorMealTime(mealTime);
+    setCurrentPage('glucides');
   };
 
+  const handleOpenChoiceModal = (beforeTs: string, afterTs: string) => {
+    setChoiceModalState({ open: true, beforeTs, afterTs });
+  };
+
+  const handleSelectMeasure = () => {
+    if (!choiceModalState) return;
+    const beforeTime = new Date(choiceModalState.beforeTs).getTime();
+    const afterTime = new Date(choiceModalState.afterTs).getTime();
+    const middleTime = new Date((beforeTime + afterTime) / 2).toISOString();
+    setMeasureModalState({ open: true, ts: middleTime });
+    setChoiceModalState(null);
+  };
+
+  const handleSelectSnack = () => {
+    if (!choiceModalState) return;
+    setSnackModalState({ beforeTs: choiceModalState.beforeTs, afterTs: choiceModalState.afterTs });
+    setChoiceModalState(null);
+  };
+  
   const handleAddMeasure = (gly: number, cetone: number | undefined, ts: string) => {
     addMesure({ gly, cetone, source: 'doigt' }, ts);
     toast.success(t.toast_measureAdded(gly));
-    setMeasureModalOpen(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) return t.history_today;
-    if (date.toDateString() === yesterday.toDateString()) return t.history_yesterday;
-    
-    return date.toLocaleDateString(t.locale, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
+    setMeasureModalState(null);
   };
 
   return (
-    <div className="p-4 space-y-4 pb-24 min-h-screen">
-      <header className="py-4 text-center">
-        <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.journal_title}</h1>
-      </header>
-      
-      <div className="sticky top-0 bg-emerald-main/20 backdrop-blur-md py-2 z-10 -mx-4 px-4 shadow-sm space-y-3">
-        <div className="flex justify-center bg-white/40 p-1 rounded-pill shadow-inner">
-          {(['day', 'week', 'month'] as ViewMode[]).map(mode => (
-            <button
-              key={mode}
-              onClick={() => { setViewMode(mode); setCurrentDate(new Date()); }}
-              className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-all duration-300 ${viewMode === mode ? 'bg-white text-text-title shadow-md' : 'text-white/90'}`}
-            >
-              {t[`journal_view${mode.charAt(0).toUpperCase() + mode.slice(1)}`]}
-            </button>
-          ))}
-        </div>
-        <DateNavigator 
-            currentDate={currentDate} 
-            setCurrentDate={setCurrentDate} 
-            viewMode={viewMode} 
-        />
-      </div>
-
-      {!hasEvents ? (
-        <div className="text-center p-8 bg-white/50 rounded-card mt-10">
-            <p className="font-semibold text-text-muted">{t.journal_emptyPeriod}</p>
-        </div>
-      ) : (
-        <div className="relative px-2">
-            <div className="absolute top-0 bottom-0 left-6 w-0.5 bg-slate-200/70 rounded-full" />
-            {groupedEvents.map(([date, events]) => (
-                <div key={date} className="relative mb-6">
-                    <h2 className="font-display font-semibold text-white text-shadow pl-12 mb-2">{formatDate(date)}</h2>
-                    <div className="space-y-4">
-                        {events.map((event) => {
-                            const eventConfig = {
-                                'mesure': { icon: <GlucoseDropIcon className="w-6 h-6 text-white"/>, bg: 'bg-emerald-main' },
-                                'repas': { icon: <MealIcon className="w-6 h-6 text-white"/>, bg: 'bg-coral' },
-                                'injection': { icon: <SyringeIcon className="w-6 h-6 text-white"/>, bg: 'bg-jade-deep' },
-                                'activity': { icon: <WalkIcon className="w-6 h-6 text-white"/>, bg: 'bg-info' },
-                                'note': { icon: <NoteIcon className="w-6 h-6 text-white"/>, bg: 'bg-honey-yellow' },
-                                'routine-mesure': { icon: <GlucoseDropIcon className="w-6 h-6 text-white"/>, bg: 'bg-slate-400' },
-                                'routine-injection': { icon: <CalculatorIcon className="w-6 h-6 text-white"/>, bg: 'bg-slate-400' },
-                            }[event.eventType];
-                            
-                             if (!eventConfig) return null;
-
-                            const isRoutine = event.eventType.startsWith('routine-');
-
-                            return (
-                                <div key={event.id} className="relative flex items-start gap-4">
-                                    <div className={`z-10 absolute top-2 left-6 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${eventConfig.bg}`}>
-                                        {eventConfig.icon}
-                                    </div>
-                                    <div className="pl-12 w-full">
-                                        {isRoutine ? (
-                                            <RoutineTaskCard event={event as RoutineTask} onAction={handleTaskAction} />
-                                        ) : (
-                                            <EventCard event={event} />
-                                        )}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
+    <div className="p-4 space-y-4 pb-24">
+        <header className="sticky top-0 bg-emerald-main/80 backdrop-blur-md py-4 z-10 -mx-4 px-4 shadow-sm space-y-4">
+          <h1 className="text-3xl font-display font-bold text-white text-shadow text-center">{t.journal_title}</h1>
+          
+          <div className="flex justify-center bg-black/10 p-1 rounded-pill shadow-inner">
+            {(['day', 'week', 'month'] as ViewMode[]).map(mode => (
+              <button
+                key={mode}
+                onClick={() => { setViewMode(mode); setCurrentDate(new Date()); }}
+                className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-all duration-300 ${viewMode === mode ? 'bg-white text-text-title shadow-md' : 'text-white/90'}`}
+              >
+                {t[`journal_view${mode.charAt(0).toUpperCase() + mode.slice(1)}`]}
+              </button>
             ))}
-        </div>
+          </div>
+          <DateNavigator 
+              currentDate={currentDate} 
+              setCurrentDate={setCurrentDate} 
+              viewMode={viewMode} 
+          />
+        </header>
+
+        {!hasEvents && viewMode !== 'day' ? (
+          <div className="text-center p-8 bg-white rounded-card mt-10">
+              <p className="font-semibold text-text-muted">{t.journal_emptyPeriod}</p>
+          </div>
+        ) : (
+          <div className="relative px-2">
+              {viewMode === 'day' && <div className="absolute top-0 bottom-0 left-6 w-0.5 bg-emerald-main/30 rounded-full" />}
+              <div className={viewMode === 'day' ? "space-y-0" : "space-y-3"}>
+                  {timelineEvents.map((event, index) => {
+                      if (event.eventType === 'timeslot') {
+                          const slot = event as TimeSlotEvent & { content: MealGroupEvent[] };
+                          return (
+                              <div key={slot.id}>
+                                  <TimeSlotCard event={slot} onAdd={() => handleAddAction(slot.mealTime)}>
+                                      {slot.content.map(group => <MealGroupCard key={group.id} event={group} />)}
+                                  </TimeSlotCard>
+                                  {index < timelineEvents.length - 1 && (
+                                      <div key={`add-${event.id}`} className="relative h-12 flex items-center justify-center my-2">
+                                          <div className="absolute top-0 bottom-0 left-6 w-0.5 bg-emerald-main/30" />
+                                          <button 
+                                              onClick={() => handleOpenChoiceModal(event.ts, timelineEvents[index + 1].ts)}
+                                              className="z-10 transition-all duration-300 ease-fast transform hover:scale-110 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-main rounded-full"
+                                              aria-label={t.journal_addSnack}
+                                          >
+                                              <PlusIcon className="w-10 h-10" />
+                                          </button>
+                                      </div>
+                                  )}
+                              </div>
+                          );
+                      }
+                      
+                      if (event.eventType === 'meal_group') {
+                          const group = event as MealGroupEvent;
+                          return (
+                              <div key={group.id} className={viewMode === 'day' ? "relative flex items-start gap-4 my-6" : ""}>
+                                  {viewMode === 'day' && <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-3 h-3 rounded-full bg-white border-2 border-slate-300" />}
+                                  <div className={viewMode === 'day' ? "pl-12 w-full" : "w-full"}>
+                                    <MealGroupCard event={group} />
+                                  </div>
+                              </div>
+                          );
+                      }
+
+                      if (event.eventType === 'repas' || event.eventType === 'mesure' || event.eventType === 'injection') {
+                          const isSnack = event.eventType === 'repas' && ((event as Repas).moment === 'collation' || (event as Repas).moment === 'gouter');
+                          
+                          if (isSnack) {
+                              const snackEvent = { repas: event as Repas };
+                              return (
+                                  <div key={event.id} className={viewMode === 'day' ? "relative flex items-start gap-4 my-6" : ""}>
+                                      {viewMode === 'day' && <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-3 h-3 rounded-full bg-white border-2 border-slate-300" />}
+                                      <div className={viewMode === 'day' ? "pl-12 w-full" : "w-full"}>
+                                        <MealGroupCard event={snackEvent} />
+                                      </div>
+                                  </div>
+                              );
+                          }
+                  
+                          return (
+                              <div key={event.id} className={viewMode === 'day' ? "relative flex items-start gap-4 my-6" : ""}>
+                                  {viewMode === 'day' && <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-3 h-3 rounded-full bg-white border-2 border-slate-300" />}
+                                  <div className={viewMode === 'day' ? "pl-12 w-full" : "w-full"}>
+                                    <EventCard event={event} />
+                                  </div>
+                              </div>
+                          );
+                      }
+
+                      return null;
+                  })}
+              </div>
+          </div>
+        )}
+
+      {choiceModalState?.open && (
+        <AddEventChoiceModal 
+            onClose={() => setChoiceModalState(null)}
+            onSelectMeasure={handleSelectMeasure}
+            onSelectSnack={handleSelectSnack}
+        />
       )}
-      {isMeasureModalOpen && (
-        <QuickAddItemModal onClose={() => setMeasureModalOpen(false)} onConfirm={handleAddMeasure} />
+      {snackModalState && (
+        <AddSnackModal 
+            onClose={() => setSnackModalState(null)}
+            beforeTs={snackModalState.beforeTs}
+            afterTs={snackModalState.afterTs}
+        />
+      )}
+      {measureModalState?.open && (
+        <QuickAddItemModal 
+          onClose={() => setMeasureModalState(null)}
+          onConfirm={handleAddMeasure}
+          initialTs={measureModalState.ts}
+        />
       )}
     </div>
   );

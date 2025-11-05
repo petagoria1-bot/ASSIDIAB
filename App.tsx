@@ -54,8 +54,8 @@ const App: React.FC = () => {
   }, [checkSession]);
 
   useEffect(() => {
-    if (currentUser && typeof currentUser.id === 'number') {
-      loadInitialData(currentUser.id);
+    if (currentUser && currentUser.uid) {
+      loadInitialData(currentUser.uid);
     } else {
       clearPatientData();
     }
@@ -105,10 +105,8 @@ const App: React.FC = () => {
     }
   };
 
-  const backgroundClass = 'bg-main-gradient';
-
   return (
-    <div className={`min-h-screen text-text-main font-sans ${backgroundClass}`}>
+    <div className="min-h-screen text-text-main font-sans bg-main-gradient">
       <Toaster 
         position="top-center" 
         toastOptions={{

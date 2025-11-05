@@ -3,7 +3,7 @@ import { Patient, Mesure, Repas, Injection, Food, User, FavoriteMeal, Event, Dai
 
 // The database instance is created directly instead of through a subclass
 // to prevent TypeScript errors related to method inheritance in some environments.
-export const db = new Dexie('DiabAssistantDB') as Dexie & {
+export const db = new Dexie('DiabAssisDB') as Dexie & {
   users: Table<User, number>;
   patients: Table<Patient, string>;
   mesures: Table<Mesure, string>;
@@ -15,6 +15,19 @@ export const db = new Dexie('DiabAssistantDB') as Dexie & {
   dailyProgress: Table<DailyProgress, string>; // YYYY-MM-DD format
 };
 
+db.version(5).stores({
+  users: '++id, &uid, email',
+  patients: 'id, userUid',
+  mesures: 'id, ts, patient_id',
+  repas: 'id, ts, patient_id',
+  injections: 'id, ts, patient_id, type',
+  foodLibrary: 'id, name',
+  favoriteMeals: 'id, patient_id, name',
+  events: 'id, ts, patient_id, status',
+  dailyProgress: 'date, patient_id'
+});
+
+
 db.version(4).stores({
   users: '++id, &username',
   patients: 'id, userId',
@@ -24,7 +37,7 @@ db.version(4).stores({
   foodLibrary: 'id, name',
   favoriteMeals: 'id, patient_id, name',
   events: 'id, ts, patient_id, status',
-  dailyProgress: 'date, patient_id' // New table for gamification
+  dailyProgress: 'date, patient_id'
 });
 
 db.version(3).stores({

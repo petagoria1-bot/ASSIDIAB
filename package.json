@@ -1,5 +1,5 @@
 {
-  "name": "diab'assistant-t1",
+  "name": "diabassis",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,7 +15,8 @@
     "zustand": "^5.0.8",
     "dexie": "^4.2.1",
     "react-hot-toast": "^2.6.0",
-    "@google/genai": "^0.14.0"
+    "@google/genai": "^0.14.0",
+    "firebase": "^12.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -7,15 +7,15 @@ import toast from 'react-hot-toast';
 import useTranslations from '../hooks/useTranslations';
 import Card from '../components/Card';
 import MealBuilderCard from '../components/MealBuilderCard';
-import SunIcon from '../components/icons/SunIcon';
-import SunDimIcon from '../components/icons/SunDimIcon';
-import CookieIcon from '../components/icons/CookieIcon';
-import MoonIcon from '../components/icons/MoonIcon';
 import CustomSelect from '../components/CustomSelect';
 import CalculatorIcon from '../components/icons/CalculatorIcon';
 import InfoIcon from '../components/icons/InfoIcon';
 import DoseExplanationModal from '../components/DoseExplanationModal';
 import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimation';
+import BreakfastIcon from '../components/icons/BreakfastIcon';
+import LunchIcon from '../components/icons/LunchIcon';
+import SnackIcon from '../components/icons/SnackIcon';
+import DinnerIcon from '../components/icons/DinnerIcon';
 
 interface DoseCalculatorProps {
   setCurrentPage: (page: Page) => void;
@@ -108,10 +108,10 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   };
 
   const mealTimeOptions = [
-    { value: 'petit_dej', label: t.mealTimes.petit_dej, icon: <SunIcon className="w-6 h-6" /> },
-    { value: 'dejeuner', label: t.mealTimes.dejeuner, icon: <SunDimIcon className="w-6 h-6" /> },
-    { value: 'gouter', label: t.mealTimes.gouter, icon: <CookieIcon className="w-6 h-6" /> },
-    { value: 'diner', label: t.mealTimes.diner, icon: <MoonIcon className="w-6 h-6" /> },
+    { value: 'petit_dej', label: t.mealTimes.petit_dej, icon: <BreakfastIcon className="w-6 h-6" /> },
+    { value: 'dejeuner', label: t.mealTimes.dejeuner, icon: <LunchIcon className="w-6 h-6" /> },
+    { value: 'gouter', label: t.mealTimes.gouter, icon: <SnackIcon className="w-6 h-6" /> },
+    { value: 'diner', label: t.mealTimes.diner, icon: <DinnerIcon className="w-6 h-6" /> },
   ];
   
   const inputClasses = "w-full p-3 bg-white rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center text-lg";

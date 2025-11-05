@@ -3,18 +3,40 @@ import toast from 'react-hot-toast';
 import { db } from '../services/db';
 import { User } from '../types';
 import { usePatientStore } from './patientStore';
-
-const SESSION_KEY = 'diab_assistant_user';
+import { auth } from '../services/firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
 
 interface AuthState {
   currentUser: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  signup: (username: string, password: string) => Promise<void>;
-  login: (username: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   checkSession: () => void;
+}
+
+const formatAuthError = (errorCode: string): string => {
+    switch (errorCode) {
+        case 'auth/invalid-email':
+            return 'Adresse e-mail invalide.';
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+            return 'Email ou mot de passe incorrect.';
+        case 'auth/email-already-in-use':
+            return 'Cette adresse e-mail est déjà utilisée.';
+        case 'auth/weak-password':
+            return 'Le mot de passe doit comporter au moins 6 caractères.';
+        default:
+            return 'Une erreur est survenue lors de l\'authentification.';
+    }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -24,76 +46,56 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   checkSession: () => {
-    try {
-      const storedUser = sessionStorage.getItem(SESSION_KEY);
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        set({ currentUser: user, isAuthenticated: true, error: null });
+    onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        const user: User = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+        };
+        set({ currentUser: user, isAuthenticated: true, isLoading: false });
+      } else {
+        set({ currentUser: null, isAuthenticated: false, isLoading: false });
       }
-    } catch (e) {
-      console.error("Failed to parse user from session storage", e);
-    } finally {
-        set({ isLoading: false });
-    }
+    });
   },
 
-  signup: async (username, password) => {
+  signup: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // The `&username` in the db schema ensures uniqueness.
-      // Dexie will throw a 'ConstraintError' if we try to add a duplicate.
-      const newUser: User = { username, password };
-      const id = await db.users.add(newUser);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
       
-      if (typeof id !== 'number') {
-        throw new Error("La création du compte a échoué (ID invalide).");
-      }
-      
-      // Re-fetch the user to ensure it's fully committed before proceeding.
-      // This makes the process more robust against race conditions.
-      const userFromDb = await db.users.get(id);
-      if (!userFromDb) {
-          throw new Error("Erreur critique: L'utilisateur n'a pas pu être retrouvé après création.");
-      }
+      const newUser: User = { uid: firebaseUser.uid, email: firebaseUser.email };
 
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userFromDb));
-      set({ currentUser: userFromDb, isAuthenticated: true, isLoading: false });
+      // We still keep a local copy for potential offline profile info
+      await db.users.add({ uid: newUser.uid, email: newUser.email ?? '' });
+
+      set({ currentUser: newUser, isAuthenticated: true, isLoading: false });
       toast.success("Compte créé avec succès !");
 
     } catch (error: any) {
-      let errorMessage = "Une erreur inconnue est survenue.";
-      if (error.name === 'ConstraintError') {
-          errorMessage = "Ce pseudo est déjà utilisé.";
-      } else if (error.message) {
-          errorMessage = error.message;
-      }
-      
+      const errorMessage = formatAuthError(error.code);
       set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
     }
   },
 
-  login: async (username, password) => {
+  login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const user = await db.users.where('username').equals(username).first();
-      if (!user || user.password !== password) {
-        throw new Error("Pseudo ou mot de passe incorrect.");
-      }
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-      set({ currentUser: user, isAuthenticated: true, isLoading: false });
-      toast.success(`Bienvenue, ${username} !`);
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will handle setting the user state
+      toast.success(`Bienvenue !`);
     } catch (error: any) {
-      // FIX: Added missing opening brace for the catch block
-      const errorMessage = (error as Error).message || "Une erreur inconnue est survenue.";
+      const errorMessage = formatAuthError(error.code);
       set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
     }
   },
 
-  logout: () => {
-    sessionStorage.removeItem(SESSION_KEY);
+  logout: async () => {
+    await signOut(auth);
     usePatientStore.getState().clearPatientData(); // Clear patient data on logout
-    set({ currentUser: null, isAuthenticated: false });
+    // onAuthStateChanged will handle setting the user state to null
   },
 }));

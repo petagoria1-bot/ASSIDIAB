@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diab'Assistant T1</title>
+    <title>DiabAssis</title>
+    <meta name="theme-color" content="#008A68" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -86,6 +88,7 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
+      .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
       .timeline-card:active {
         transform: translateY(-4px);
         box-shadow: 0 12px 28px rgba(0, 168, 107, 0.15);
@@ -117,10 +120,16 @@
       @keyframes timeline-card-enter-left { from { opacity: 0; transform: translateX(-20px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
       @keyframes timeline-card-enter-right { from { opacity: 0; transform: translateX(20px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
       @keyframes timeline-point-pop { from { transform: scale(0.5); } to { transform: scale(1); } }
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes fade-in-lift { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }
 
       .animate-timeline-card-left { animation: timeline-card-enter-left 0.4s cubic-bezier(.25,.8,.25,1) backwards; }
       .animate-timeline-card-right { animation: timeline-card-enter-right 0.4s cubic-bezier(.25,.8,.25,1) backwards; }
       .animate-timeline-point-pop { animation: timeline-point-pop 0.3s cubic-bezier(.25,.8,.25,1) backwards; }
+      .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+      .animate-fade-in-lift { animation: fade-in-lift 0.6s ease-out forwards; }
+      .animate-fade-in-fast { animation: fade-in-fast 0.2s ease-out forwards; }
 
 
       /* Animation Classes */
@@ -159,16 +168,20 @@
     <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
     "zustand": "https://aistudiocdn.com/zustand@^5.0.8",
+    "zustand/": "https://aistudiocdn.com/zustand@^5.0.8/",
     "dexie": "https://aistudiocdn.com/dexie@^4.2.1",
     "react-hot-toast": "https://aistudiocdn.com/react-hot-toast@^2.6.0",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0",
-    "zustand/": "https://aistudiocdn.com/zustand@^5.0.8/",
-    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
 </script>

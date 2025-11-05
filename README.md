@@ -1,20 +1,48 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# Diab Time Icons
+
+Pack d'icônes vectorielles "time-of-day" pour applications, au style monoline et épuré.
+
+## Utilisation
+
+Toutes les icônes sont au format SVG 256x256, conçues avec un `stroke="currentColor"`. Elles hériteront de la couleur du texte environnant.
+
+### Intégration HTML (`<img>`)
+
+```html
+<img src="path/to/sunrise.svg" alt="Lever du soleil" width="48" height="48" style="color: #10B981;">
+```
+
+### Intégration HTML (SVG en ligne)
+
+Copiez-collez le contenu du fichier SVG directement dans votre HTML. Cela permet une personnalisation CSS plus avancée.
+
+```html
+<div style="color: #008A68; width: 48px; height: 48px;">
+  <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Contenu de l'icône -->
+    <path d="M32 192 L 224 192" />
+    <path d="M80 192 A 48 48 0 0 1 176 192" />
+    <line x1="128" y1="144" x2="128" y2="120" />
+    <line x1="96.5" y1="163.5" x2="84" y2="151" />
+    <line x1="159.5" y1="163.5" x2="172" y2="151" />
+  </svg>
 </div>
+```
 
-# Run and deploy your AI Studio app
+### Personnalisation CSS
 
-This contains everything you need to run your app locally.
+```css
+.icon {
+  width: 32px;
+  height: 32px;
+  color: #EF4444; /* La couleur que vous souhaitez */
+}
 
-View your app in AI Studio: https://ai.studio/apps/drive/16ngAw9SR098VtXD2sNiLjVhujvjrS1rT
+.icon svg {
+  stroke-width: 10; /* Ajuster l'épaisseur du trait si besoin */
+}
+```
 
-## Run Locally
+## Licence
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Ce pack d'icônes est distribué sous la licence [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).

@@ -1,0 +1,21 @@
+{
+  "short_name": "DiabAssis",
+  "name": "DiabAssis",
+  "description": "An offline-first Progressive Web App to help parents of children with Type 1 Diabetes manage insulin doses, track meals, and monitor blood glucose levels. It includes a dose calculator, a logbook, and emergency protocols.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#A7F3D0",
+  "theme_color": "#008A68",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

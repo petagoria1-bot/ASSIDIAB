@@ -1,6 +1,3 @@
-
-
-
 import React, { useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
@@ -21,8 +18,8 @@ const Onboarding: React.FC = () => {
       toast.error(t.toast_fillAllFields);
       return;
     }
-    if (currentUser?.id) {
-        await createPatient(prenom, naissance, currentUser.id);
+    if (currentUser) {
+        await createPatient(prenom, naissance, currentUser);
         toast.success(t.toast_profileCreated(prenom));
     } else {
         toast.error(t.toast_userNotFound);

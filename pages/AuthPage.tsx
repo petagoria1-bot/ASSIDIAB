@@ -1,6 +1,3 @@
-
-
-
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -10,7 +7,7 @@ import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { login, signup, isLoading } = useAuthStore();
@@ -19,19 +16,19 @@ const AuthPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLogin) {
-      await login(username, password);
+      await login(email, password);
     } else {
       if (password !== confirmPassword) {
         toast.error(t.toast_passwordsDoNotMatch);
         return;
       }
-      await signup(username, password);
+      await signup(email, password);
     }
   };
 
   const toggleForm = () => {
     setIsLogin(!isLogin);
-    setUsername('');
+    setEmail('');
     setPassword('');
     setConfirmPassword('');
   }
@@ -52,12 +49,12 @@ const AuthPage: React.FC = () => {
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-text-muted mb-1">{t.auth_username}</label>
+              <label htmlFor="email" className="block text-sm font-medium text-text-muted mb-1">{t.auth_username}</label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className={inputClasses}
               />

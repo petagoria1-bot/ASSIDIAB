@@ -9,9 +9,10 @@ import DropletIcon from './icons/DropletIcon';
 interface QuickAddItemModalProps {
   onClose: () => void;
   onConfirm: (gly: number, cetone: number | undefined, ts: string) => void;
+  initialTs?: string;
 }
 
-const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfirm }) => {
+const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfirm, initialTs }) => {
   const [gly, setGly] = useState('');
   const [cetone, setCetone] = useState('');
   const [isClosing, setIsClosing] = useState(false);
@@ -22,7 +23,7 @@ const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfir
     const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
     return localISOTime;
   }
-  const [eventDateTime, setEventDateTime] = useState(toLocalISOString(new Date()));
+  const [eventDateTime, setEventDateTime] = useState(initialTs ? toLocalISOString(new Date(initialTs)) : toLocalISOString(new Date()));
 
   const handleClose = () => {
     setIsClosing(true);
@@ -82,6 +83,7 @@ const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfir
                   onFocus={handleFocus}
                   className={inputClasses}
                   placeholder="ex: 1.25"
+                  autoFocus
                 />
             </div>
             <div>
