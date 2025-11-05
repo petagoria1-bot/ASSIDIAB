@@ -44,86 +44,84 @@ const AuthPage: React.FC = () => {
           <h1 className="text-3xl font-display font-bold text-white mt-2">{t.auth_appTitle}</h1>
         </div>
         
-        <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-card-open">
-          <h2 className="text-xl font-display font-semibold text-center text-text-title mb-5">
+        <div className="bg-white/[.85] rounded-card p-6 sm:p-8 shadow-glass border border-black/5 animate-card-open">
+          <h2 className="text-2xl font-display font-bold text-center text-text-title mb-6">
             {isLogin ? t.auth_loginTitle : t.auth_signupTitle}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-text-muted mb-1">{t.auth_username}</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className={inputClasses}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-1">{t.auth_password}</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className={inputClasses}
-              />
-            </div>
-            {!isLogin && (
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-muted mb-1">{t.auth_confirmPassword}</label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className={inputClasses}
-                />
-              </div>
-            )}
-            
-            <button 
-              type="submit" 
-              disabled={isLoading} 
-              className={`w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3.5 px-6 rounded-button mt-4 transition-all duration-300 ease-fast disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl transform hover:-translate-y-1 ${
-                isLogin 
-                ? 'bg-gradient-to-r from-jade-deep-dark to-emerald-main text-white' 
-                : 'bg-gradient-to-r from-turquoise-light to-mint-soft text-jade-deep'
-              }`}
-            >
-              <span className="flex-1 text-center">{isLoading ? t.common_loading : (isLogin ? t.auth_loginButton : t.auth_signupButton)}</span>
-              {!isLoading && <ArrowRightIcon className="w-6 h-6 transition-all duration-300 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100" />}
-            </button>
-          </form>
-
-          <div className="relative flex py-5 items-center">
-            <div className="flex-grow border-t border-slate-300"></div>
-            <span className="flex-shrink mx-4 text-slate-500 text-sm font-medium">{t.auth_or}</span>
-            <div className="flex-grow border-t border-slate-300"></div>
-          </div>
           
-          <button
-            type="button"
-            onClick={loginWithGoogle}
-            disabled={isLoading}
-            className="w-full btn-interactive group flex items-center justify-center text-md font-semibold py-3 px-6 rounded-button bg-white border border-slate-300 text-text-main transition-all duration-300 ease-fast hover:shadow-md disabled:opacity-60"
-          >
-            <GoogleIcon className="w-6 h-6 mr-3" />
-            {t.auth_continueWithGoogle}
-          </button>
+          <div className="space-y-4">
+              <button
+                type="button"
+                onClick={loginWithGoogle}
+                disabled={isLoading}
+                className="w-full btn-interactive group flex items-center justify-center text-md font-semibold py-3 px-6 rounded-button bg-white border border-slate-300 text-text-main transition-all duration-300 ease-fast hover:shadow-md disabled:opacity-60"
+              >
+                <GoogleIcon className="w-6 h-6 mr-3" />
+                {isLogin ? t.auth_loginWithGoogle : t.auth_signupWithGoogle}
+              </button>
 
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="flex-shrink mx-4 text-xs text-slate-500 uppercase font-semibold">{t.auth_or}</span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-text-muted mb-1">{t.auth_username}</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-1">{t.auth_password}</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className={inputClasses}
+                  />
+                </div>
+                {!isLogin && (
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-muted mb-1">{t.auth_confirmPassword}</label>
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className={inputClasses}
+                    />
+                  </div>
+                )}
+                
+                <button 
+                  type="submit" 
+                  disabled={isLoading} 
+                  className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3.5 px-6 rounded-button mt-2 bg-gradient-to-r from-jade-deep-dark to-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl transform hover:-translate-y-1"
+                >
+                  <span className="flex-1 text-center">{isLoading ? t.common_loading : (isLogin ? t.auth_loginButton : t.auth_signupButton)}</span>
+                  {!isLoading && <ArrowRightIcon className="w-6 h-6 transition-all duration-300 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100" />}
+                </button>
+              </form>
+          </div>
         </div>
 
         <div className="text-center mt-6">
             <p className="text-sm text-white/90">
-                {isLogin ? t.auth_noAccount : t.auth_hasAccount}
+                {isLogin ? t.auth_noAccountPrompt : t.auth_hasAccountPrompt}{' '}
+                <button onClick={toggleForm} className="font-semibold text-white underline hover:text-white/80 transition-colors">
+                    {isLogin ? t.auth_signupLink : t.auth_loginLink}
+                </button>
             </p>
-            <button onClick={toggleForm} className="font-semibold text-white py-2 px-5 rounded-pill transition-all duration-300 hover:bg-white/20 transform hover:scale-105 mt-2 btn-interactive">
-                {isLogin ? t.auth_signupLink : t.auth_loginLink}
-            </button>
         </div>
       </div>
     </div>
