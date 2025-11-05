@@ -313,6 +313,8 @@ const translations = {
         "auth_signupLink": "S'scrire",
         "auth_hasAccount": "Déjà un compte ?",
         "auth_loginLink": "Se connecter",
+        "auth_or": "OU",
+        "auth_continueWithGoogle": "Continuer avec Google",
         "onboarding_welcome": "Bienvenue !",
         "onboarding_subtitle": "Configurez le profil de votre enfant.",
         "onboarding_firstNamePlaceholder": "ex: Léo",
@@ -376,6 +378,8 @@ const translations = {
         "toast_snackAdded": "Collation ajoutée !",
         "toast_invitationSent": "Invitation envoyée (simulation).",
         "toast_caregiverRemoved": "Membre supprimé.",
+        "toast_googleLoginSuccess": "Connexion avec Google réussie !",
+        "toast_googleLoginError": "Erreur lors de la connexion avec Google.",
 
 
         // Settings
@@ -651,6 +655,10 @@ const translations = {
     },
     en: {
         "auth_username": "Email Address",
+        "auth_or": "OR",
+        "auth_continueWithGoogle": "Continue with Google",
+        "toast_googleLoginSuccess": "Signed in with Google successfully!",
+        "toast_googleLoginError": "Error signing in with Google.",
         "settings_title": "Settings",
         "settings_language": "Language",
         "settings_profile": "Profile",

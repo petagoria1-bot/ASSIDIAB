@@ -4,13 +4,14 @@ import toast from 'react-hot-toast';
 import useTranslations from '../hooks/useTranslations';
 import DropletLogoIcon from '../components/icons/DropletLogoIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
+import GoogleIcon from '../components/icons/GoogleIcon';
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { login, signup, isLoading } = useAuthStore();
+  const { login, signup, isLoading, loginWithGoogle } = useAuthStore();
   const t = useTranslations();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,6 +98,23 @@ const AuthPage: React.FC = () => {
               {!isLoading && <ArrowRightIcon className="w-6 h-6 transition-all duration-300 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100" />}
             </button>
           </form>
+
+          <div className="relative flex py-5 items-center">
+            <div className="flex-grow border-t border-slate-300"></div>
+            <span className="flex-shrink mx-4 text-slate-500 text-sm font-medium">{t.auth_or}</span>
+            <div className="flex-grow border-t border-slate-300"></div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={loginWithGoogle}
+            disabled={isLoading}
+            className="w-full btn-interactive group flex items-center justify-center text-md font-semibold py-3 px-6 rounded-button bg-white border border-slate-300 text-text-main transition-all duration-300 ease-fast hover:shadow-md disabled:opacity-60"
+          >
+            <GoogleIcon className="w-6 h-6 mr-3" />
+            {t.auth_continueWithGoogle}
+          </button>
+
         </div>
 
         <div className="text-center mt-6">
