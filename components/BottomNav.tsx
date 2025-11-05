@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { Page } from '../types';
 import useTranslations from '../hooks/useTranslations';
 import HomeIcon from './icons/HomeIcon';
-import JournalIcon from './icons/JournalIcon';
 import CalculatorIcon from './icons/CalculatorIcon';
 import EmergencyIcon from './icons/EmergencyIcon';
 import SettingsIcon from './icons/SettingsIcon';
+import JournalIcon from './icons/JournalIcon';
 
 interface BottomNavProps {
   currentPage: Page;
@@ -33,11 +32,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
               key={item.page}
               onClick={() => setCurrentPage(item.page)}
               className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform
-                ${isActive ? 'text-jade-deep font-bold scale-110' : 'text-icon-inactive hover:text-jade-deep'}`
+                ${isActive ? 'text-jade-deep font-bold' : 'text-icon-inactive hover:text-jade-deep'}`
               }
               aria-current={isActive ? 'page' : undefined}
             >
-              <item.icon className={`transition-all duration-300 ${isActive ? 'text-emerald-main' : ''}`}/>
+              <div className={isActive ? 'animate-icon-active' : ''}>
+                <item.icon className={`transition-all duration-300 ${isActive ? 'text-emerald-main' : ''}`}/>
+              </div>
               <span className={`text-xs mt-1 font-medium ${isActive ? 'font-semibold' : ''}`}>{item.label}</span>
             </button>
           );

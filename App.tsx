@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { usePatientStore } from './store/patientStore';
@@ -19,11 +18,26 @@ import AuthPage from './pages/AuthPage';
 import { Page } from './types';
 import Reports from './pages/Reports';
 import useTranslations from './hooks/useTranslations';
+import DropletLogoIcon from './components/icons/DropletLogoIcon';
+
+const Loader: React.FC = () => (
+    <div className="relative w-20 h-20">
+        <div className="absolute inset-0 border-4 border-jade-deep rounded-full animate-[loader-spin_1.5s_cubic-bezier(.25,.8,.25,1)_infinite]"></div>
+        <div className="absolute inset-0 flex items-center justify-center animate-[loader-beat_2.5s_ease-in-out_infinite]">
+            <DropletLogoIcon className="w-12 h-12" />
+        </div>
+        <div className="absolute inset-[-10px] border-2 border-turquoise-light rounded-full opacity-50 animate-[halo-pulse_2.5s_ease-in-out_infinite]"></div>
+    </div>
+);
+
 
 const LoadingScreen: React.FC = () => {
   const t = useTranslations();
   return (
-    <div className="flex items-center justify-center h-screen bg-off-white font-sans text-text-muted">{t.common_loading}...</div>
+    <div className="flex flex-col items-center justify-center h-screen bg-off-white font-sans text-text-muted space-y-4">
+        <Loader />
+        <p>{t.common_loading}...</p>
+    </div>
   );
 };
 
@@ -73,7 +87,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'journal':
-        return <Journal />;
+        return <Journal setCurrentPage={setCurrentPage} />;
       case 'glucides':
         return <DoseCalculator setCurrentPage={setCurrentPage} />;
       case 'emergency':
@@ -91,8 +105,10 @@ const App: React.FC = () => {
     }
   };
 
+  const backgroundClass = 'bg-main-gradient';
+
   return (
-    <div className="min-h-screen bg-main-gradient text-text-main font-sans">
+    <div className={`min-h-screen text-text-main font-sans ${backgroundClass}`}>
       <Toaster 
         position="top-center" 
         toastOptions={{
@@ -107,8 +123,10 @@ const App: React.FC = () => {
         }}
       />
       <main className="max-w-lg mx-auto relative">
-        <div className="pb-28"> 
-          {renderPage()}
+        <div className="pb-28" key={currentPage}> 
+          <div className="animate-page-slide-in">
+            {renderPage()}
+          </div>
         </div>
       </main>
       <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />

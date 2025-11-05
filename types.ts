@@ -139,3 +139,11 @@ export interface AnalyzedFoodItem {
   poids_g: number;
   glucides_g: number;
 }
+
+export interface DailyProgress {
+    date: string; // YYYY-MM-DD
+    patient_id: string;
+    water_ml: number;
+    activity_min: number;
+    quiz_completed: boolean;
+}

@@ -1,9 +1,12 @@
 
+
+
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import useTranslations from '../hooks/useTranslations';
 import DropletLogoIcon from '../components/icons/DropletLogoIcon';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,7 +46,7 @@ const AuthPage: React.FC = () => {
           <h1 className="text-3xl font-display font-bold text-white mt-2">{t.auth_appTitle}</h1>
         </div>
         
-        <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-fade-in-lift">
+        <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-card-open">
           <h2 className="text-xl font-display font-semibold text-center text-text-title mb-5">
             {isLogin ? t.auth_loginTitle : t.auth_signupTitle}
           </h2>
@@ -87,23 +90,26 @@ const AuthPage: React.FC = () => {
             <button 
               type="submit" 
               disabled={isLoading} 
-              className={`w-full text-white font-bold text-lg py-3 rounded-button mt-2 transition-all duration-300 disabled:opacity-50 shadow-md hover:shadow-lg ${
+              className={`w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3.5 px-6 rounded-button mt-4 transition-all duration-300 ease-fast disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl transform hover:-translate-y-1 ${
                 isLogin 
-                ? 'bg-gradient-to-r from-jade-deep-dark to-emerald-main' 
+                ? 'bg-gradient-to-r from-jade-deep-dark to-emerald-main text-white' 
                 : 'bg-gradient-to-r from-turquoise-light to-mint-soft text-jade-deep'
               }`}
             >
-              {isLoading ? t.common_loading : (isLogin ? t.auth_loginButton : t.auth_signupButton)}
+              <span className="flex-1 text-center">{isLoading ? t.common_loading : (isLogin ? t.auth_loginButton : t.auth_signupButton)}</span>
+              {!isLoading && <ArrowRightIcon className="w-6 h-6 transition-all duration-300 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100" />}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-sm text-white/90 mt-6">
-          {isLogin ? t.auth_noAccount : t.auth_hasAccount}
-          <button onClick={toggleForm} className="font-semibold hover:underline ms-1">
-            {isLogin ? t.auth_signupLink : t.auth_loginLink}
-          </button>
-        </p>
+        <div className="text-center mt-6">
+            <p className="text-sm text-white/90">
+                {isLogin ? t.auth_noAccount : t.auth_hasAccount}
+            </p>
+            <button onClick={toggleForm} className="font-semibold text-white py-2 px-5 rounded-pill transition-all duration-300 hover:bg-white/20 transform hover:scale-105 mt-2 btn-interactive">
+                {isLogin ? t.auth_signupLink : t.auth_loginLink}
+            </button>
+        </div>
       </div>
     </div>
   );

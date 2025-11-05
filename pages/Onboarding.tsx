@@ -1,8 +1,12 @@
+
+
+
 import React, { useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import useTranslations from '../hooks/useTranslations';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 
 const Onboarding: React.FC = () => {
   const { createPatient, isLoading } = usePatientStore();
@@ -36,7 +40,7 @@ const Onboarding: React.FC = () => {
           <p className="text-white/80 mt-2">{t.onboarding_subtitle}</p>
         </div>
         
-        <form onSubmit={handleSubmit} className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-fade-in-lift">
+        <form onSubmit={handleSubmit} className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-card-open">
           <div className="space-y-4">
             <div>
               <label htmlFor="prenom" className="block text-sm font-medium text-text-muted mb-1">{t.common_firstName}</label>
@@ -63,8 +67,13 @@ const Onboarding: React.FC = () => {
             </div>
           </div>
           
-          <button type="submit" disabled={isLoading} className="w-full text-jade-deep font-bold text-lg py-3 rounded-button mt-6 bg-gradient-to-r from-turquoise-light to-mint-soft transition-all duration-300 disabled:opacity-50 shadow-md hover:shadow-lg">
-            {isLoading ? t.common_creating : t.onboarding_startButton}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3.5 px-6 rounded-button mt-6 bg-gradient-to-r from-turquoise-light to-mint-soft text-jade-deep transition-all duration-300 ease-fast disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl transform hover:-translate-y-1"
+          >
+            <span className="flex-1 text-center">{isLoading ? t.common_creating : t.onboarding_startButton}</span>
+            {!isLoading && <ArrowRightIcon className="w-6 h-6 transition-all duration-300 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100" />}
           </button>
         </form>
 

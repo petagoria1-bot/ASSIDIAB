@@ -7,7 +7,7 @@ import { Page, Mesure, Event } from '../types';
 import QuickAddItemModal from '../components/QuickAddItemModal';
 import QuickBolusModal from '../components/QuickBolusModal';
 import toast from 'react-hot-toast';
-import GlucoQuizCard from '../components/GlucoQuizCard';
+import ProgressCard from '../components/ProgressCard';
 import AddEventModal from '../components/AddEventModal';
 import GlucoseTrackingIllustration from '../components/illustrations/GlucoseTrackingIllustration';
 import MedicalAgendaIllustration from '../components/illustrations/MedicalAgendaIllustration';
@@ -17,6 +17,9 @@ import GlucoseDropIcon from '../components/icons/GlucoseDropIcon';
 import EmergencyIcon from '../components/icons/EmergencyIcon';
 import CheckCircleIcon from '../components/icons/CheckCircleIcon';
 import CircleIcon from '../components/icons/CircleIcon';
+import GlucoQuizCard from '../components/GlucoQuizCard';
+import GlucosePulseAnimation from '../components/animations/GlucosePulseAnimation';
+import CalendarBlinkAnimation from '../components/animations/CalendarBlinkAnimation';
 
 
 interface DashboardProps {
@@ -80,6 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
   const [isMeasureModalOpen, setMeasureModalOpen] = useState(false);
   const [isBolusModalOpen, setBolusModalOpen] = useState(false);
   const [isEventModalOpen, setEventModalOpen] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
 
   const lastMeasure: Mesure | undefined = useMemo(() => mesures[0], [mesures]);
   
@@ -87,6 +91,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
     const today = new Date().toDateString();
     return mesures.filter(m => new Date(m.ts).toDateString() === today).length;
   }, [mesures]);
+
+  const hasPendingEvents = useMemo(() => events.some(e => e.status === 'pending'), [events]);
 
   const handleAddMeasure = (gly: number, cetone: number | undefined, ts: string) => {
     addMesure({ gly, cetone, source: 'doigt' }, ts);
@@ -114,43 +120,54 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
         <h1 className="text-3xl font-display font-bold text-white text-shadow">{getGreeting(t, patient.prenom)}</h1>
       </header>
       
-      <Card className="animate-fade-in-lift">
+      <Card className="animate-card-open">
         <div className="flex justify-between items-center">
-          <div>
-            <p className="text-sm font-semibold text-text-muted">{t.dashboard_currentGlucose}</p>
+          <div className="flex items-center gap-3">
             {lastMeasure ? (
-              <p className="text-4xl font-display font-bold text-emerald-main">{lastMeasure.gly.toFixed(2)} <span className="text-xl text-text-muted">g/L</span></p>
+                <GlucosePulseAnimation className="w-16 h-16 flex-shrink-0" />
             ) : (
-              <p className="text-lg font-semibold text-text-muted">{t.dashboard_noMeasure}</p>
+                <div className="w-16 h-16 flex-shrink-0" />
             )}
-             <p className="text-xs text-text-muted/80 mt-1">{t.dashboard_todayChecks(todayMeasuresCount)}</p>
+            <div>
+              <p className="text-sm font-semibold text-text-muted">{t.dashboard_currentGlucose}</p>
+              {lastMeasure ? (
+                <p className="text-4xl font-display font-bold text-emerald-main">{lastMeasure.gly.toFixed(2)} <span className="text-xl text-text-muted">g/L</span></p>
+              ) : (
+                <p className="text-lg font-semibold text-text-muted">{t.dashboard_noMeasure}</p>
+              )}
+              <p className="text-xs text-text-muted/80 mt-1">{t.dashboard_todayChecks(todayMeasuresCount)}</p>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <button onClick={() => setCurrentPage('glucides')} className="flex flex-col items-center justify-center p-2 bg-mint-soft/50 rounded-lg hover:bg-mint-soft transition-colors space-y-1">
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <button onClick={() => setCurrentPage('glucides')} className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-white/60 to-mint-soft/40 rounded-card hover:shadow-lg transition-all transform hover:-translate-y-1 space-y-2 border border-white/50 ring-1 ring-white/20 btn-interactive">
               <CalculatorIcon className="w-8 h-8"/>
-              <span className="text-xs font-semibold text-jade-deep">{t.dashboard_action_calculate}</span>
+              <span className="text-sm font-bold text-jade-deep">{t.dashboard_action_calculate}</span>
             </button>
-            <button onClick={() => setBolusModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-mint-soft/50 rounded-lg hover:bg-mint-soft transition-colors space-y-1">
+            <button onClick={() => setBolusModalOpen(true)} className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-white/60 to-mint-soft/40 rounded-card hover:shadow-lg transition-all transform hover:-translate-y-1 space-y-2 border border-white/50 ring-1 ring-white/20 btn-interactive">
               <SyringeIcon className="w-8 h-8"/>
-              <span className="text-xs font-semibold text-jade-deep">{t.dashboard_action_bolus}</span>
+              <span className="text-sm font-bold text-jade-deep">{t.dashboard_action_bolus}</span>
             </button>
-            <button onClick={() => setMeasureModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-mint-soft/50 rounded-lg hover:bg-mint-soft transition-colors space-y-1">
+            <button onClick={() => setMeasureModalOpen(true)} className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-white/60 to-mint-soft/40 rounded-card hover:shadow-lg transition-all transform hover:-translate-y-1 space-y-2 border border-white/50 ring-1 ring-white/20 btn-interactive">
                <GlucoseDropIcon className="w-8 h-8"/>
-              <span className="text-xs font-semibold text-jade-deep">{t.dashboard_action_measure}</span>
+              <span className="text-sm font-bold text-jade-deep">{t.dashboard_action_measure}</span>
             </button>
-            <button onClick={() => setCurrentPage('emergency')} className="flex flex-col items-center justify-center p-2 bg-danger-soft/50 rounded-lg hover:bg-danger-soft transition-colors space-y-1">
+            <button onClick={() => setCurrentPage('emergency')} className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-white/60 to-danger-soft/50 rounded-card hover:shadow-lg transition-all transform hover:-translate-y-1 space-y-2 border border-white/50 ring-1 ring-white/20 btn-interactive">
                <EmergencyIcon className="w-8 h-8"/>
-              <span className="text-xs font-semibold text-danger-dark">{t.dashboard_action_emergency}</span>
+              <span className="text-sm font-bold text-danger-dark">{t.dashboard_action_emergency}</span>
             </button>
           </div>
         </div>
       </Card>
       
-      <Card className="animate-fade-in-lift">
-         <div className="flex items-center text-text-title mb-3">
-             <MedicalAgendaIllustration />
-         </div>
-        <h2 className="font-display font-semibold text-xl ms-2 -mt-4 text-center">{t.dashboard_eventsTitle}</h2>
+      <Card className="animate-card-open" style={{animationDelay: '100ms'}}>
+         {hasPendingEvents ? (
+            <div className="relative w-24 h-24 mx-auto my-2 flex items-center justify-center">
+                <CalendarBlinkAnimation className="w-24 h-24" />
+            </div>
+         ) : (
+            <MedicalAgendaIllustration />
+         )}
+        <h2 className="font-display font-semibold text-xl text-center -mt-4">{t.dashboard_eventsTitle}</h2>
          <div className="mt-2 space-y-1">
              {events.length > 0 ? (
                  events.slice(0, 3).map(event => <EventCard key={event.id} event={event} />)
@@ -158,23 +175,37 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
                  <p className="text-center text-sm text-text-muted p-4">{t.dashboard_noEvents}</p>
              )}
          </div>
-         <button onClick={() => setEventModalOpen(true)} className="w-full mt-3 text-emerald-main text-sm font-bold py-2 rounded-button hover:bg-mint-soft transition-colors">
+         <button onClick={() => setEventModalOpen(true)} className="w-full mt-3 text-emerald-main text-sm font-bold py-2 rounded-button hover:bg-mint-soft transition-colors btn-interactive">
              {t.dashboard_addEvent}
          </button>
       </Card>
       
-      <Card className="cursor-pointer hover:shadow-glass-hover animate-fade-in-lift" onClick={() => setCurrentPage('rapports')}>
-         <GlucoseTrackingIllustration />
-        <h2 className="font-display font-semibold text-xl text-center text-text-title">{t.dashboard_dataAnalysisTitle}</h2>
-        <p className="text-sm text-text-muted text-center mt-1">{t.dashboard_dataAnalysisText}</p>
-        <button className="w-full mt-3 bg-emerald-main text-white text-sm font-bold py-2 rounded-button hover:bg-jade-deep-dark transition-colors">
-          {t.dashboard_dataAnalysisButton}
-        </button>
-      </Card>
+       <div className="rounded-card animate-breathing-halo">
+        <Card className="cursor-pointer hover:shadow-glass-hover animate-card-open" style={{animationDelay: '200ms'}} onClick={() => setCurrentPage('rapports')}>
+           <GlucoseTrackingIllustration />
+          <h2 className="font-display font-semibold text-xl text-center text-text-title">{t.dashboard_dataAnalysisTitle}</h2>
+          <p className="text-sm text-text-muted text-center mt-1">{t.dashboard_dataAnalysisText}</p>
+          <button className="w-full mt-3 bg-emerald-main text-white text-sm font-bold py-2 rounded-button hover:bg-jade-deep-dark transition-colors btn-interactive">
+            {t.dashboard_dataAnalysisButton}
+          </button>
+        </Card>
+      </div>
 
-      <div className="animate-fade-in-lift">
+      <div className="animate-card-open" style={{animationDelay: '300ms'}}>
+        <ProgressCard />
+      </div>
+
+      <div className="animate-card-open" style={{animationDelay: '400ms'}}>
         <GlucoQuizCard />
       </div>
+
+       {showNotification && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-sm p-4 z-50">
+          <div className="bg-mint-soft p-4 rounded-card shadow-xl border border-turquoise-light/50 text-center text-jade-deep-dark font-semibold animate-notification-pop-up">
+            Ceci est une notification douce !
+          </div>
+        </div>
+      )}
 
       {isMeasureModalOpen && (
         <QuickAddItemModal onClose={() => setMeasureModalOpen(false)} onConfirm={handleAddMeasure} />

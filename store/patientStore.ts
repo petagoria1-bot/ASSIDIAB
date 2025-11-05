@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
-import { Patient, Mesure, Repas, Injection, Food, InjectionType, FavoriteMeal, MealItem, FoodItem, Event, EventStatus } from '../types';
+import { Patient, Mesure, Repas, Injection, Food, InjectionType, FavoriteMeal, MealItem, FoodItem, Event, EventStatus, DailyProgress } from '../types';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants';
 import { initialFoodData } from '../data/foodLibrary';
 
@@ -14,6 +14,8 @@ const sortEvents = (events: Event[]) => {
     });
 };
 
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
+
 interface PatientState {
   patient: Patient | null;
   mesures: Mesure[];
@@ -22,6 +24,7 @@ interface PatientState {
   foodLibrary: Food[];
   favoriteMeals: FavoriteMeal[];
   events: Event[];
+  todayProgress: DailyProgress | null;
   isLoading: boolean;
   loadInitialData: (userId: number) => Promise<void>;
   createPatient: (prenom: string, naissance: string, userId: number) => Promise<void>;
@@ -36,6 +39,9 @@ interface PatientState {
   deleteFavoriteMeal: (id: string) => Promise<void>;
   addEvent: (eventData: Omit<Event, 'id' | 'patient_id' | 'status'>) => Promise<void>;
   updateEventStatus: (eventId: string, status: EventStatus) => Promise<void>;
+  logWater: (amount_ml: number) => Promise<void>;
+  logActivity: (minutes: number) => Promise<void>;
+  logQuizCompleted: () => Promise<void>;
   clearPatientData: () => void;
 }
 
@@ -47,13 +53,13 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   foodLibrary: [],
   favoriteMeals: [],
   events: [],
+  todayProgress: null,
   isLoading: true,
   
   loadInitialData: async (userId) => {
     set({ isLoading: true });
     let patient = await db.patients.where({ userId }).first();
     
-    // Always load food library
     let foodLibrary = await db.foodLibrary.toArray();
     if (foodLibrary.length === 0) {
         await db.foodLibrary.bulkAdd(initialFoodData);
@@ -61,6 +67,13 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     }
     
     if (patient) {
+      const today = getTodayDateString();
+      let todayProgress = await db.dailyProgress.get(today);
+      if (!todayProgress) {
+          todayProgress = { date: today, patient_id: patient.id, water_ml: 0, activity_min: 0, quiz_completed: false };
+          await db.dailyProgress.add(todayProgress);
+      }
+
       const [mesures, repas, injections, favoriteMeals, events] = await Promise.all([
         db.mesures.where('patient_id').equals(patient.id).sortBy('ts'),
         db.repas.where('patient_id').equals(patient.id).sortBy('ts'),
@@ -69,9 +82,9 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         db.events.where('patient_id').equals(patient.id).toArray(),
       ]);
       const sortedEvents = sortEvents(events);
-      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, favoriteMeals, events: sortedEvents, isLoading: false });
+      set({ patient, mesures: mesures.reverse(), repas: repas.reverse(), injections: injections.reverse(), foodLibrary, favoriteMeals, events: sortedEvents, todayProgress, isLoading: false });
     } else {
-        set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, favoriteMeals: [], events: [], isLoading: false });
+        set({ patient: null, mesures: [], repas: [], injections: [], foodLibrary, favoriteMeals: [], events: [], todayProgress: null, isLoading: false });
     }
   },
 
@@ -84,7 +97,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
       naissance
     };
     await db.patients.add(newPatient);
-    set({ patient: newPatient, isLoading: false });
+    await get().loadInitialData(userId); // Reload all data for the new patient
   },
 
   updatePatient: async (patientData) => {
@@ -235,7 +248,31 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     set({ events: sortEvents(updatedEvents) });
   },
 
+  logWater: async (amount_ml) => {
+    const todayProgress = get().todayProgress;
+    if (!todayProgress) return;
+    const newProgress = { ...todayProgress, water_ml: todayProgress.water_ml + amount_ml };
+    await db.dailyProgress.put(newProgress);
+    set({ todayProgress: newProgress });
+  },
+
+  logActivity: async (minutes) => {
+    const todayProgress = get().todayProgress;
+    if (!todayProgress) return;
+    const newProgress = { ...todayProgress, activity_min: todayProgress.activity_min + minutes };
+    await db.dailyProgress.put(newProgress);
+    set({ todayProgress: newProgress });
+  },
+
+  logQuizCompleted: async () => {
+    const todayProgress = get().todayProgress;
+    if (!todayProgress || todayProgress.quiz_completed) return;
+    const newProgress = { ...todayProgress, quiz_completed: true };
+    await db.dailyProgress.put(newProgress);
+    set({ todayProgress: newProgress });
+  },
+
   clearPatientData: () => {
-    set({ patient: null, mesures: [], repas: [], injections: [], favoriteMeals: [], events: [], isLoading: false });
+    set({ patient: null, mesures: [], repas: [], injections: [], favoriteMeals: [], events: [], todayProgress: null, isLoading: false });
   }
 }));

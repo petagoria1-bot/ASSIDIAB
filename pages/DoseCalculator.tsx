@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePatientStore } from '../store/patientStore';
+import { useUiStore } from '../store/uiStore';
 import { calculateDose } from '../services/calculator';
 import { DoseCalculationOutput, MealTime, Page, MealItem } from '../types';
 import toast from 'react-hot-toast';
@@ -14,6 +15,7 @@ import CustomSelect from '../components/CustomSelect';
 import CalculatorIcon from '../components/icons/CalculatorIcon';
 import InfoIcon from '../components/icons/InfoIcon';
 import DoseExplanationModal from '../components/DoseExplanationModal';
+import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimation';
 
 interface DoseCalculatorProps {
   setCurrentPage: (page: Page) => void;
@@ -21,6 +23,7 @@ interface DoseCalculatorProps {
 
 const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const { patient, getLastCorrection, addFullBolus } = usePatientStore();
+  const { calculatorMealTime, setCalculatorMealTime } = useUiStore();
   const t = useTranslations();
 
   const [glyPre, setGlyPre] = useState('');
@@ -29,6 +32,21 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const [mealItems, setMealItems] = useState<MealItem[]>([]);
   const [calculation, setCalculation] = useState<DoseCalculationOutput | null>(null);
   const [isExplanationOpen, setExplanationOpen] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+
+  useEffect(() => {
+    if (calculatorMealTime) {
+      setMoment(calculatorMealTime);
+      setCalculatorMealTime(null); // Clear after use
+    }
+  }, [calculatorMealTime, setCalculatorMealTime]);
+
+  useEffect(() => {
+    if (showSuccessAnimation) {
+      const timer = setTimeout(() => setShowSuccessAnimation(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessAnimation]);
   
   const handleCalculate = async () => {
     if (!patient) return;
@@ -49,6 +67,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
       lastCorrection,
     });
     setCalculation(result);
+    setShowSuccessAnimation(true);
   };
   
   const handleSaveBolus = async () => {
@@ -140,27 +159,34 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
       )}
       
       {calculation && (
-        <Card className="animate-fade-in-lift">
-          <h2 className="text-lg font-semibold text-text-title mb-3 text-center">{t.calculator_resultTitle}</h2>
-          <div className="text-center bg-mint-soft/50 p-4 rounded-xl space-y-2">
-            <p className="font-semibold text-text-main">{t.calculator_resultMealDose(calculation.doseRepas_U, totalCarbs)}</p>
-            {calculation.addCorr_U > 0 && (
-                <p className="font-semibold text-text-main">{t.calculator_resultCorrectionDose(calculation.addCorr_U, glyPre)}</p>
-            )}
-            <div className="flex items-center justify-center gap-2">
-              <p className="font-display font-bold text-5xl text-emerald-main py-2">{calculation.doseTotale} <span className="text-3xl text-text-muted">U</span></p>
-              <button onClick={() => setExplanationOpen(true)} aria-label={t.doseExplanation_title}>
-                <InfoIcon />
-              </button>
+        <div className="relative">
+          {showSuccessAnimation && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <CheckmarkPopAnimation className="w-20 h-20" />
             </div>
-            {calculation.warning && (
-              <p className="text-xs text-amber-700 font-semibold bg-amber-100 p-2 rounded-md">{calculation.warning}</p>
-            )}
-          </div>
-           <button onClick={handleSaveBolus} className="w-full mt-4 bg-emerald-main text-white text-sm font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors">
-             {t.calculator_saveButton}
-           </button>
-        </Card>
+          )}
+          <Card className="animate-fade-in-lift">
+            <h2 className="text-lg font-semibold text-text-title mb-3 text-center">{t.calculator_resultTitle}</h2>
+            <div className="text-center bg-mint-soft/50 p-4 rounded-xl space-y-2">
+              <p className="font-semibold text-text-main">{t.calculator_resultMealDose(calculation.doseRepas_U, totalCarbs)}</p>
+              {calculation.addCorr_U > 0 && (
+                  <p className="font-semibold text-text-main">{t.calculator_resultCorrectionDose(calculation.addCorr_U, glyPre)}</p>
+              )}
+              <div className="flex items-center justify-center gap-2">
+                <p className="font-display font-bold text-5xl text-emerald-main py-2">{calculation.doseTotale} <span className="text-3xl text-text-muted">U</span></p>
+                <button onClick={() => setExplanationOpen(true)} aria-label={t.doseExplanation_title}>
+                  <InfoIcon />
+                </button>
+              </div>
+              {calculation.warning && (
+                <p className="text-xs text-amber-700 font-semibold bg-amber-100 p-2 rounded-md">{calculation.warning}</p>
+              )}
+            </div>
+            <button onClick={handleSaveBolus} className="w-full mt-4 bg-emerald-main text-white text-sm font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors">
+              {t.calculator_saveButton}
+            </button>
+          </Card>
+        </div>
       )}
       
       {isExplanationOpen && calculation && patient && (

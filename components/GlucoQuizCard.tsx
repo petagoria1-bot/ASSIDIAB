@@ -2,13 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import Card from './Card';
 import useTranslations from '../hooks/useTranslations';
-import type { QuizQuestion } from '../hooks/useTranslations';
+// Fix: The 'QuizQuestion' type is exported from 'data/quizData.ts', not from 'hooks/useTranslations.ts'.
+import type { QuizQuestion } from '../data/quizData';
 import LightbulbIcon from './icons/LightbulbIcon';
+import { usePatientStore } from '../store/patientStore';
 
 
 const GlucoQuizCard: React.FC = () => {
     const t = useTranslations();
     const { quizData, quiz_title, quiz_nextQuestion } = t;
+    const { logQuizCompleted } = usePatientStore();
 
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -29,6 +32,7 @@ const GlucoQuizCard: React.FC = () => {
         if (isAnswered) return;
         setSelectedAnswer(index);
         setIsAnswered(true);
+        logQuizCompleted();
     };
 
     if (!question) return null;

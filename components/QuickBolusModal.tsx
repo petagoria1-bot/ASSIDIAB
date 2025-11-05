@@ -4,15 +4,12 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { InjectionType } from '../types';
 import useTranslations from '../hooks/useTranslations';
+import InsulinPenAnimation from './animations/InsulinPenAnimation';
 
 interface QuickBolusModalProps {
   onClose: () => void;
   onConfirm: (dose: number, type: InjectionType, ts: string) => void;
 }
-
-const SyringeIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m18 2 4 4"></path><path d="m17 7 3-3"></path><path d="M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0L2.3 16.3a2.4 2.4 0 0 1 0-3.4Z"></path><path d="m14 11 3-3"></path><path d="m6 18l-2-2"></path><path d="m2 22 4-4"></path></svg>
-);
 
 const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm }) => {
   const [dose, setDose] = useState('');
@@ -47,7 +44,7 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
       <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-center text-center mb-4">
-            <SyringeIcon className="w-8 h-8 text-emerald-main me-2" />
+            <InsulinPenAnimation className="w-12 h-12" />
             <h3 className="text-xl font-display font-semibold text-text-title">{t.quickAdd_bolusTitle}</h3>
         </div>
         

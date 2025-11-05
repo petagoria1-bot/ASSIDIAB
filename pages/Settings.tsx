@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
@@ -15,6 +17,7 @@ import TargetIcon from '../components/icons/TargetIcon';
 import RatioIcon from '../components/icons/RatioIcon';
 import EmergencyIcon from '../components/icons/EmergencyIcon';
 import CloseIcon from '../components/icons/CloseIcon';
+import ToggleSwitch from '../components/ToggleSwitch';
 
 import FlagFR from '../components/icons/FlagFR';
 import FlagEN from '../components/icons/FlagEN';
@@ -31,7 +34,7 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const { patient, updatePatient } = usePatientStore();
   const { logout } = useAuthStore();
-  const { language, setLanguage } = useSettingsStore();
+  const { language, setLanguage, translateFood, toggleTranslateFood } = useSettingsStore();
   const t = useTranslations();
 
   const [localPatient, setLocalPatient] = useState<Patient | null>(patient);
@@ -99,6 +102,20 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
           <h2 className="text-lg font-semibold text-text-title">{t.settings_language}</h2>
         </div>
         <CustomSelect options={languageOptions} value={language} onChange={(val) => setLanguage(val as Language)} />
+        
+        <div className="mt-4 pt-4 border-t border-slate-200/80">
+          <div className="flex justify-between items-center">
+            <label htmlFor="translate-toggle" className="font-medium text-text-main cursor-pointer" onClick={toggleTranslateFood}>
+              {t.settings_translateFood}
+            </label>
+            <ToggleSwitch 
+              isOn={translateFood}
+              onToggle={toggleTranslateFood}
+              ariaLabel={t.settings_translateFood}
+            />
+          </div>
+          <p className="text-xs text-text-muted mt-1 pr-14">{t.settings_translateFood_description}</p>
+        </div>
       </Card>
 
       <Card>

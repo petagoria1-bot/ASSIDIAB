@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
@@ -13,6 +14,7 @@ interface QuickAddItemModalProps {
 const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfirm }) => {
   const [gly, setGly] = useState('');
   const [cetone, setCetone] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
   const t = useTranslations();
 
   const toLocalISOString = (date: Date) => {
@@ -21,6 +23,11 @@ const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfir
     return localISOTime;
   }
   const [eventDateTime, setEventDateTime] = useState(toLocalISOString(new Date()));
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(onClose, 400); // Wait for animation to finish
+  };
 
   const handleConfirm = () => {
     const glyValue = parseFloat(gly.replace(',', '.'));
@@ -45,8 +52,8 @@ const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfir
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center";
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
-      <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-fade-in-lift" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={handleClose}>
+      <div className={`bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 ${isClosing ? 'animate-card-close' : 'animate-card-open'}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-center text-center mb-4">
             <DropletIcon className="w-8 h-8 text-emerald-main me-2" />
             <h3 className="text-xl font-display font-semibold text-text-title">{t.quickAdd_measureTitle}</h3>
@@ -93,8 +100,8 @@ const QuickAddItemModal: React.FC<QuickAddItemModalProps> = ({ onClose, onConfir
         </div>
         
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
-          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_confirm}</button>
+          <button onClick={handleClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors btn-interactive">{t.common_cancel}</button>
+          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm btn-interactive">{t.common_confirm}</button>
         </div>
       </div>
     </div>
