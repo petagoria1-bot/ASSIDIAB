@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import useTranslations from '../hooks/useTranslations';
-import { Caregiver, CaregiverPermissions } from '../types';
-import ToggleSwitch from './ToggleSwitch';
-import EmergencyIcon from './icons/EmergencyIcon';
+import useTranslations from '../hooks/useTranslations.ts';
+import { Caregiver, CaregiverPermissions } from '../types.ts';
+import ToggleSwitch from './ToggleSwitch.tsx';
+import EmergencyIcon from './icons/EmergencyIcon.tsx';
 
 interface PermissionsModalProps {
   onClose: () => void;
-  onSave: (caregiverUid: string, permissions: CaregiverPermissions) => void;
+  onSave: (caregiverEmail: string, permissions: CaregiverPermissions) => void;
   caregiver: Caregiver;
 }
 
@@ -45,7 +45,7 @@ const PermissionsModal: React.FC<PermissionsModalProps> = ({ onClose, onSave, ca
   };
   
   const handleSave = () => {
-    onSave(caregiver.userUid, permissions);
+    onSave(caregiver.email, permissions);
   };
 
   const modalContent = (

@@ -196,7 +196,7 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
         return false;
     });
 
-    if (viewMode !== 'day' || eventsForPeriod.length === 0 && viewMode !== 'day') {
+    if (viewMode !== 'day' || eventsForPeriod.length === 0) {
         const allEvents = eventsForPeriod
             .map(e => ({ ...e, eventType: 'gly' in e ? 'mesure' : 'total_carbs_g' in e ? 'repas' : 'injection' } as JournalEvent))
             .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
@@ -287,7 +287,7 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
     const finalEvents = [...slotsWithContent, ...standaloneGroups, ...otherEvents]
         .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 
-    return { timelineEvents: finalEvents, hasEvents: true };
+    return { timelineEvents: finalEvents, hasEvents: finalEvents.length > 0 };
 }, [mesures, repas, injections, t, viewMode, currentDate]);
 
   const handleAddAction = (mealTime: MealTime) => {
@@ -343,9 +343,9 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
           />
         </header>
 
-        {!hasEvents && viewMode !== 'day' ? (
+        {!hasEvents ? (
           <div className="text-center p-8 bg-white rounded-card mt-10">
-              <p className="font-semibold text-text-muted">{t.journal_emptyPeriod}</p>
+              <p className="font-semibold text-text-muted">{viewMode === 'day' ? t.journal_emptyDay : t.journal_emptyPeriod}</p>
           </div>
         ) : (
           <div className="relative px-2">

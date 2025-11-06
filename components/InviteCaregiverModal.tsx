@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { usePatientStore } from '../store/patientStore';
-import { CaregiverRole } from '../types';
-import useTranslations from '../hooks/useTranslations';
+import { usePatientStore } from '../store/patientStore.ts';
+import { CaregiverRole } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
 
 interface InviteCaregiverModalProps {
   onClose: () => void;
@@ -18,7 +18,7 @@ const InviteCaregiverModal: React.FC<InviteCaregiverModalProps> = ({ onClose }) 
 
   const handleInvite = async () => {
     if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
-      toast.error("Veuillez entrer une adresse e-mail valide.");
+      toast.error(t.toast_invalidEmail);
       return;
     }
 
@@ -28,7 +28,7 @@ const InviteCaregiverModal: React.FC<InviteCaregiverModalProps> = ({ onClose }) 
       onClose();
     } catch (error) {
       console.error("Failed to invite caregiver:", error);
-      toast.error("Erreur lors de l'envoi de l'invitation.");
+      toast.error(t.toast_inviteError);
     }
   };
   
@@ -48,7 +48,7 @@ const InviteCaregiverModal: React.FC<InviteCaregiverModalProps> = ({ onClose }) 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputClasses}
-              placeholder="exemple@email.com"
+              placeholder={t.invite_email_placeholder}
               autoFocus
             />
           </div>

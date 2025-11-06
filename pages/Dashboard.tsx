@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useMemo, useState } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import Card from '../components/Card.tsx';
@@ -61,7 +62,7 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
     return (
         <div className={`p-3 rounded-lg flex items-center justify-between transition-all duration-300 ${event.status === 'completed' ? 'opacity-60 bg-slate-50' : 'bg-white/50'}`}>
             <div className="flex items-center gap-3">
-                 <button onClick={handleStatusChange} className="focus:outline-none focus:ring-2 focus:ring-emerald-main/50 rounded-full" aria-label={event.status === 'pending' ? 'Mark as completed' : 'Mark as pending'}>
+                 <button onClick={handleStatusChange} className="focus:outline-none focus:ring-2 focus:ring-emerald-main/50 rounded-full" aria-label={event.status === 'pending' ? t.dashboard_markCompleted : t.dashboard_markPending}>
                     {event.status === 'pending' ? (
                         <CircleIcon className="w-7 h-7 text-slate-400 hover:text-emerald-main transition-colors" />
                     ) : (

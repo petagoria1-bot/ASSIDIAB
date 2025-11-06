@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { Food, MealItem, FavoriteMeal } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import AddFoodConfirmationModal from './AddFoodConfirmationModal';
-import EditMealItemModal from './EditMealItemModal';
-import PackagingCalculatorModal from './PackagingCalculatorModal';
-import TrashIcon from './icons/TrashIcon';
-import EditIcon from './icons/EditIcon';
-import MiniCarbIndicator from './MiniCarbIndicator';
-import PackagingIcon from './icons/PackagingIcon';
-import CameraIcon from './icons/CameraIcon';
+import { usePatientStore } from '../store/patientStore.ts';
+import { Food, MealItem, FavoriteMeal } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import AddFoodConfirmationModal from './AddFoodConfirmationModal.tsx';
+import EditMealItemModal from './EditMealItemModal.tsx';
+import PackagingCalculatorModal from './PackagingCalculatorModal.tsx';
+import TrashIcon from './icons/TrashIcon.tsx';
+import EditIcon from './icons/EditIcon.tsx';
+import MiniCarbIndicator from './MiniCarbIndicator.tsx';
+import PackagingIcon from './icons/PackagingIcon.tsx';
+import CameraIcon from './icons/CameraIcon.tsx';
 import toast from 'react-hot-toast';
-import CloseIcon from './icons/CloseIcon';
+import CloseIcon from './icons/CloseIcon.tsx';
 
 interface MealBuilderCardProps {
   onTotalCarbsChange: (totalCarbs: number) => void;
@@ -53,7 +53,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
   const handleRemoveItem = (listId: string) => {
     setMealItems(prev => prev.filter(item => item.listId !== listId));
     setItemToRemove(null);
-    toast.success('Aliment supprimé');
+    toast.success(t.toast_foodRemoved);
   };
 
   const filteredFood = useMemo(() => {
@@ -102,7 +102,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
                   <PackagingIcon className="w-8 h-8"/>
                   <span>{t.mealBuilder_packagingCalc}</span>
               </button>
-               <button onClick={() => toast.error('Bientôt disponible !')} className="flex flex-col items-center justify-center p-3 bg-slate-200/50 rounded-lg transition-colors space-y-2 text-text-muted cursor-not-allowed">
+               <button onClick={() => toast.error(t.toast_comingSoon)} className="flex flex-col items-center justify-center p-3 bg-slate-200/50 rounded-lg transition-colors space-y-2 text-text-muted cursor-not-allowed">
                   <CameraIcon className="w-8 h-8"/>
                   <span className="opacity-70">{t.mealBuilder_photoScan}</span>
               </button>
@@ -126,7 +126,9 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
                 {itemToRemove === item.listId ? (
                     <button onClick={() => handleRemoveItem(item.listId)} className="p-2 text-white bg-danger rounded-full transition-colors"><TrashIcon className="w-5 h-5" /></button>
                 ) : (
-                    <button onClick={() => setItemToRemove(item.listId)} className="p-2 text-text-muted hover:text-danger rounded-full hover:bg-white/50 transition-colors"><CloseIcon className="w-5 h-5" /></button>
+                    <button onClick={() => setItemToRemove(item.listId)} className="p-2 text-text-muted hover:text-danger rounded-full hover:bg-white/50 transition-colors" aria-label={t.mealBuilder_removeItemAria(item.food.name)}>
+                        <CloseIcon className="w-5 h-5" />
+                    </button>
                 )}
             </div>
           </div>

@@ -92,13 +92,13 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
         toast.success(t.toast_caregiverRemoved);
       } catch (error) {
         console.error("Failed to remove caregiver:", error);
-        toast.error("Erreur lors de la suppression.");
+        toast.error(t.toast_caregiverRemoveError);
       }
   };
 
-  const handleSavePermissions = async (caregiverUid: string, permissions: CaregiverPermissions) => {
+  const handleSavePermissions = async (caregiverEmail: string, permissions: CaregiverPermissions) => {
     try {
-        await updateCaregiverPermissions(caregiverUid, permissions);
+        await updateCaregiverPermissions(caregiverEmail, permissions);
         toast.success(t.toast_permissionsUpdated);
         setEditingCaregiver(null);
     } catch (error) {
@@ -182,19 +182,19 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
         <p className="text-sm text-text-muted mb-4">{t.settings_family_description}</p>
         <div className="space-y-2">
             {localPatient.caregivers.map((caregiver) => (
-                <div key={caregiver.userUid} className="flex items-center justify-between bg-input-bg p-2 rounded-lg">
+                <div key={caregiver.email} className="flex items-center justify-between bg-input-bg p-2 rounded-lg">
                     <div>
                         <p className="font-semibold text-text-main">{caregiver.email}</p>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${caregiver.role === 'owner' ? 'bg-emerald-main/20 text-emerald-main' : caregiver.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-text-muted'}`}>
-                            {getRoleLabel(caregiver.role)} - {caregiver.status === 'pending' ? t.settings_family_pending : t.settings_family_active}
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${caregiver.role === 'owner' ? 'bg-emerald-main/20 text-emerald-main' : caregiver.status === 'awaiting_confirmation' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-text-muted'}`}>
+                            {getRoleLabel(caregiver.role)} - {caregiver.status === 'awaiting_confirmation' ? t.settings_family_pending : t.settings_family_active}
                         </span>
                     </div>
                     {isOwner && caregiver.role !== 'owner' && (
                         <div className="flex items-center gap-1">
-                            <button onClick={() => setEditingCaregiver(caregiver)} className="text-text-muted p-2 hover:bg-white rounded-full">
+                            <button onClick={() => setEditingCaregiver(caregiver)} className="text-text-muted p-2 hover:bg-white rounded-full" aria-label={t.settings_editPermissionsAria(caregiver.email)}>
                                 <EditIcon />
                             </button>
-                            <button onClick={() => handleRemoveCaregiver(caregiver)} className="text-danger p-2 hover:bg-danger-soft rounded-full">
+                            <button onClick={() => handleRemoveCaregiver(caregiver)} className="text-danger p-2 hover:bg-danger-soft rounded-full" aria-label={t.settings_removeCaregiverAria(caregiver.email)}>
                                 <TrashIcon />
                             </button>
                         </div>
