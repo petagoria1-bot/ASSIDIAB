@@ -11,7 +11,8 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  UserCredential
 } from 'firebase/auth';
 
 interface AuthState {
@@ -90,8 +91,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged will handle setting the user state
+      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      const user: User = { uid: firebaseUser.uid, email: firebaseUser.email };
+      set({ currentUser: user, isAuthenticated: true, isLoading: false });
       toast.success(`Bienvenue !`);
     } catch (error: any) {
       const errorMessage = formatAuthError(error.code);
@@ -104,8 +107,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        // onAuthStateChanged will handle setting the user state
+        const result: UserCredential = await signInWithPopup(auth, provider);
+        const firebaseUser = result.user;
+        const user: User = { uid: firebaseUser.uid, email: firebaseUser.email };
+        set({ currentUser: user, isAuthenticated: true, isLoading: false });
         toast.success("Connexion avec Google réussie !");
     } catch (error: any) {
         console.error("Google sign-in error", error);
