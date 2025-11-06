@@ -56,35 +56,41 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    const handleAuth = async () => {
-      try {
-        // By awaiting this, we ensure that any redirect is processed before moving on.
-        // The result of this will then be available to onAuthStateChanged.
-        await getRedirectResult(auth);
-      } catch (error: any) {
-        // If getRedirectResult fails, we log it. onAuthStateChanged will likely
-        // receive a `null` user, which is the correct outcome.
+    // Set up the persistent listener for auth state changes (e.g., logout).
+    // This does NOT control the initial `isLoading` state.
+    onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const user: User = { uid: firebaseUser.uid, email: firebaseUser.email };
+        set({ currentUser: user, isAuthenticated: true });
+      } else {
+        set({ currentUser: null, isAuthenticated: false });
+      }
+    });
+
+    // Handle the initial authentication check, which includes waiting for any
+    // pending redirect operations to complete. This is a one-time check.
+    getRedirectResult(auth)
+      .then((result) => {
+        // If `result` is null, it means there was no redirect operation.
+        // The `onAuthStateChanged` listener will have already picked up
+        // any persisted session.
+        if (result) {
+          // If `result` is not null, the user has just signed in via redirect.
+          // `onAuthStateChanged` will also fire, but we can be explicit here.
+          const user: User = { uid: result.user.uid, email: result.user.email };
+          set({ currentUser: user, isAuthenticated: true });
+        }
+      })
+      .catch((error: any) => {
         console.error("Google Sign-In Redirect Error:", error);
         toast.error(formatAuthError(error.code));
-      }
-
-      // Now, set up the listener. It will fire with the correct state,
-      // whether from the processed redirect or from a stored session,
-      // and it will correctly set isLoading to false only once the state is certain.
-      onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-        if (firebaseUser) {
-          const user: User = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-          };
-          set({ currentUser: user, isAuthenticated: true, isLoading: false, error: null });
-        } else {
-          set({ currentUser: null, isAuthenticated: false, isLoading: false, error: null });
-        }
+      })
+      .finally(() => {
+        // CRITICAL: This is the only place we set `isLoading` to `false`.
+        // It ensures that we don't render the main app content until
+        // we've definitively checked for a redirect result.
+        set({ isLoading: false });
       });
-    };
-
-    handleAuth();
   },
 
   signup: async (email, password) => {
