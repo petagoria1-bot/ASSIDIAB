@@ -24,6 +24,7 @@ import {
     updateDoc,
     where
 } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 interface PatientState {
   patient: Patient | null;
@@ -197,16 +198,28 @@ export const usePatientStore = create<PatientState>((set, get) => ({
 
   createPatient: async (prenom, naissance, user) => {
     set({ isLoading: true });
-    const newPatient: Patient = {
-      id: user.uid,
-      userUid: user.uid,
-      prenom,
-      naissance,
-      ...DEFAULT_PATIENT_SETTINGS,
-      caregivers: [{ userUid: user.uid, email: user.email || '', role: 'owner', status: 'active' }]
-    };
-    const patientRef = doc(firestore, 'patients', user.uid);
-    await setDoc(patientRef, newPatient);
+    try {
+        const newPatient: Patient = {
+            id: user.uid,
+            userUid: user.uid,
+            prenom,
+            naissance,
+            ...DEFAULT_PATIENT_SETTINGS,
+            caregivers: [{ userUid: user.uid, email: user.email || '', role: 'owner', status: 'active' }]
+        };
+        const patientRef = doc(firestore, 'patients', user.uid);
+        await setDoc(patientRef, newPatient);
+        
+        // Explicitly update the local state to navigate away from Onboarding.
+        // The existing onSnapshot listener will simply receive this same update, which is fine.
+        set({ patient: newPatient, isLoading: false });
+
+    } catch (error) {
+        console.error("Error creating patient profile:", error);
+        toast.error("Une erreur est survenue lors de la création du profil.");
+        // Ensure we don't stay in a loading state on error
+        set({ isLoading: false });
+    }
   },
   
   updatePatient: async (patientData) => {
