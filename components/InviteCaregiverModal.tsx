@@ -7,28 +7,34 @@ import useTranslations from '../hooks/useTranslations.ts';
 
 interface InviteCaregiverModalProps {
   onClose: () => void;
+  onLinkGenerated: (link: string) => void;
 }
 
-const InviteCaregiverModal: React.FC<InviteCaregiverModalProps> = ({ onClose }) => {
-  const { inviteCaregiver } = usePatientStore();
+const InviteCaregiverModal: React.FC<InviteCaregiverModalProps> = ({ onClose, onLinkGenerated }) => {
+  const { generateInvitationLink } = usePatientStore();
   const t = useTranslations();
   
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<CaregiverRole>('family');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleInvite = async () => {
+  const handleGenerateLink = async () => {
     if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
       toast.error(t.toast_invalidEmail);
       return;
     }
-
+    setIsLoading(true);
     try {
-      await inviteCaregiver(email, role);
-      toast.success(t.toast_invitationSent);
-      onClose();
+      const link = await generateInvitationLink(email, role);
+      if (link) {
+        toast.success(t.toast_invitationLinkCreated);
+        onLinkGenerated(link);
+      }
     } catch (error) {
-      console.error("Failed to invite caregiver:", error);
+      console.error("Failed to generate invitation link:", error);
       toast.error(t.toast_inviteError);
+    } finally {
+        setIsLoading(false);
     }
   };
   
@@ -70,8 +76,10 @@ const InviteCaregiverModal: React.FC<InviteCaregiverModalProps> = ({ onClose }) 
         </div>
         
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
-          <button onClick={handleInvite} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.invite_button}</button>
+          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors" disabled={isLoading}>{t.common_cancel}</button>
+          <button onClick={handleGenerateLink} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm" disabled={isLoading}>
+            {isLoading ? t.common_loading : t.invite_button}
+          </button>
         </div>
       </div>
     </div>

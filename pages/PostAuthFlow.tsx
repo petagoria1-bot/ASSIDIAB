@@ -15,7 +15,6 @@ import Illustrations from './Illustrations.tsx';
 import History from './History.tsx';
 import BottomNav from '../components/BottomNav.tsx';
 import { Page } from '../types.ts';
-import RoleConfirmationModal from '../components/RoleConfirmationModal.tsx';
 import LoadingScreen from '../components/LoadingScreen.tsx';
 import useTranslations from '../hooks/useTranslations.ts';
 import EmergencyIcon from '../components/icons/EmergencyIcon.tsx';
@@ -51,14 +50,14 @@ const DataLoadError: React.FC = () => {
 
 const PostAuthFlow: React.FC = () => {
   const { currentUser } = useAuthStore();
-  const { patient, pendingInvitation, isLoading, loadPatientData, error } = usePatientStore();
+  const { patient, isLoading, loadPatientData, error } = usePatientStore();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !patient) {
       loadPatientData(currentUser);
     }
-  }, [currentUser, loadPatientData]);
+  }, [currentUser, patient, loadPatientData]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -66,10 +65,6 @@ const PostAuthFlow: React.FC = () => {
 
   if (error) {
       return <DataLoadError />;
-  }
-
-  if (pendingInvitation) {
-    return <RoleConfirmationModal />;
   }
   
   if (!patient) {

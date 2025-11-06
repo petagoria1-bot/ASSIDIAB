@@ -20,6 +20,7 @@ import UsersIcon from '../components/icons/UsersIcon.tsx';
 import TrashIcon from '../components/icons/TrashIcon.tsx';
 import CalculatorIcon from '../components/icons/CalculatorIcon.tsx';
 import InviteCaregiverModal from '../components/InviteCaregiverModal.tsx';
+import ShareInvitationModal from '../components/ShareInvitationModal.tsx';
 import PermissionsModal from '../components/PermissionsModal.tsx';
 import EditIcon from '../components/icons/EditIcon.tsx';
 
@@ -44,6 +45,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
 
   const [localPatient, setLocalPatient] = useState<Patient | null>(patient);
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [editingCaregiver, setEditingCaregiver] = useState<Caregiver | null>(null);
   
   if (!localPatient || !currentUser) return null;
@@ -131,7 +133,8 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
         <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.settings_title}</h1>
       </header>
       
-      {isInviteModalOpen && <InviteCaregiverModal onClose={() => setInviteModalOpen(false)} />}
+      {isInviteModalOpen && <InviteCaregiverModal onClose={() => setInviteModalOpen(false)} onLinkGenerated={(link) => { setInviteModalOpen(false); setGeneratedLink(link); }} />}
+      {generatedLink && <ShareInvitationModal invitationLink={generatedLink} onClose={() => setGeneratedLink(null)} />}
       {editingCaregiver && <PermissionsModal caregiver={editingCaregiver} onClose={() => setEditingCaregiver(null)} onSave={handleSavePermissions} />}
 
       <Card>
@@ -186,7 +189,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
                     <div>
                         <p className="font-semibold text-text-main">{caregiver.email}</p>
                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${caregiver.role === 'owner' ? 'bg-emerald-main/20 text-emerald-main' : caregiver.status === 'awaiting_confirmation' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-text-muted'}`}>
-                            {getRoleLabel(caregiver.role)} - {caregiver.status === 'awaiting_confirmation' ? t.settings_family_pending : t.settings_family_active}
+                            {getRoleLabel(caregiver.role)} - {caregiver.status === 'awaiting_confirmation' ? t.settings_family_pending_invitation : t.settings_family_active}
                         </span>
                     </div>
                     {isOwner && caregiver.role !== 'owner' && (

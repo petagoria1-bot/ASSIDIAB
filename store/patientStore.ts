@@ -5,21 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { initialFoodData } from '../data/foodLibrary.ts';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants.ts';
 import { firestore } from '../services/firebase.ts';
-import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, onSnapshot, Unsubscribe, addDoc, orderBy, writeBatch } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, onSnapshot, Unsubscribe, addDoc, orderBy, writeBatch, Timestamp, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useAuthStore } from './authStore.ts';
 import toast from 'react-hot-toast';
 import Dexie from 'dexie';
 
-// Define a type for the pending invitation check
-export interface PendingInvitation {
-    patientId: string;
-    patientName: string;
-    caregiver: Caregiver;
-}
 
 interface PatientState {
   patient: Patient | null;
-  pendingInvitation: PendingInvitation | null;
   mesures: Mesure[];
   repas: Repas[];
   injections: Injection[];
@@ -34,8 +27,6 @@ interface PatientState {
   unsubscribeMessages: Unsubscribe | null;
   clearPatientData: () => void;
   loadPatientData: (user: User) => Promise<boolean>;
-  checkForPendingInvitation: (user: User) => Promise<boolean>;
-  handleInvitation: (invitation: PendingInvitation, accept: boolean, user: User, declineStrings?: { messageText: string, fromSystem: string }) => Promise<void>;
   createPatient: (prenom: string, naissance: string, user: User) => Promise<void>;
   updatePatient: (patientData: Patient) => Promise<void>;
   addMesure: (mesure: Omit<Mesure, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
@@ -49,7 +40,9 @@ interface PatientState {
   logWater: (amount_ml: number) => Promise<void>;
   logActivity: (duration_min: number) => Promise<void>;
   logQuizCompleted: () => Promise<void>;
-  inviteCaregiver: (email: string, role: CaregiverRole) => Promise<void>;
+  generateInvitationLink: (email: string, role: CaregiverRole) => Promise<string | null>;
+  getInvitationDetails: (inviteId: string) => Promise<{ patientName: string; role: string } | null>;
+  acceptInvitation: (inviteId: string, user: User) => Promise<void>;
   removeCaregiver: (caregiver: Caregiver) => Promise<void>;
   updateCaregiverPermissions: (caregiverEmail: string, permissions: CaregiverPermissions) => Promise<void>;
   markMessagesAsRead: () => Promise<void>;
@@ -57,7 +50,6 @@ interface PatientState {
 
 export const usePatientStore = create<PatientState>((set, get) => ({
   patient: null,
-  pendingInvitation: null,
   mesures: [],
   repas: [],
   injections: [],
@@ -76,7 +68,6 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     get().unsubscribeMessages?.();
     set({
       patient: null,
-      pendingInvitation: null,
       mesures: [],
       repas: [],
       injections: [],
@@ -89,94 +80,53 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     });
   },
   
-  checkForPendingInvitation: async (user: User) => {
-    if (!user.email) return false;
-    const q = query(collection(firestore, "patients"), where("pendingEmails", "array-contains", user.email));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-        const patientDoc = querySnapshot.docs[0];
-        const patientData = patientDoc.data() as Patient;
-        const pendingCaregiver = patientData.caregivers.find(c => c.email === user.email && c.status === 'awaiting_confirmation');
-        if (pendingCaregiver) {
-            set({
-                pendingInvitation: {
-                    patientId: patientData.id,
-                    patientName: patientData.prenom,
-                    caregiver: pendingCaregiver
-                }
-            });
-            return true;
-        }
-    }
-    return false;
-  },
-
   loadPatientData: async (user: User) => {
     set({ isLoading: true, error: null });
     get().clearPatientData();
 
     try {
-        const q = query(collection(firestore, "patients"), where("activeCaregiverUids", "array-contains", user.uid));
+        const q = query(collection(firestore, "patients"), where("caregiversUids", "array-contains", user.uid));
         const querySnapshot = await getDocs(q);
         const patientDoc = querySnapshot.empty ? null : querySnapshot.docs[0];
 
         if (patientDoc) {
-        const patientId = patientDoc.id;
-        
-        const unsubPatient = onSnapshot(doc(firestore, "patients", patientId), (doc) => {
-            try {
-                if (doc.exists()) {
-                    const patientData = doc.data() as Patient;
-                    set({ patient: patientData });
-                }
-            } catch (e) {
-                console.error("Error processing patient snapshot", e);
-            }
-        }, (error) => {
-            console.error("Patient snapshot listener failed:", error);
-        });
+            const patientId = patientDoc.id;
+            
+            const unsubPatient = onSnapshot(doc(firestore, "patients", patientId), (doc) => {
+                if (doc.exists()) set({ patient: doc.data() as Patient });
+            });
 
-        const unsubMessages = onSnapshot(query(collection(firestore, `patients/${patientId}/messages`), where("toUid", "==", user.uid), orderBy("ts", "desc")), (snapshot) => {
-            try {
+            const unsubMessages = onSnapshot(query(collection(firestore, `patients/${patientId}/messages`), where("toUid", "==", user.uid), orderBy("ts", "desc")), (snapshot) => {
                 const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
                 const unreadCount = messages.filter(m => !m.read).length;
                 set({ messages, unreadMessagesCount: unreadCount });
-            } catch (e) {
-                console.error("Error processing messages snapshot", e);
+            });
+
+            set({ unsubscribePatient: unsubPatient, unsubscribeMessages: unsubMessages });
+
+            const foodCount = await db.foodLibrary.count();
+            if(foodCount === 0) await db.foodLibrary.bulkAdd(initialFoodData);
+            
+            const [foodLib, allMesures, allRepas, allInjections, allEvents] = await Promise.all([
+                db.foodLibrary.orderBy('name').toArray(),
+                db.mesures.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
+                db.repas.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
+                db.injections.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
+                db.events.where('[patient_id+status]').equals([patientId, 'pending']).sortBy('ts')
+            ]);
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            let progress = await db.dailyProgress.get(todayStr);
+            if (!progress) {
+                progress = { date: todayStr, patient_id: patientId, water_ml: 0, activity_min: 0, quiz_completed: false };
+                await db.dailyProgress.put(progress);
             }
-        }, (error) => {
-            console.error("Messages snapshot listener failed:", error);
-        });
 
-        set({ unsubscribePatient: unsubPatient, unsubscribeMessages: unsubMessages });
-
-        const foodCount = await db.foodLibrary.count();
-        if(foodCount === 0) await db.foodLibrary.bulkAdd(initialFoodData);
-        
-        // Using Dexie.minKey/maxKey allows us to query the compound index for a specific patientId
-        // and get results sorted by the second part of the index (ts). This is highly performant.
-        const [foodLib, allMesures, allRepas, allInjections, allEvents] = await Promise.all([
-            db.foodLibrary.orderBy('name').toArray(),
-            db.mesures.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
-            db.repas.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
-            db.injections.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
-            db.events.where('[patient_id+status]').equals([patientId, 'pending']).sortBy('ts')
-        ]);
-
-        const todayStr = new Date().toISOString().split('T')[0];
-        let progress = await db.dailyProgress.get(todayStr);
-        if (!progress) {
-            progress = { date: todayStr, patient_id: patientId, water_ml: 0, activity_min: 0, quiz_completed: false };
-            await db.dailyProgress.put(progress);
-        }
-
-        set({ patient: patientDoc.data() as Patient, foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
-        return true;
+            set({ patient: patientDoc.data() as Patient, foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
+            return true;
         } else {
-            const hasInvitation = await get().checkForPendingInvitation(user);
             set({ isLoading: false });
-            return hasInvitation ? true : false;
+            return false;
         }
     } catch (error) {
         console.error("CRITICAL: Failed to load patient data.", error);
@@ -185,88 +135,32 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         return false;
     }
   },
-  
-  handleInvitation: async (invitation, accept, user, declineStrings) => {
-    try {
-        const patientRef = doc(firestore, "patients", invitation.patientId);
-        const patientSnap = await getDoc(patientRef);
-        if (!patientSnap.exists()) return;
-
-        const patientData = patientSnap.data() as Patient;
-        const owner = patientData.caregivers.find(c => c.role === 'owner');
-
-        let updatedCaregivers = [...patientData.caregivers];
-        const caregiverIndex = updatedCaregivers.findIndex(c => c.email === user.email && c.status === 'awaiting_confirmation');
-        
-        if (caregiverIndex !== -1) {
-            if (accept) {
-                updatedCaregivers[caregiverIndex].status = 'active';
-                updatedCaregivers[caregiverIndex].userUid = user.uid;
-                await updateDoc(patientRef, { 
-                    caregivers: updatedCaregivers,
-                    pendingEmails: arrayRemove(user.email),
-                    activeCaregiverUids: arrayUnion(user.uid)
-                });
-                set({ pendingInvitation: null });
-                await get().loadPatientData(user);
-            } else {
-                updatedCaregivers[caregiverIndex].status = 'declined';
-                await updateDoc(patientRef, { 
-                    caregivers: updatedCaregivers,
-                    pendingEmails: arrayRemove(user.email),
-                });
-                if (owner && owner.userUid && declineStrings) {
-                    await addDoc(collection(firestore, `patients/${invitation.patientId}/messages`), {
-                        patientId: invitation.patientId,
-                        fromUid: 'system',
-                        fromEmail: declineStrings.fromSystem,
-                        toUid: owner.userUid,
-                        text: declineStrings.messageText,
-                        ts: new Date().toISOString(),
-                        read: false
-                    });
-                }
-                set({ pendingInvitation: null });
-                useAuthStore.getState().logout();
-            }
-        }
-    } catch (error) {
-        console.error("Failed to handle invitation:", error);
-        toast.error("Une erreur est survenue lors du traitement de l'invitation.");
-        set({ pendingInvitation: null });
-        useAuthStore.getState().logout();
-    }
-  },
 
   createPatient: async (prenom, naissance, user) => {
     set({ isLoading: true });
     try {
       const patientId = uuidv4();
+      const ownerCaregiver: Caregiver = {
+          userUid: user.uid,
+          email: user.email!,
+          role: 'owner',
+          status: 'active',
+          permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
+      };
       const newPatient: Patient = {
         id: patientId,
         userUid: user.uid,
         prenom,
         naissance,
         ...DEFAULT_PATIENT_SETTINGS,
-        caregivers: [{
-          userUid: user.uid,
-          email: user.email!,
-          role: 'owner',
-          status: 'active',
-          permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
-        }]
+        caregivers: [ownerCaregiver]
       };
 
-      const patientWithQueryFields = {
-        ...newPatient,
-        activeCaregiverUids: [user.uid],
-        pendingEmails: []
-      };
-
-      await setDoc(doc(firestore, "patients", patientId), patientWithQueryFields);
+      await setDoc(doc(firestore, "patients", patientId), {
+          ...newPatient,
+          caregiversUids: [user.uid] // For querying
+      });
       
-      // Reload all data to ensure consistency and attach listeners.
-      // This avoids the onboarding loop.
       await get().loadPatientData(user);
 
     } catch (error) {
@@ -382,37 +276,88 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     set({ todayProgress: newProgress });
   },
 
-  inviteCaregiver: async (email, role) => {
+  generateInvitationLink: async (email, role) => {
     const { patient } = get();
     if (!patient) throw new Error("Patient not loaded");
     if (patient.caregivers.some(c => c.email === email)) {
         throw new Error("User is already a caregiver.");
     }
-
-    const defaultPermissions: CaregiverPermissions = {
-        canViewJournal: true,
-        canEditJournal: role === 'parent',
-        canEditPAI: false,
-        canManageFamily: false,
-    };
+    const inviteId = uuidv4();
+    const inviteRef = doc(firestore, `patients/${patient.id}/invitations`, inviteId);
     
-    if (role === 'health_professional') {
-        defaultPermissions.canEditJournal = false;
-    }
-
-    const newCaregiver: Caregiver = {
-        userUid: null,
+    await setDoc(inviteRef, {
         email,
         role,
-        status: 'awaiting_confirmation',
-        permissions: defaultPermissions
-    };
+        patientId: patient.id,
+        patientName: patient.prenom,
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + 72 * 60 * 60 * 1000)), // 72 hours
+    });
 
     const patientRef = doc(firestore, "patients", patient.id);
-    await updateDoc(patientRef, {
-        caregivers: arrayUnion(newCaregiver),
-        pendingEmails: arrayUnion(email)
-    });
+    const newCaregiver: Caregiver = {
+        userUid: null, email, role, status: 'awaiting_confirmation',
+        permissions: { canViewJournal: true, canEditJournal: role === 'parent', canEditPAI: false, canManageFamily: false }
+    };
+    await updateDoc(patientRef, { caregivers: arrayUnion(newCaregiver) });
+
+    return `${window.location.origin}/invite/${inviteId}`;
+  },
+
+  getInvitationDetails: async (inviteId) => {
+    // This is a bit tricky since we don't know the patientId.
+    // This requires a root-level collection query, which is less ideal for security.
+    // For now, we assume the invite link includes the patientId or we find it.
+    // A better way would be a collectionGroup query on 'invitations'.
+    // Let's assume a simpler structure for now or a Cloud Function handles this lookup.
+    // To implement without collectionGroup queries, we can iterate through patients.
+    // This is NOT scalable, but for a small app it works.
+    const patientsSnapshot = await getDocs(collection(firestore, "patients"));
+    for (const patientDoc of patientsSnapshot.docs) {
+        const inviteRef = doc(firestore, `patients/${patientDoc.id}/invitations`, inviteId);
+        const inviteSnap = await getDoc(inviteRef);
+        if (inviteSnap.exists()) {
+            const data = inviteSnap.data();
+            const expiresAt = (data.expiresAt as Timestamp).toDate();
+            if (expiresAt < new Date()) {
+                await deleteDoc(inviteRef);
+                return null; // Expired
+            }
+            return { patientName: data.patientName, role: data.role };
+        }
+    }
+    return null;
+  },
+
+  acceptInvitation: async (inviteId, user) => {
+    const patientsSnapshot = await getDocs(collection(firestore, "patients"));
+    for (const patientDoc of patientsSnapshot.docs) {
+        const inviteRef = doc(firestore, `patients/${patientDoc.id}/invitations`, inviteId);
+        const inviteSnap = await getDoc(inviteRef);
+
+        if (inviteSnap.exists()) {
+            const inviteData = inviteSnap.data();
+            const patientRef = doc(firestore, "patients", patientDoc.id);
+            const patientSnap = await getDoc(patientRef);
+            if (!patientSnap.exists()) continue;
+
+            const patientData = patientSnap.data() as Patient;
+            const updatedCaregivers = patientData.caregivers.map(c => {
+                if (c.email === inviteData.email && c.status === 'awaiting_confirmation') {
+                    return { ...c, status: 'active' as const, userUid: user.uid };
+                }
+                return c;
+            });
+
+            await updateDoc(patientRef, {
+                caregivers: updatedCaregivers,
+                caregiversUids: arrayUnion(user.uid)
+            });
+
+            await deleteDoc(inviteRef);
+            return;
+        }
+    }
+    throw new Error("Invitation not found or invalid.");
   },
 
   removeCaregiver: async (caregiverToRemove) => {
@@ -427,11 +372,9 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     const updatePayload: any = {
         caregivers: arrayRemove(caregiverInState)
     };
-
-    if (caregiverInState.status === 'awaiting_confirmation') {
-        updatePayload.pendingEmails = arrayRemove(caregiverInState.email);
-    } else if (caregiverInState.status === 'active' && caregiverInState.userUid) {
-        updatePayload.activeCaregiverUids = arrayRemove(caregiverInState.userUid);
+    
+    if (caregiverInState.status === 'active' && caregiverInState.userUid) {
+        updatePayload.caregiversUids = arrayRemove(caregiverInState.userUid);
     }
     
     await updateDoc(patientRef, updatePayload);
