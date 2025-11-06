@@ -55,53 +55,41 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // This is the persistent listener. It will be our final source of truth.
+    // This persistent listener will react to all auth changes (login, logout, token refresh).
+    // Its only job is to keep the user state in sync with Firebase.
+    // It does NOT manage the initial loading state.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // This listener fires on any auth change: login, logout, and INITIAL LOAD.
-  
-      if (user) {
-        // CASE A: We have a user. This is definitive.
-        const currentUser: User = { uid: user.uid, email: user.email };
-        set({
-          currentUser,
-          isAuthenticated: true,
-          isLoading: false, // DEFINITIVE: We are logged in. Stop loading.
-          error: null,
-        });
-      } else {
-        // CASE B: We do NOT have a user.
-        // This could mean we are logged out OR a redirect is being processed.
-        // We MUST check the redirect status before concluding we are logged out.
-        getRedirectResult(auth)
-          .then((result) => {
-            if (result === null) {
-              // The check is complete, and there was no redirect user.
-              // Since the listener also reported no user, we now have a definitive answer.
-              set({
-                currentUser: null,
-                isAuthenticated: false,
-                isLoading: false, // DEFINITIVE: We are logged out. Stop loading.
-              });
-            }
-            // If `result` is NOT null, a sign-in just completed.
-            // Firebase will automatically fire `onAuthStateChanged` again with the new user.
-            // We do nothing here and let `isLoading` remain true, waiting for CASE A.
-          })
-          .catch((error) => {
-            console.error("Google Sign-In Redirect Error:", error);
-            const errorMessage = formatAuthError((error as any).code);
-            toast.error(errorMessage);
-            set({
-              error: errorMessage,
-              isLoading: false, // DEFINITIVE: An error occurred. Stop loading.
-              isAuthenticated: false,
-              currentUser: null,
-            });
-          });
-      }
+      const currentUser: User | null = user ? { uid: user.uid, email: user.email } : null;
+      set({
+        currentUser,
+        isAuthenticated: !!user,
+        error: null,
+      });
     });
-  
-    // Return the function to clean up the listener when the app unmounts.
+
+    // This one-time check runs on app startup. It forces the app to wait
+    // for any pending Google Sign-In redirect to be processed before hiding the loading screen.
+    const performStartupCheck = async () => {
+      try {
+        // This promise resolves after Firebase has processed any redirect from Google.
+        // After it resolves, the `onAuthStateChanged` listener above will have been triggered
+        // with the final, correct authentication state (either the new user or null).
+        await getRedirectResult(auth);
+      } catch (error: any) {
+        console.error("Google Sign-In startup error:", error);
+        const errorMessage = formatAuthError(error.code);
+        toast.error(errorMessage);
+        set({ error: errorMessage });
+      } finally {
+        // Now that we are CERTAIN that any redirect has been handled,
+        // we can hide the loading screen. The state is now definitive.
+        set({ isLoading: false });
+      }
+    };
+
+    performStartupCheck();
+
+    // Return the function to clean up the persistent listener when the app unmounts.
     return unsubscribe;
   },
 
@@ -145,6 +133,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   loginWithGoogle: async () => {
+    // Set loading to true to give feedback to the user before the page unloads for redirect.
     set({ isLoading: true, error: null });
     try {
         const provider = new GoogleAuthProvider();
