@@ -22,7 +22,7 @@ interface AuthState {
   signup: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  resetPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
   initializeAuth: () => () => void; // Returns the unsubscribe function
 }
 
@@ -127,16 +127,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // onAuthStateChanged will handle clearing the user state.
   },
 
-  resetPassword: async (email: string) => {
-    set({ isLoading: true, error: null });
+  resetPassword: async (email: string): Promise<boolean> => {
+    set({ error: null });
     try {
       await sendPasswordResetEmail(auth, email);
-      set({ isLoading: false });
+      return true;
     } catch (error: any) {
       const errorMessage = formatAuthError(error.code);
-      set({ error: errorMessage, isLoading: false });
+      set({ error: errorMessage });
       toast.error(errorMessage);
-      throw new Error(errorMessage); // Propagate error
+      return false;
     }
   },
 }));

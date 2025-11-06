@@ -15,6 +15,7 @@ const AuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showEmailExistsModal, setShowEmailExistsModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (error === 'auth/email-already-in-use') {
@@ -50,11 +51,11 @@ const AuthPage: React.FC = () => {
       toast.error(t.toast_invalidEmail);
       return;
     }
-    try {
-      await resetPassword(email);
+    setIsSubmitting(true);
+    const success = await resetPassword(email);
+    setIsSubmitting(false);
+    if (success) {
       setView('reset-success');
-    } catch (err) {
-      // Error is handled by the store's toast
     }
   };
 
@@ -169,10 +170,10 @@ const AuthPage: React.FC = () => {
             />
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
             >
-              {isLoading ? t.common_loading : t.auth_resetButton}
+              {isSubmitting ? t.common_loading : t.auth_resetButton}
             </button>
         </form>
         <div className="text-center mt-4">
