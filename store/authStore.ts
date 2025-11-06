@@ -57,32 +57,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // This listener is Firebase's source of truth. It fires on initial load
-    // (after any redirect is processed), on sign-in, and on sign-out.
+    // This is the simplest and most robust way to handle auth state.
+    // onAuthStateChanged is the single source of truth. It fires once on load
+    // with the correct state (including after a redirect) and then whenever
+    // the auth state changes. isLoading is only set to false *after* this
+    // initial check is complete, which prevents all race conditions.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const currentUser: User | null = user ? { uid: user.uid, email: user.email } : null;
-      
-      // The key fix: isLoading becomes false ONLY after this first, definitive check completes.
-      set({
-        currentUser,
-        isAuthenticated: !!user,
-        isLoading: false,
-        error: null,
-      });
+      if (user) {
+        const currentUser: User = { uid: user.uid, email: user.email };
+        set({
+          currentUser,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } else {
+        set({
+          currentUser: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      }
     });
 
-    // Also handle potential errors during the redirect process itself.
-    // This is useful for catching specific issues like account conflicts.
-    getRedirectResult(auth).catch((error: any) => {
-        console.error("Redirect Result Error:", error);
-        const errorMessage = formatAuthError(error.code);
-        if (errorMessage) { // Only show toast if it's a known error
-          toast.error(errorMessage);
-        }
-        set({ error: errorMessage, isLoading: false }); // Also stop loading on error.
-    });
-
-    // Return the cleanup function for React's useEffect.
+    // Return the cleanup function.
     return unsubscribe;
   },
 
@@ -113,10 +112,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   loginWithGoogle: async () => {
-    set({ error: null }); // Clear previous errors before redirecting
+    set({ isLoading: true, error: null }); 
     try {
         const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
+        // We handle potential redirect errors here
+        await signInWithRedirect(auth, provider).catch(error => {
+          throw error;
+        });
         // The page will redirect. The result is handled by initializeAuth on the next load.
     } catch (error: any) {
         console.error("Google sign-in initiation error", error);

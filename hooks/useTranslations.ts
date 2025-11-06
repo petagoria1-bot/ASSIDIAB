@@ -23,6 +23,7 @@ const fr = {
   common_confirm: "Confirmer",
   common_optional: "Optionnel",
   common_loading: "Chargement...",
+  common_loading_connection: "Finalisation de la connexion...",
   common_creating: "Création...",
   common_min: "Min",
   common_max: "Max",
