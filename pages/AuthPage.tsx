@@ -2,42 +2,155 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore.ts';
 import useTranslations from '../hooks/useTranslations.ts';
 import DropletLogoIcon from '../components/icons/DropletLogoIcon.tsx';
-import GoogleIcon from '../components/icons/GoogleIcon.tsx';
 import toast from 'react-hot-toast';
 
 const AuthPage: React.FC = () => {
-  const { isLoading, login, signup, loginWithGoogle, error, clearError } = useAuthStore();
+  const { isLoading, login, signup, resetPassword } = useAuthStore();
   const t = useTranslations();
-
-  const [isLoginView, setIsLoginView] = useState(true);
+  
+  const [view, setView] = useState<'login' | 'signup' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-
-    if (isLoginView) {
-      if (!email || !password) {
-        toast.error(t.toast_fillAllFields);
-        return;
-      }
-      await login(email, password);
-    } else {
-      if (!email || !password || !confirmPassword) {
-        toast.error(t.toast_fillAllFields);
-        return;
-      }
-      if (password !== confirmPassword) {
-        toast.error(t.toast_passwordsDoNotMatch);
-        return;
-      }
-      await signup(email, password);
+    if (!email || !password) {
+      toast.error(t.toast_fillAllFields);
+      return;
     }
+    await login(email, password);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !confirmPassword) {
+      toast.error(t.toast_fillAllFields);
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error(t.toast_passwordsDoNotMatch);
+      return;
+    }
+    await signup(email, password);
   };
   
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error(t.toast_invalidEmail);
+      return;
+    }
+    await resetPassword(email);
+    setView('login'); // Go back to login view after request
+  };
+
+  const switchView = (targetView: 'login' | 'signup') => {
+    if (view !== targetView) {
+        setView(targetView);
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+    }
+  }
+  
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+
+  const renderLoginSignup = () => (
+    <div key="login-signup">
+      <div className="flex justify-center bg-slate-200/60 rounded-pill p-1 mb-6">
+        <button 
+          onClick={() => switchView('login')}
+          className={`w-1/2 py-2 rounded-pill font-semibold transition-all duration-300 ${view === 'login' ? 'bg-white shadow-md text-emerald-main' : 'text-text-muted'}`}
+        >
+          {t.auth_loginTitle}
+        </button>
+        <button 
+          onClick={() => switchView('signup')}
+          className={`w-1/2 py-2 rounded-pill font-semibold transition-all duration-300 ${view === 'signup' ? 'bg-white shadow-md text-emerald-main' : 'text-text-muted'}`}
+        >
+          {t.auth_signupTitle}
+        </button>
+      </div>
+
+      <form onSubmit={view === 'login' ? handleLogin : handleSignup} className="space-y-4">
+        <input
+          type="email"
+          placeholder={t.auth_emailPlaceholder}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={inputClasses}
+          required
+        />
+        <input
+          type="password"
+          placeholder={t.auth_passwordPlaceholder}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className={inputClasses}
+          required
+        />
+        {view === 'signup' && (
+          <input
+            type="password"
+            placeholder={t.auth_confirmPasswordPlaceholder}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={inputClasses}
+            required
+          />
+        )}
+        
+        {view === 'login' && (
+            <div className="text-right">
+                <button type="button" onClick={() => { setEmail(''); setView('reset'); }} className="text-sm font-semibold text-emerald-main hover:underline">
+                    {t.auth_forgotPassword}
+                </button>
+            </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
+        >
+          {isLoading ? t.common_loading : (view === 'login' ? t.auth_loginButton : t.auth_signupButton)}
+        </button>
+      </form>
+    </div>
+  );
+
+  const renderReset = () => (
+    <div key="reset" className="animate-fade-in-fast">
+        <h2 className="text-xl font-display font-bold text-center text-text-title mb-2">{t.auth_resetTitle}</h2>
+        <p className="text-sm text-center text-text-muted mb-6">{t.auth_resetSubtitle}</p>
+
+        <form onSubmit={handlePasswordReset} className="space-y-4">
+            <input
+              type="email"
+              placeholder={t.auth_emailPlaceholder}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClasses}
+              required
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
+            >
+              {isLoading ? t.common_loading : t.auth_resetButton}
+            </button>
+        </form>
+        <div className="text-center mt-4">
+            <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">
+                {t.auth_backToLogin}
+            </button>
+        </div>
+    </div>
+  );
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient font-sans">
@@ -49,69 +162,7 @@ const AuthPage: React.FC = () => {
         </div>
         
         <div className="bg-white/[.85] rounded-card p-6 sm:p-8 shadow-glass border border-black/5 animate-card-open">
-          <h2 className="text-2xl font-display font-bold text-center text-text-title mb-6">
-            {isLoginView ? t.auth_loginTitle : t.auth_signupTitle}
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="email"
-              placeholder={t.auth_emailPlaceholder}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClasses}
-              required
-            />
-            <input
-              type="password"
-              placeholder={t.auth_passwordPlaceholder}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClasses}
-              required
-            />
-            {!isLoginView && (
-              <input
-                type="password"
-                placeholder={t.auth_confirmPasswordPlaceholder}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={inputClasses}
-                required
-              />
-            )}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
-            >
-              {isLoading ? t.common_loading : (isLoginView ? t.auth_loginButton : t.auth_signupButton)}
-            </button>
-          </form>
-
-          <div className="relative flex py-5 items-center">
-              <div className="flex-grow border-t border-slate-300"></div>
-              <span className="flex-shrink mx-4 text-slate-400 text-sm font-semibold">{t.auth_or}</span>
-              <div className="flex-grow border-t border-slate-300"></div>
-          </div>
-          
-          <button
-            type="button"
-            onClick={loginWithGoogle}
-            disabled={isLoading}
-            className="w-full btn-interactive group flex items-center justify-center text-md font-semibold py-3 px-6 rounded-button bg-white border border-slate-300 text-text-main transition-all duration-300 ease-fast hover:shadow-md disabled:opacity-60"
-          >
-            <GoogleIcon className="w-6 h-6 mr-3" />
-            {t.auth_googleSignIn}
-          </button>
-          
-          <p className="text-center text-sm text-text-muted mt-6">
-            {isLoginView ? t.auth_noAccount : t.auth_hasAccount}
-            <button onClick={() => { setIsLoginView(!isLoginView); clearError(); }} className="font-semibold text-emerald-main hover:underline ml-1">
-              {isLoginView ? t.auth_signupNow : t.auth_loginNow}
-            </button>
-          </p>
-
+          {view === 'reset' ? renderReset() : renderLoginSignup()}
         </div>
       </div>
     </div>

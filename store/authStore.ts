@@ -10,9 +10,7 @@ import {
   signOut, 
   onAuthStateChanged,
   User as FirebaseUser,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult
+  sendPasswordResetEmail
 } from 'firebase/auth';
 
 interface AuthState {
@@ -23,8 +21,8 @@ interface AuthState {
   clearError: () => void;
   signup: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => void;
+  resetPassword: (email: string) => Promise<void>;
   initializeAuth: () => () => void; // Returns the unsubscribe function
 }
 
@@ -34,6 +32,7 @@ const formatAuthError = (errorCode: string): string => {
             return 'Adresse e-mail invalide.';
         case 'auth/user-not-found':
         case 'auth/wrong-password':
+        case 'auth/invalid-credential':
             return 'Email ou mot de passe incorrect.';
         case 'auth/email-already-in-use':
             return 'Cette adresse e-mail est déjà utilisée.';
@@ -116,23 +115,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginWithGoogle: async () => {
-    set({ isLoading: true, error: null }); 
-    try {
-        const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
-    } catch (error: any) {
-        console.error("Google sign-in initiation error", error);
-        const errorMessage = formatAuthError(error.code);
-        set({ error: errorMessage, isLoading: false });
-        toast.error(errorMessage);
-    }
-  },
-
   logout: async () => {
     // Clear any pending invite flow on logout
     sessionStorage.removeItem('pendingInviteId');
     await signOut(auth);
     // onAuthStateChanged will handle clearing the user state.
+  },
+
+  resetPassword: async (email: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await sendPasswordResetEmail(auth, email);
+      // Using a more generic message for security (prevents user enumeration)
+      toast.success("Si un compte est associé à cet e-mail, un lien de réinitialisation a été envoyé.");
+      set({ isLoading: false });
+    } catch (error: any) {
+      const errorMessage = formatAuthError(error.code);
+      set({ error: errorMessage, isLoading: false });
+      toast.error(errorMessage);
+    }
   },
 }));
