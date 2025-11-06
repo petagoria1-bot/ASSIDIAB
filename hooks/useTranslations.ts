@@ -128,6 +128,10 @@ const fr = {
   dashboard_dataAnalysisButton: "Voir mes rapports",
   dashboard_markCompleted: "Marquer comme terminé",
   dashboard_markPending: "Marquer comme à faire",
+  dashboard_inbox_title: "Boîte de réception",
+  dashboard_inbox_unread_one: "Vous avez 1 nouveau message.",
+  dashboard_inbox_unread_many: (count: number) => `Vous avez ${count} nouveaux messages.`,
+  dashboard_inbox_all_read: "Vos messages sont à jour.",
   // Calculator
   calculator_title: "Calculateur de Bolus",
   calculator_glycemiaAndTimeTitle: "Glycémie & Moment",

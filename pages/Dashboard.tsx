@@ -29,6 +29,8 @@ import BreakfastIcon from '../components/icons/BreakfastIcon.tsx';
 import LunchIcon from '../components/icons/LunchIcon.tsx';
 import DinnerIcon from '../components/icons/DinnerIcon.tsx';
 import SnackIcon from '../components/icons/SnackIcon.tsx';
+import InboxIcon from '../components/icons/InboxIcon.tsx';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon.tsx';
 
 
 interface DashboardProps {
@@ -80,7 +82,7 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
 
 
 const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
-  const { patient, mesures, addMesure, addInjection, events, addEvent } = usePatientStore();
+  const { patient, mesures, addMesure, addInjection, events, addEvent, unreadMessagesCount } = usePatientStore();
   const { setCalculatorMealTime } = useUiStore();
   const t = useTranslations();
   const [isMeasureModalOpen, setMeasureModalOpen] = useState(false);
@@ -168,9 +170,41 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
 
   if (!patient) return null;
 
+  const InboxCard = () => {
+    const hasUnread = unreadMessagesCount > 0;
+    const message = hasUnread 
+      ? (unreadMessagesCount === 1 ? t.dashboard_inbox_unread_one : t.dashboard_inbox_unread_many(unreadMessagesCount))
+      : t.dashboard_inbox_all_read;
+
+    return (
+      <div className={hasUnread ? 'animate-breathing-halo rounded-card' : ''}>
+        <Card 
+          onClick={() => setCurrentPage('inbox')} 
+          className="animate-card-open"
+          style={{animationDelay: '100ms'}}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <InboxIcon className={`w-12 h-12 transition-colors ${hasUnread ? 'text-emerald-main' : 'text-slate-400'}`} />
+              <div>
+                <h2 className="font-display font-semibold text-xl text-text-title">{t.dashboard_inbox_title}</h2>
+                <p className="text-sm text-text-muted">{message}</p>
+              </div>
+            </div>
+            <ArrowRightIcon className="w-6 h-6 text-text-muted"/>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
   return (
     <div>
-      <TimeOfDayHeader greeting={getGreeting(t, patient.prenom)} />
+      <TimeOfDayHeader 
+        greeting={getGreeting(t, patient.prenom)}
+        unreadCount={unreadMessagesCount}
+        onInboxClick={() => setCurrentPage('inbox')}
+      />
 
       <div className="px-4 space-y-5">
         <Card className="animate-card-open">
@@ -212,7 +246,9 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
           </div>
         </Card>
         
-        <Card className="animate-card-open" style={{animationDelay: '100ms'}}>
+        <InboxCard />
+
+        <Card className="animate-card-open" style={{animationDelay: '200ms'}}>
            {hasPendingEvents ? (
               <div className="relative w-24 h-24 mx-auto my-2 flex items-center justify-center">
                   <CalendarBlinkAnimation className="w-24 h-24" />
@@ -233,8 +269,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
            </button>
         </Card>
         
-         <div className="rounded-card animate-breathing-halo">
-          <Card className="cursor-pointer hover:shadow-glass-hover animate-card-open" style={{animationDelay: '200ms'}} onClick={() => setCurrentPage('rapports')}>
+         <div className="rounded-card">
+          <Card className="cursor-pointer hover:shadow-glass-hover animate-card-open" style={{animationDelay: '300ms'}} onClick={() => setCurrentPage('rapports')}>
              <GlucoseTrackingIllustration />
             <h2 className="font-display font-semibold text-xl text-center text-text-title">{t.dashboard_dataAnalysisTitle}</h2>
             <p className="text-sm text-text-muted text-center mt-1">{t.dashboard_dataAnalysisText}</p>
@@ -244,11 +280,11 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
           </Card>
         </div>
 
-        <div className="animate-card-open" style={{animationDelay: '300ms'}}>
+        <div className="animate-card-open" style={{animationDelay: '400ms'}}>
           <ProgressCard />
         </div>
 
-        <div className="animate-card-open" style={{animationDelay: '400ms'}}>
+        <div className="animate-card-open" style={{animationDelay: '500ms'}}>
           <GlucoQuizCard />
         </div>
 

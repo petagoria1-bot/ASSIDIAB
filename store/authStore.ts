@@ -10,7 +10,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
   UserCredential
 } from 'firebase/auth';
 
@@ -113,11 +113,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
         const provider = new GoogleAuthProvider();
-        const result: UserCredential = await signInWithPopup(auth, provider);
-        const firebaseUser = result.user;
-        const user: User = { uid: firebaseUser.uid, email: firebaseUser.email };
-        set({ currentUser: user, isAuthenticated: true, isLoading: false });
-        toast.success("Connexion avec Google réussie !");
+        // Using signInWithRedirect instead of signInWithPopup is more robust
+        // in embedded environments (iframes) where popups may be blocked or restricted.
+        await signInWithRedirect(auth, provider);
+        // The result of the redirect is handled by the onAuthStateChanged listener
+        // in checkSession, so we don't need to process the result here. The page will
+        // reload, and checkSession will pick up the authenticated user.
     } catch (error: any) {
         console.error("Google sign-in error", error);
         const errorMessage = formatAuthError(error.code);

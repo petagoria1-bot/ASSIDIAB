@@ -5,8 +5,6 @@ import CalculatorIcon from './icons/CalculatorIcon.tsx';
 import JournalIcon from './icons/JournalIcon.tsx';
 import ChartIcon from './icons/ChartIcon.tsx';
 import SettingsIcon from './icons/SettingsIcon.tsx';
-import InboxIcon from './icons/InboxIcon.tsx';
-import { usePatientStore } from '../store/patientStore.ts';
 import useTranslations from '../hooks/useTranslations.ts';
 
 
@@ -40,14 +38,13 @@ const NavItem: React.FC<{
 );
 
 const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) => {
-  const { unreadMessagesCount } = usePatientStore();
   const t = useTranslations();
   
   const navItems = [
     { page: 'dashboard', label: t.nav_home, icon: <HomeIcon /> },
     { page: 'glucides', label: t.nav_calculator, icon: <CalculatorIcon /> },
     { page: 'journal', label: t.nav_journal, icon: <JournalIcon /> },
-    { page: 'inbox', label: t.nav_inbox, icon: <InboxIcon />, badge: unreadMessagesCount },
+    { page: 'rapports', label: t.nav_reports, icon: <ChartIcon /> },
     { page: 'settings', label: t.nav_settings, icon: <SettingsIcon /> },
   ];
 
@@ -61,7 +58,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
             icon={item.icon}
             isActive={currentPage === item.page}
             onClick={() => setCurrentPage(item.page as Page)}
-            badgeCount={item.badge}
+            badgeCount={undefined}
           />
         ))}
       </div>
