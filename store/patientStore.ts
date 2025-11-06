@@ -29,6 +29,7 @@ interface PatientState {
   messages: Message[];
   unreadMessagesCount: number;
   isLoading: boolean;
+  error: string | null;
   unsubscribePatient: Unsubscribe | null;
   unsubscribeMessages: Unsubscribe | null;
   clearPatientData: () => void;
@@ -66,6 +67,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   messages: [],
   unreadMessagesCount: 0,
   isLoading: true,
+  error: null,
   unsubscribePatient: null,
   unsubscribeMessages: null,
 
@@ -111,7 +113,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   },
 
   loadPatientData: async (user: User) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     get().clearPatientData();
 
     try {
@@ -179,8 +181,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     } catch (error) {
         console.error("CRITICAL: Failed to load patient data.", error);
         toast.error("Une erreur critique est survenue. Impossible de charger vos données. Veuillez réessayer.");
-        set({ isLoading: false, patient: null });
-        useAuthStore.getState().logout(); 
+        set({ isLoading: false, patient: null, error: "LOAD_FAILED" });
         return false;
     }
   },

@@ -393,6 +393,10 @@ const fr = {
   animations_heart: "Coeur",
   animations_calendar: "Calendrier",
   animations_checkmark: "Validation",
+  // Error handling
+  error_criticalTitle: "Erreur Critique",
+  error_loadDataBody: "Impossible de charger les données du profil. Veuillez vérifier votre connexion internet et réessayer.",
+  error_retry: "Réessayer",
 };
 const en = { ...fr, locale: 'en' }; // Placeholder for English
 
