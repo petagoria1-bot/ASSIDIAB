@@ -1,22 +1,23 @@
 
+
 import React, { useEffect, useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { useAuthStore } from '../store/authStore';
-import Onboarding from './Onboarding';
-import Dashboard from './Dashboard';
-import DoseCalculator from './DoseCalculator';
-import Journal from './Journal';
-import Reports from './Reports';
-import Settings from './Settings';
-import Emergency from './Emergency';
-import Pai from './Pai';
-import FoodLibrary from './FoodLibrary';
-import Inbox from './Inbox';
-import Illustrations from './Illustrations';
-import BottomNav from '../components/BottomNav';
-import { Page } from '../types';
-import RoleConfirmationModal from '../components/RoleConfirmationModal';
-import LoadingScreen from '../components/LoadingScreen';
+import { usePatientStore } from '../store/patientStore.ts';
+import { useAuthStore } from '../store/authStore.ts';
+import Onboarding from './Onboarding.tsx';
+import Dashboard from './Dashboard.tsx';
+import DoseCalculator from './DoseCalculator.tsx';
+import Journal from './Journal.tsx';
+import Reports from './Reports.tsx';
+import Settings from './Settings.tsx';
+import Emergency from './Emergency.tsx';
+import Pai from './Pai.tsx';
+import FoodLibrary from './FoodLibrary.tsx';
+import Inbox from './Inbox.tsx';
+import Illustrations from './Illustrations.tsx';
+import BottomNav from '../components/BottomNav.tsx';
+import { Page } from '../types.ts';
+import RoleConfirmationModal from '../components/RoleConfirmationModal.tsx';
+import LoadingScreen from '../components/LoadingScreen.tsx';
 
 const PostAuthFlow: React.FC = () => {
   const { currentUser } = useAuthStore();

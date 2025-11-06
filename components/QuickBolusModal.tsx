@@ -1,10 +1,12 @@
 
+
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { InjectionType } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import InsulinPenAnimation from './animations/InsulinPenAnimation';
+import { InjectionType } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import InsulinPenAnimation from './animations/InsulinPenAnimation.tsx';
 
 interface QuickBolusModalProps {
   onClose: () => void;
@@ -76,19 +78,15 @@ const QuickBolusModal: React.FC<QuickBolusModalProps> = ({ onClose, onConfirm })
           <div>
             <span className="block text-sm font-medium text-text-muted mb-2">{t.quickAdd_injectionType}</span>
             <div className="flex gap-2">
-                <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
-                    {t.quickAdd_rapid}
-                </button>
-                <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
-                    {t.common_correction}
-                </button>
+                <button onClick={() => setType('rapide')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'rapide' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>{t.quickAdd_rapid}</button>
+                <button onClick={() => setType('correction')} className={`flex-1 py-3 rounded-button text-sm font-semibold transition-colors ${type === 'correction' ? 'bg-info text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>{t.common_correction}</button>
             </div>
           </div>
         </div>
         
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
-          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_confirm}</button>
+          <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors btn-interactive">{t.common_cancel}</button>
+          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm btn-interactive">{t.common_confirm}</button>
         </div>
       </div>
     </div>

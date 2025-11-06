@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import useTranslations from '../hooks/useTranslations';
-import { Page } from '../types';
-import Card from '../components/Card';
-import InboxIcon from '../components/icons/InboxIcon';
-import ArrowLeftIcon from '../components/icons/ArrowLeftIcon';
+import { usePatientStore } from '../store/patientStore.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import { Page } from '../types.ts';
+import Card from '../components/Card.tsx';
+import InboxIcon from '../components/icons/InboxIcon.tsx';
+import ArrowLeftIcon from '../components/icons/ArrowLeftIcon.tsx';
 
 interface InboxProps {
   setCurrentPage: (page: Page) => void;

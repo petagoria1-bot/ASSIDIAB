@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import { Patient, Mesure, Repas, Injection, Food, User, FavoriteMeal, Event, DailyProgress } from '../types';
+import { Patient, Mesure, Repas, Injection, Food, User, FavoriteMeal, Event, DailyProgress } from '../types.ts';
 
 // The database instance is created directly instead of through a subclass
 // to prevent TypeScript errors related to method inheritance in some environments.
@@ -14,6 +14,18 @@ export const db = new Dexie('DiabAssisDB') as Dexie & {
   events: Table<Event, string>;
   dailyProgress: Table<DailyProgress, string>; // YYYY-MM-DD format
 };
+
+db.version(6).stores({
+  users: '++id, &uid, email',
+  patients: 'id, userUid',
+  mesures: 'id, [patient_id+ts]', // Compound index for sorting
+  repas: 'id, [patient_id+ts]', // Compound index for sorting
+  injections: 'id, [patient_id+ts], type', // Compound index for sorting
+  foodLibrary: 'id, &name', // Add unique constraint to name for better data integrity
+  favoriteMeals: 'id, patient_id, name',
+  events: 'id, ts, [patient_id+status]', // Compound index for querying
+  dailyProgress: 'date, patient_id'
+});
 
 db.version(5).stores({
   users: '++id, &uid, email',

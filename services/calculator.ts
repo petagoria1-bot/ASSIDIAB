@@ -1,4 +1,4 @@
-import { DoseCalculationInput, DoseCalculationOutput, Injection } from '../types';
+import { DoseCalculationInput, DoseCalculationOutput, Injection } from '../types.ts';
 
 // Helper to round to 1 decimal place
 const roundToOneDecimal = (num: number): number => {

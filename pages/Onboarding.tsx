@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { useAuthStore } from '../store/authStore';
+import { usePatientStore } from '../store/patientStore.ts';
+import { useAuthStore } from '../store/authStore.ts';
 import toast from 'react-hot-toast';
-import useTranslations from '../hooks/useTranslations';
-import ArrowRightIcon from '../components/icons/ArrowRightIcon';
+import useTranslations from '../hooks/useTranslations.ts';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon.tsx';
 
 const Onboarding: React.FC = () => {
   const { createPatient, isLoading } = usePatientStore();

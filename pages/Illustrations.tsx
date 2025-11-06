@@ -1,15 +1,16 @@
 
+
 import React from 'react';
-import { Page } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import Card from '../components/Card';
-import ArrowLeftIcon from '../components/icons/ArrowLeftIcon';
-import BreakfastSteamAnimation from '../components/animations/BreakfastSteamAnimation';
-import GlucosePulseAnimation from '../components/animations/GlucosePulseAnimation';
-import InsulinPenAnimation from '../components/animations/InsulinPenAnimation';
-import HeartBeatAnimation from '../components/animations/HeartBeatAnimation';
-import CalendarBlinkAnimation from '../components/animations/CalendarBlinkAnimation';
-import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimation';
+import { Page } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import Card from '../components/Card.tsx';
+import ArrowLeftIcon from '../components/icons/ArrowLeftIcon.tsx';
+import BreakfastSteamAnimation from '../components/animations/BreakfastSteamAnimation.tsx';
+import GlucosePulseAnimation from '../components/animations/GlucosePulseAnimation.tsx';
+import InsulinPenAnimation from '../components/animations/InsulinPenAnimation.tsx';
+import HeartBeatAnimation from '../components/animations/HeartBeatAnimation.tsx';
+import CalendarBlinkAnimation from '../components/animations/CalendarBlinkAnimation.tsx';
+import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimation.tsx';
 
 interface IllustrationsProps {
   setCurrentPage: (page: Page) => void;

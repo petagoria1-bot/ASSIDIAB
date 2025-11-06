@@ -1,13 +1,13 @@
 import React from 'react';
-import { Page } from '../types';
-import HomeIcon from './icons/HomeIcon';
-import CalculatorIcon from './icons/CalculatorIcon';
-import JournalIcon from './icons/JournalIcon';
-import ChartIcon from './icons/ChartIcon';
-import SettingsIcon from './icons/SettingsIcon';
-import InboxIcon from './icons/InboxIcon';
-import { usePatientStore } from '../store/patientStore';
-import useTranslations from '../hooks/useTranslations';
+import { Page } from '../types.ts';
+import HomeIcon from './icons/HomeIcon.tsx';
+import CalculatorIcon from './icons/CalculatorIcon.tsx';
+import JournalIcon from './icons/JournalIcon.tsx';
+import ChartIcon from './icons/ChartIcon.tsx';
+import SettingsIcon from './icons/SettingsIcon.tsx';
+import InboxIcon from './icons/InboxIcon.tsx';
+import { usePatientStore } from '../store/patientStore.ts';
+import useTranslations from '../hooks/useTranslations.ts';
 
 
 interface BottomNavProps {

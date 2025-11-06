@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Patient, Mesure, Repas, Injection } from '../types';
 import useTranslations from '../hooks/useTranslations';
@@ -79,8 +78,6 @@ const GlucoseChart: React.FC<GlucoseChartProps> = ({ events, patient }) => {
 
         {/* X-axis labels and grid lines */}
         {[0, 6, 12, 18, 24].map(hour => {
-            // Fix: Create a valid Date object to pass to timeToX.
-            // .setHours() returns a number (timestamp), not a Date object.
             const date = new Date(0);
             date.setHours(hour, 0, 0, 0);
             const xPos = timeToX(date);

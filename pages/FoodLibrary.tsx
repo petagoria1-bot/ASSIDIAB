@@ -1,11 +1,12 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import Card from '../components/Card';
-import AddFoodModal from '../components/AddFoodModal'; // Import the new modal
-import { Food } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import EditIcon from '../components/icons/EditIcon';
+import { usePatientStore } from '../store/patientStore.ts';
+import Card from '../components/Card.tsx';
+import AddFoodModal from '../components/AddFoodModal.tsx'; // Import the new modal
+import { Food } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import EditIcon from '../components/icons/EditIcon.tsx';
 
 const FoodLibrary: React.FC = () => {
   const { foodLibrary } = usePatientStore();

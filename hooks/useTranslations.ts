@@ -1,6 +1,6 @@
-import { useSettingsStore } from '../store/settingsStore';
-import { quizData as quizDataFR } from '../data/quizData';
-import { MealTime } from '../types';
+import { useSettingsStore } from '../store/settingsStore.ts';
+import { quizData as quizDataFR } from '../data/quizData.ts';
+import { MealTime } from '../types.ts';
 
 // Mock translations. In a real app, these would be in separate files (e.g., JSON).
 const fr = {

@@ -1,10 +1,11 @@
 
 
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import useTranslations from '../hooks/useTranslations';
-import DropletIcon from './icons/DropletIcon';
+import useTranslations from '../hooks/useTranslations.ts';
+import DropletIcon from './icons/DropletIcon.tsx';
 
 interface QuickAddItemModalProps {
   onClose: () => void;

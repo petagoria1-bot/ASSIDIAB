@@ -1,4 +1,4 @@
-import { Food } from '../types';
+import { Food } from '../types.ts';
 
 export const initialFoodData: Food[] = [
   {

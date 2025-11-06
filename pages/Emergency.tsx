@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import useTranslations from '../hooks/useTranslations';
-import Card from '../components/Card';
-import PhoneIcon from '../components/icons/PhoneIcon';
+import { usePatientStore } from '../store/patientStore.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import Card from '../components/Card.tsx';
+import PhoneIcon from '../components/icons/PhoneIcon.tsx';
 
 type Protocol = 'hypo' | 'hyper' | 'acetone';
 

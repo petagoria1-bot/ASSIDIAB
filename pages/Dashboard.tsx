@@ -1,32 +1,33 @@
 
 
+
 import React, { useMemo, useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import Card from '../components/Card';
-import useTranslations from '../hooks/useTranslations';
-import { Page, Mesure, Event, MealTime } from '../types';
-import QuickAddItemModal from '../components/QuickAddItemModal';
-import QuickBolusModal from '../components/QuickBolusModal';
+import { usePatientStore } from '../store/patientStore.ts';
+import Card from '../components/Card.tsx';
+import useTranslations from '../hooks/useTranslations.ts';
+import { Page, Mesure, Event, MealTime } from '../types.ts';
+import QuickAddItemModal from '../components/QuickAddItemModal.tsx';
+import QuickBolusModal from '../components/QuickBolusModal.tsx';
 import toast from 'react-hot-toast';
-import ProgressCard from '../components/ProgressCard';
-import AddEventModal from '../components/AddEventModal';
-import GlucoseTrackingIllustration from '../components/illustrations/GlucoseTrackingIllustration';
-import MedicalAgendaIllustration from '../components/illustrations/MedicalAgendaIllustration';
-import CalculatorIcon from '../components/icons/CalculatorIcon';
-import SyringeIcon from '../components/icons/SyringeIcon';
-import GlucoseDropIcon from '../components/icons/GlucoseDropIcon';
-import EmergencyIcon from '../components/icons/EmergencyIcon';
-import CheckCircleIcon from '../components/icons/CheckCircleIcon';
-import CircleIcon from '../components/icons/CircleIcon';
-import GlucoQuizCard from '../components/GlucoQuizCard';
-import GlucosePulseAnimation from '../components/animations/GlucosePulseAnimation';
-import CalendarBlinkAnimation from '../components/animations/CalendarBlinkAnimation';
-import TimeOfDayHeader from '../components/TimeOfDayHeader';
-import { useUiStore } from '../store/uiStore';
-import BreakfastIcon from '../components/icons/BreakfastIcon';
-import LunchIcon from '../components/icons/LunchIcon';
-import DinnerIcon from '../components/icons/DinnerIcon';
-import SnackIcon from '../components/icons/SnackIcon';
+import ProgressCard from '../components/ProgressCard.tsx';
+import AddEventModal from '../components/AddEventModal.tsx';
+import GlucoseTrackingIllustration from '../components/illustrations/GlucoseTrackingIllustration.tsx';
+import MedicalAgendaIllustration from '../components/illustrations/MedicalAgendaIllustration.tsx';
+import CalculatorIcon from '../components/icons/CalculatorIcon.tsx';
+import SyringeIcon from '../components/icons/SyringeIcon.tsx';
+import GlucoseDropIcon from '../components/icons/GlucoseDropIcon.tsx';
+import EmergencyIcon from '../components/icons/EmergencyIcon.tsx';
+import CheckCircleIcon from '../components/icons/CheckCircleIcon.tsx';
+import CircleIcon from '../components/icons/CircleIcon.tsx';
+import GlucoQuizCard from '../components/GlucoQuizCard.tsx';
+import GlucosePulseAnimation from '../components/animations/GlucosePulseAnimation.tsx';
+import CalendarBlinkAnimation from '../components/animations/CalendarBlinkAnimation.tsx';
+import TimeOfDayHeader from '../components/TimeOfDayHeader.tsx';
+import { useUiStore } from '../store/uiStore.ts';
+import BreakfastIcon from '../components/icons/BreakfastIcon.tsx';
+import LunchIcon from '../components/icons/LunchIcon.tsx';
+import DinnerIcon from '../components/icons/DinnerIcon.tsx';
+import SnackIcon from '../components/icons/SnackIcon.tsx';
 
 
 interface DashboardProps {

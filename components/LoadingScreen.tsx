@@ -1,6 +1,7 @@
 
+
 import React from 'react';
-import DropletLogoIcon from './icons/DropletLogoIcon';
+import DropletLogoIcon from './icons/DropletLogoIcon.tsx';
 
 const LoadingScreen: React.FC<{ message?: string }> = ({ message = 'Chargement...' }) => {
   return (

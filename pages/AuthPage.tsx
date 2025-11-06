@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
-import { useAuthStore } from '../store/authStore';
+import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/authStore.ts';
 import toast from 'react-hot-toast';
-import useTranslations from '../hooks/useTranslations';
-import DropletLogoIcon from '../components/icons/DropletLogoIcon';
-import ArrowRightIcon from '../components/icons/ArrowRightIcon';
-import GoogleIcon from '../components/icons/GoogleIcon';
+import useTranslations from '../hooks/useTranslations.ts';
+import DropletLogoIcon from '../components/icons/DropletLogoIcon.tsx';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon.tsx';
+import GoogleIcon from '../components/icons/GoogleIcon.tsx';
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { login, signup, isLoading, loginWithGoogle } = useAuthStore();
+  const { login, signup, isLoading, loginWithGoogle, error, clearError } = useAuthStore();
   const t = useTranslations();
+
+  useEffect(() => {
+    if (error === 'auth/email-already-in-use') {
+      setIsLogin(true); // Switch to the login form
+      clearError();     // Reset the error state to prevent re-triggering
+    }
+  }, [error, clearError, setIsLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MealTime } from '../types';
+import { MealTime } from '../types.ts';
 
 interface UiState {
   calculatorMealTime: MealTime | null;

@@ -1,9 +1,10 @@
 
+
 import React from 'react';
-import { usePatientStore } from '../store/patientStore';
-import Card from '../components/Card';
-import useTranslations from '../hooks/useTranslations';
-import { MealTime, CorrectionRule } from '../types';
+import { usePatientStore } from '../store/patientStore.ts';
+import Card from '../components/Card.tsx';
+import useTranslations from '../hooks/useTranslations.ts';
+import { MealTime, CorrectionRule } from '../types.ts';
 
 const Pai: React.FC = () => {
   const { patient } = usePatientStore();

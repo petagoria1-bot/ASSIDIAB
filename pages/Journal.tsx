@@ -1,26 +1,26 @@
 import React, { useMemo, useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { useUiStore } from '../store/uiStore';
-import { Mesure, Repas, Injection, Page, MealTime } from '../types';
-import useTranslations from '../hooks/useTranslations';
+import { usePatientStore } from '../store/patientStore.ts';
+import { useUiStore } from '../store/uiStore.ts';
+import { Mesure, Repas, Injection, Page, MealTime } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
 import toast from 'react-hot-toast';
-import GlucoseDropIcon from '../components/icons/GlucoseDropIcon';
-import MealIcon from '../components/icons/MealIcon';
-import SyringeIcon from '../components/icons/SyringeIcon';
-import WalkIcon from '../components/icons/WalkIcon';
-import NoteIcon from '../components/icons/NoteIcon';
-import DateNavigator from '../components/DateNavigator';
-import ChevronDownIcon from '../components/icons/ChevronDownIcon';
-import QuickAddItemModal from '../components/QuickAddItemModal';
-import AddSnackModal from '../components/AddSnackModal';
-import PlusIcon from '../components/icons/PlusIcon';
-import MealGroupCard from '../components/MealGroupCard';
-import TimeSlotCard from '../components/TimeSlotCard';
-import AddEventChoiceModal from '../components/AddEventChoiceModal';
-import BreakfastIcon from '../components/icons/BreakfastIcon';
-import LunchIcon from '../components/icons/LunchIcon';
-import DinnerIcon from '../components/icons/DinnerIcon';
-import SnackIcon from '../components/icons/SnackIcon';
+import GlucoseDropIcon from '../components/icons/GlucoseDropIcon.tsx';
+import MealIcon from '../components/icons/MealIcon.tsx';
+import SyringeIcon from '../components/icons/SyringeIcon.tsx';
+import WalkIcon from '../components/icons/WalkIcon.tsx';
+import NoteIcon from '../components/icons/NoteIcon.tsx';
+import DateNavigator from '../components/DateNavigator.tsx';
+import ChevronDownIcon from '../components/icons/ChevronDownIcon.tsx';
+import QuickAddItemModal from '../components/QuickAddItemModal.tsx';
+import AddSnackModal from '../components/AddSnackModal.tsx';
+import PlusIcon from '../components/icons/PlusIcon.tsx';
+import MealGroupCard from '../components/MealGroupCard.tsx';
+import TimeSlotCard from '../components/TimeSlotCard.tsx';
+import AddEventChoiceModal from '../components/AddEventChoiceModal.tsx';
+import BreakfastIcon from '../components/icons/BreakfastIcon.tsx';
+import LunchIcon from '../components/icons/LunchIcon.tsx';
+import DinnerIcon from '../components/icons/DinnerIcon.tsx';
+import SnackIcon from '../components/icons/SnackIcon.tsx';
 
 
 interface MealGroupEvent {

@@ -1,24 +1,25 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { useUiStore } from '../store/uiStore';
-import { useSettingsStore } from '../store/settingsStore';
-import { calculateDose } from '../services/calculator';
-import { DoseCalculationOutput, MealTime, Page, MealItem } from '../types';
+import { usePatientStore } from '../store/patientStore.ts';
+import { useUiStore } from '../store/uiStore.ts';
+import { useSettingsStore } from '../store/settingsStore.ts';
+import { calculateDose } from '../services/calculator.ts';
+import { DoseCalculationOutput, MealTime, Page, MealItem } from '../types.ts';
 import toast from 'react-hot-toast';
-import useTranslations from '../hooks/useTranslations';
-import Card from '../components/Card';
-import MealBuilderCard from '../components/MealBuilderCard';
-import CustomSelect from '../components/CustomSelect';
-import CalculatorIcon from '../components/icons/CalculatorIcon';
-import InfoIcon from '../components/icons/InfoIcon';
-import DoseExplanationModal from '../components/DoseExplanationModal';
-import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimation';
-import BreakfastIcon from '../components/icons/BreakfastIcon';
-import LunchIcon from '../components/icons/LunchIcon';
-import SnackIcon from '../components/icons/SnackIcon';
-import DinnerIcon from '../components/icons/DinnerIcon';
-import RatioReminderModal from '../components/RatioReminderModal';
+import useTranslations from '../hooks/useTranslations.ts';
+import Card from '../components/Card.tsx';
+import MealBuilderCard from '../components/MealBuilderCard.tsx';
+import CustomSelect from '../components/CustomSelect.tsx';
+import CalculatorIcon from '../components/icons/CalculatorIcon.tsx';
+import InfoIcon from '../components/icons/InfoIcon.tsx';
+import DoseExplanationModal from '../components/DoseExplanationModal.tsx';
+import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimation.tsx';
+import BreakfastIcon from '../components/icons/BreakfastIcon.tsx';
+import LunchIcon from '../components/icons/LunchIcon.tsx';
+import SnackIcon from '../components/icons/SnackIcon.tsx';
+import DinnerIcon from '../components/icons/DinnerIcon.tsx';
+import RatioReminderModal from '../components/RatioReminderModal.tsx';
 
 interface DoseCalculatorProps {
   setCurrentPage: (page: Page) => void;

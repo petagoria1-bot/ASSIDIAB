@@ -1,14 +1,15 @@
 
+
 import React, { useState, useEffect } from 'react';
 
-import SunriseIcon from './icons/SunriseIcon';
-import MorningIcon from './icons/MorningIcon';
-import NoonIcon from './icons/NoonIcon';
-import AfternoonIcon from './icons/AfternoonIcon';
-import GoldenHourIcon from './icons/GoldenHourIcon';
-import SunsetIcon from './icons/SunsetIcon';
-import DuskIcon from './icons/DuskIcon';
-import NightIcon from './icons/NightIcon';
+import SunriseIcon from './icons/SunriseIcon.tsx';
+import MorningIcon from './icons/MorningIcon.tsx';
+import NoonIcon from './icons/NoonIcon.tsx';
+import AfternoonIcon from './icons/AfternoonIcon.tsx';
+import GoldenHourIcon from './icons/GoldenHourIcon.tsx';
+import SunsetIcon from './icons/SunsetIcon.tsx';
+import DuskIcon from './icons/DuskIcon.tsx';
+import NightIcon from './icons/NightIcon.tsx';
 
 type TimePhase = 'sunrise' | 'morning' | 'noon' | 'afternoon' | 'goldenHour' | 'sunset' | 'dusk' | 'night';
 

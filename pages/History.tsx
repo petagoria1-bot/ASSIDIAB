@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { Mesure, Repas, Injection } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import TimelineEventCard from '../components/TimelineEventCard';
+import { usePatientStore } from '../store/patientStore.ts';
+import { Mesure, Repas, Injection } from '../types.ts';
+import useTranslations from '../hooks/useTranslations.ts';
+import TimelineEventCard from '../components/TimelineEventCard.tsx';
 
 type TimelineEvent = (Mesure | Repas | Injection | { id: string; ts: string; type: 'activity' | 'note', details: any }) & { eventType: 'mesure' | 'repas' | 'injection' | 'activity' | 'note' };
 

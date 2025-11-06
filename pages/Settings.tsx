@@ -1,36 +1,36 @@
 import React, { useState } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { useAuthStore } from '../store/authStore';
-import { useSettingsStore, Language } from '../store/settingsStore';
-import Card from '../components/Card';
-import useTranslations from '../hooks/useTranslations';
-import { Page, Patient, EmergencyContact, Caregiver, CaregiverPermissions } from '../types';
+import { usePatientStore } from '../store/patientStore.ts';
+import { useAuthStore } from '../store/authStore.ts';
+import { useSettingsStore, Language } from '../store/settingsStore.ts';
+import Card from '../components/Card.tsx';
+import useTranslations from '../hooks/useTranslations.ts';
+import { Page, Patient, EmergencyContact, Caregiver, CaregiverPermissions } from '../types.ts';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
-import CustomSelect from '../components/CustomSelect';
-import LanguageIcon from '../components/icons/LanguageIcon';
-import UserIcon from '../components/icons/UserIcon';
-import TargetIcon from '../components/icons/TargetIcon';
-import RatioIcon from '../components/icons/RatioIcon';
-import EmergencyIcon from '../components/icons/EmergencyIcon';
-import CloseIcon from '../components/icons/CloseIcon';
-import ToggleSwitch from '../components/ToggleSwitch';
-import UsersIcon from '../components/icons/UsersIcon';
-import TrashIcon from '../components/icons/TrashIcon';
-import CalculatorIcon from '../components/icons/CalculatorIcon';
-import InviteCaregiverModal from '../components/InviteCaregiverModal';
-import PermissionsModal from '../components/PermissionsModal';
-import EditIcon from '../components/icons/EditIcon';
+import CustomSelect from '../components/CustomSelect.tsx';
+import LanguageIcon from '../components/icons/LanguageIcon.tsx';
+import UserIcon from '../components/icons/UserIcon.tsx';
+import TargetIcon from '../components/icons/TargetIcon.tsx';
+import RatioIcon from '../components/icons/RatioIcon.tsx';
+import EmergencyIcon from '../components/icons/EmergencyIcon.tsx';
+import CloseIcon from '../components/icons/CloseIcon.tsx';
+import ToggleSwitch from '../components/ToggleSwitch.tsx';
+import UsersIcon from '../components/icons/UsersIcon.tsx';
+import TrashIcon from '../components/icons/TrashIcon.tsx';
+import CalculatorIcon from '../components/icons/CalculatorIcon.tsx';
+import InviteCaregiverModal from '../components/InviteCaregiverModal.tsx';
+import PermissionsModal from '../components/PermissionsModal.tsx';
+import EditIcon from '../components/icons/EditIcon.tsx';
 
 
-import FlagFR from '../components/icons/FlagFR';
-import FlagEN from '../components/icons/FlagEN';
-import FlagTR from '../components/icons/FlagTR';
-import FlagAR from '../components/icons/FlagAR';
-import FlagUR from '../components/icons/FlagUR';
-import FlagPS from '../components/icons/FlagPS';
-import FlagUK from '../components/icons/FlagUK';
+import FlagFR from '../components/icons/FlagFR.tsx';
+import FlagEN from '../components/icons/FlagEN.tsx';
+import FlagTR from '../components/icons/FlagTR.tsx';
+import FlagAR from '../components/icons/FlagAR.tsx';
+import FlagUR from '../components/icons/FlagUR.tsx';
+import FlagPS from '../components/icons/FlagPS.tsx';
+import FlagUK from '../components/icons/FlagUK.tsx';
 
 interface SettingsProps {
   setCurrentPage: (page: Page) => void;

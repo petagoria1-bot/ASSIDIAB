@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
-import { db } from '../services/db';
-import { User } from '../types';
-import { auth } from '../services/firebase';
+import { db } from '../services/db.ts';
+import { User } from '../types.ts';
+import { auth } from '../services/firebase.ts';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -19,6 +19,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  clearError: () => void;
   signup: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
@@ -51,6 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  clearError: () => set({ error: null }),
 
   checkSession: () => {
     onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
@@ -81,9 +83,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       toast.success("Compte créé avec succès !");
 
     } catch (error: any) {
-      const errorMessage = formatAuthError(error.code);
-      set({ error: errorMessage, isLoading: false });
-      toast.error(errorMessage);
+      if (error.code === 'auth/email-already-in-use') {
+        set({ error: 'auth/email-already-in-use', isLoading: false });
+        toast.info("Ce compte existe déjà. Veuillez vous connecter.");
+      } else {
+        const errorMessage = formatAuthError(error.code);
+        set({ error: errorMessage, isLoading: false });
+        toast.error(errorMessage);
+      }
     }
   },
 

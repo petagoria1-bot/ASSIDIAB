@@ -1,13 +1,14 @@
-
 import { create } from 'zustand';
-import { db } from '../services/db';
-import { Patient, Mesure, Repas, Injection, Food, FullBolusPayload, Event, DailyProgress, User, Caregiver, CaregiverRole, CaregiverPermissions, Message } from '../types';
+import { db } from '../services/db.ts';
+import { Patient, Mesure, Repas, Injection, Food, FullBolusPayload, Event, DailyProgress, User, Caregiver, CaregiverRole, CaregiverPermissions, Message } from '../types.ts';
 import { v4 as uuidv4 } from 'uuid';
-import { initialFoodData } from '../data/foodLibrary';
-import { DEFAULT_PATIENT_SETTINGS } from '../constants';
-import { firestore } from '../services/firebase';
+import { initialFoodData } from '../data/foodLibrary.ts';
+import { DEFAULT_PATIENT_SETTINGS } from '../constants.ts';
+import { firestore } from '../services/firebase.ts';
 import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, onSnapshot, Unsubscribe, addDoc, orderBy, writeBatch } from "firebase/firestore";
-import { useAuthStore } from './authStore';
+import { useAuthStore } from './authStore.ts';
+import toast from 'react-hot-toast';
+import Dexie from 'dexie';
 
 // Define a type for the pending invitation check
 export interface PendingInvitation {
@@ -113,134 +114,169 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     set({ isLoading: true });
     get().clearPatientData();
 
-    const q = query(collection(firestore, "patients"), where("activeCaregiverUids", "array-contains", user.uid));
-    const querySnapshot = await getDocs(q);
-    const patientDoc = querySnapshot.empty ? null : querySnapshot.docs[0];
+    try {
+        const q = query(collection(firestore, "patients"), where("activeCaregiverUids", "array-contains", user.uid));
+        const querySnapshot = await getDocs(q);
+        const patientDoc = querySnapshot.empty ? null : querySnapshot.docs[0];
 
-    if (patientDoc) {
-      const patientId = patientDoc.id;
-      const initialPatientData = patientDoc.data() as Patient;
-      
-      const unsubPatient = onSnapshot(doc(firestore, "patients", patientId), (doc) => {
-          const patientData = doc.data() as Patient;
-          set({ patient: patientData });
-      });
+        if (patientDoc) {
+        const patientId = patientDoc.id;
+        
+        const unsubPatient = onSnapshot(doc(firestore, "patients", patientId), (doc) => {
+            try {
+                if (doc.exists()) {
+                    const patientData = doc.data() as Patient;
+                    set({ patient: patientData });
+                }
+            } catch (e) {
+                console.error("Error processing patient snapshot", e);
+            }
+        }, (error) => {
+            console.error("Patient snapshot listener failed:", error);
+        });
 
-      const unsubMessages = onSnapshot(query(collection(firestore, `patients/${patientId}/messages`), where("toUid", "==", user.uid), orderBy("ts", "desc")), (snapshot) => {
-          const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-          const unreadCount = messages.filter(m => !m.read).length;
-          set({ messages, unreadMessagesCount: unreadCount });
-      });
+        const unsubMessages = onSnapshot(query(collection(firestore, `patients/${patientId}/messages`), where("toUid", "==", user.uid), orderBy("ts", "desc")), (snapshot) => {
+            try {
+                const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+                const unreadCount = messages.filter(m => !m.read).length;
+                set({ messages, unreadMessagesCount: unreadCount });
+            } catch (e) {
+                console.error("Error processing messages snapshot", e);
+            }
+        }, (error) => {
+            console.error("Messages snapshot listener failed:", error);
+        });
 
-      set({ unsubscribePatient: unsubPatient, unsubscribeMessages: unsubMessages });
+        set({ unsubscribePatient: unsubPatient, unsubscribeMessages: unsubMessages });
 
-      const foodCount = await db.foodLibrary.count();
-      if(foodCount === 0) await db.foodLibrary.bulkAdd(initialFoodData);
-      
-      const [foodLib, allMesures, allRepas, allInjections, allEvents] = await Promise.all([
-          db.foodLibrary.toArray(),
-          db.mesures.where('patient_id').equals(patientId).reverse().sortBy('ts'),
-          db.repas.where('patient_id').equals(patientId).reverse().sortBy('ts'),
-          db.injections.where('patient_id').equals(patientId).reverse().sortBy('ts'),
-          db.events.where({ patient_id: patientId, status: 'pending' }).sortBy('ts')
-      ]);
+        const foodCount = await db.foodLibrary.count();
+        if(foodCount === 0) await db.foodLibrary.bulkAdd(initialFoodData);
+        
+        // Using Dexie.minKey/maxKey allows us to query the compound index for a specific patientId
+        // and get results sorted by the second part of the index (ts). This is highly performant.
+        const [foodLib, allMesures, allRepas, allInjections, allEvents] = await Promise.all([
+            db.foodLibrary.orderBy('name').toArray(),
+            db.mesures.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
+            db.repas.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
+            db.injections.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
+            db.events.where('[patient_id+status]').equals([patientId, 'pending']).sortBy('ts')
+        ]);
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      let progress = await db.dailyProgress.get(todayStr);
-      if (!progress) {
-          progress = { date: todayStr, patient_id: patientId, water_ml: 0, activity_min: 0, quiz_completed: false };
-          await db.dailyProgress.put(progress);
-      }
+        const todayStr = new Date().toISOString().split('T')[0];
+        let progress = await db.dailyProgress.get(todayStr);
+        if (!progress) {
+            progress = { date: todayStr, patient_id: patientId, water_ml: 0, activity_min: 0, quiz_completed: false };
+            await db.dailyProgress.put(progress);
+        }
 
-      set({ patient: initialPatientData, foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
-      return true;
-    } else {
-      const hasInvitation = await get().checkForPendingInvitation(user);
-      set({ isLoading: false });
-      return hasInvitation ? true : false; // It's not a profile, but there's a next step
+        set({ patient: patientDoc.data() as Patient, foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
+        return true;
+        } else {
+            const hasInvitation = await get().checkForPendingInvitation(user);
+            set({ isLoading: false });
+            return hasInvitation ? true : false;
+        }
+    } catch (error) {
+        console.error("CRITICAL: Failed to load patient data.", error);
+        toast.error("Une erreur critique est survenue. Impossible de charger vos données. Veuillez réessayer.");
+        set({ isLoading: false, patient: null });
+        useAuthStore.getState().logout(); 
+        return false;
     }
   },
   
   handleInvitation: async (invitation, accept, user, declineStrings) => {
-    const patientRef = doc(firestore, "patients", invitation.patientId);
-    const patientSnap = await getDoc(patientRef);
-    if (!patientSnap.exists()) return;
+    try {
+        const patientRef = doc(firestore, "patients", invitation.patientId);
+        const patientSnap = await getDoc(patientRef);
+        if (!patientSnap.exists()) return;
 
-    const patientData = patientSnap.data() as Patient;
-    const owner = patientData.caregivers.find(c => c.role === 'owner');
+        const patientData = patientSnap.data() as Patient;
+        const owner = patientData.caregivers.find(c => c.role === 'owner');
 
-    let updatedCaregivers = [...patientData.caregivers];
-    const caregiverIndex = updatedCaregivers.findIndex(c => c.email === user.email && c.status === 'awaiting_confirmation');
-    
-    if (caregiverIndex !== -1) {
-        if (accept) {
-            updatedCaregivers[caregiverIndex].status = 'active';
-            updatedCaregivers[caregiverIndex].userUid = user.uid;
-            await updateDoc(patientRef, { 
-                caregivers: updatedCaregivers,
-                pendingEmails: arrayRemove(user.email),
-                activeCaregiverUids: arrayUnion(user.uid)
-            });
-            set({ pendingInvitation: null });
-            await get().loadPatientData(user); // Reload to get patient access
-        } else {
-            updatedCaregivers[caregiverIndex].status = 'declined';
-            await updateDoc(patientRef, { 
-                caregivers: updatedCaregivers,
-                pendingEmails: arrayRemove(user.email),
-            });
-            if (owner && owner.userUid && declineStrings) {
-                 await addDoc(collection(firestore, `patients/${invitation.patientId}/messages`), {
-                    patientId: invitation.patientId,
-                    fromUid: 'system',
-                    fromEmail: declineStrings.fromSystem,
-                    toUid: owner.userUid,
-                    text: declineStrings.messageText,
-                    ts: new Date().toISOString(),
-                    read: false
-                 });
+        let updatedCaregivers = [...patientData.caregivers];
+        const caregiverIndex = updatedCaregivers.findIndex(c => c.email === user.email && c.status === 'awaiting_confirmation');
+        
+        if (caregiverIndex !== -1) {
+            if (accept) {
+                updatedCaregivers[caregiverIndex].status = 'active';
+                updatedCaregivers[caregiverIndex].userUid = user.uid;
+                await updateDoc(patientRef, { 
+                    caregivers: updatedCaregivers,
+                    pendingEmails: arrayRemove(user.email),
+                    activeCaregiverUids: arrayUnion(user.uid)
+                });
+                set({ pendingInvitation: null });
+                await get().loadPatientData(user);
+            } else {
+                updatedCaregivers[caregiverIndex].status = 'declined';
+                await updateDoc(patientRef, { 
+                    caregivers: updatedCaregivers,
+                    pendingEmails: arrayRemove(user.email),
+                });
+                if (owner && owner.userUid && declineStrings) {
+                    await addDoc(collection(firestore, `patients/${invitation.patientId}/messages`), {
+                        patientId: invitation.patientId,
+                        fromUid: 'system',
+                        fromEmail: declineStrings.fromSystem,
+                        toUid: owner.userUid,
+                        text: declineStrings.messageText,
+                        ts: new Date().toISOString(),
+                        read: false
+                    });
+                }
+                set({ pendingInvitation: null });
+                useAuthStore.getState().logout();
             }
-            set({ pendingInvitation: null });
-            useAuthStore.getState().logout();
         }
+    } catch (error) {
+        console.error("Failed to handle invitation:", error);
+        toast.error("Une erreur est survenue lors du traitement de l'invitation.");
+        set({ pendingInvitation: null });
+        useAuthStore.getState().logout();
     }
   },
 
   createPatient: async (prenom, naissance, user) => {
     set({ isLoading: true });
-    const patientId = uuidv4();
-    const newPatient: Patient = {
-      id: patientId,
-      userUid: user.uid,
-      prenom,
-      naissance,
-      ...DEFAULT_PATIENT_SETTINGS,
-      caregivers: [{
-          userUid: user.uid,
-          email: user.email!,
-          role: 'owner',
-          status: 'active',
-          permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
-      }]
-    };
+    try {
+        const patientId = uuidv4();
+        const newPatient: Patient = {
+        id: patientId,
+        userUid: user.uid,
+        prenom,
+        naissance,
+        ...DEFAULT_PATIENT_SETTINGS,
+        caregivers: [{
+            userUid: user.uid,
+            email: user.email!,
+            role: 'owner',
+            status: 'active',
+            permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
+        }]
+        };
 
-    const patientWithQueryFields = {
-      ...newPatient,
-      activeCaregiverUids: [user.uid],
-      pendingEmails: []
-    };
+        const patientWithQueryFields = {
+        ...newPatient,
+        activeCaregiverUids: [user.uid],
+        pendingEmails: []
+        };
 
-    await setDoc(doc(firestore, "patients", patientId), patientWithQueryFields);
-    
-    // Populate the local food library for the new user.
-    await db.foodLibrary.bulkAdd(initialFoodData);
-    const foodLib = await db.foodLibrary.toArray();
+        await setDoc(doc(firestore, "patients", patientId), patientWithQueryFields);
+        
+        await db.foodLibrary.bulkAdd(initialFoodData);
+        const foodLib = await db.foodLibrary.toArray();
 
-    set({ 
-      patient: patientWithQueryFields,
-      foodLibrary: foodLib,
-      isLoading: false 
-    });
+        set({ 
+        patient: patientWithQueryFields,
+        foodLibrary: foodLib,
+        isLoading: false 
+        });
+    } catch (error) {
+        console.error("Failed to create patient:", error);
+        toast.error("Erreur lors de la création du profil.");
+        set({ isLoading: false });
+    }
   },
   
   updatePatient: async (patientData) => {

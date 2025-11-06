@@ -1,12 +1,13 @@
 
+
 import React, { useEffect } from 'react';
-import { useAuthStore } from './store/authStore';
-import { usePatientStore } from './store/patientStore';
-import AuthPage from './pages/AuthPage';
-import PostAuthFlow from './pages/PostAuthFlow';
+import { useAuthStore } from './store/authStore.ts';
+import { usePatientStore } from './store/patientStore.ts';
+import AuthPage from './pages/AuthPage.tsx';
+import PostAuthFlow from './pages/PostAuthFlow.tsx';
 import { Toaster } from 'react-hot-toast';
-import DynamicBackground from './components/DynamicBackground';
-import LoadingScreen from './components/LoadingScreen';
+import DynamicBackground from './components/DynamicBackground.tsx';
+import LoadingScreen from './components/LoadingScreen.tsx';
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoading, checkSession } = useAuthStore();

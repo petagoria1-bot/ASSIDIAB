@@ -1,15 +1,16 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { usePatientStore } from '../store/patientStore';
-import { Page, Mesure, Repas, Injection } from '../types';
-import Card from '../components/Card';
-import useTranslations from '../hooks/useTranslations';
-import StatCard from '../components/StatCard';
-import GlucoseChart from '../components/GlucoseChart';
-import TargetIcon from '../components/icons/TargetIcon';
-import DropletIcon from '../components/icons/DropletIcon';
-import ArrowDownIcon from '../components/icons/ArrowDownIcon';
-import ArrowUpIcon from '../components/icons/ArrowUpIcon';
+import { usePatientStore } from '../store/patientStore.ts';
+import { Page, Mesure, Repas, Injection } from '../types.ts';
+import Card from '../components/Card.tsx';
+import useTranslations from '../hooks/useTranslations.ts';
+import StatCard from '../components/StatCard.tsx';
+import GlucoseChart from '../components/GlucoseChart.tsx';
+import TargetIcon from '../components/icons/TargetIcon.tsx';
+import DropletIcon from '../components/icons/DropletIcon.tsx';
+import ArrowDownIcon from '../components/icons/ArrowDownIcon.tsx';
+import ArrowUpIcon from '../components/icons/ArrowUpIcon.tsx';
 
 interface ReportsProps {
   setCurrentPage: (page: Page) => void;

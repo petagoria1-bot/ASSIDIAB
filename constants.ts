@@ -1,4 +1,4 @@
-import { Patient } from './types';
+import { Patient } from './types.ts';
 
 // This is now a template of settings, not a full patient object.
 export const DEFAULT_PATIENT_SETTINGS: Omit<Patient, 'id' | 'userUid' | 'prenom' | 'naissance'> = {

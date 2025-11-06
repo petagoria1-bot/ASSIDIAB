@@ -1,9 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import useTranslations from '../hooks/useTranslations';
-import { usePatientStore } from '../store/patientStore';
-import { useAuthStore } from '../store/authStore';
-import UsersIcon from './icons/UsersIcon';
+import useTranslations from '../hooks/useTranslations.ts';
+import { usePatientStore } from '../store/patientStore.ts';
+import { useAuthStore } from '../store/authStore.ts';
+import UsersIcon from './icons/UsersIcon.tsx';
 
 const RoleConfirmationModal: React.FC = () => {
   const { pendingInvitation, handleInvitation } = usePatientStore();
