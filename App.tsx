@@ -12,11 +12,12 @@ const App: React.FC = () => {
   const { clearPatientData } = usePatientStore();
 
   useEffect(() => {
-    // initializeAuth now returns an unsubscribe function.
-    // We call it here and useEffect will handle cleanup on component unmount.
+    // The dependency array is changed to empty `[]`.
+    // This is the critical fix: it ensures the authentication check runs only ONCE
+    // when the app first loads, preventing the login loop caused by re-subscribing.
     const unsubscribe = initializeAuth();
     return () => unsubscribe();
-  }, [initializeAuth]);
+  }, []);
 
   // Clear patient data when user logs out.
   useEffect(() => {
