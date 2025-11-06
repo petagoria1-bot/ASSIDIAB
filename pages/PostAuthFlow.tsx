@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import { useAuthStore } from '../store/authStore.ts';
-import Onboarding from './Onboarding.tsx';
+import InitialSetup from './InitialSetup.tsx';
 import Dashboard from './Dashboard.tsx';
 import DoseCalculator from './DoseCalculator.tsx';
 import Journal from './Journal.tsx';
@@ -73,7 +73,7 @@ const PostAuthFlow: React.FC = () => {
   }
   
   if (!patient) {
-    return <Onboarding />;
+    return <InitialSetup />;
   }
 
   const renderPage = () => {
