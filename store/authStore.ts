@@ -57,31 +57,34 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // This is the simplest and most robust way to handle auth state.
-    // onAuthStateChanged is the single source of truth. It fires once on load
-    // with the correct state (including after a redirect) and then whenever
-    // the auth state changes. isLoading is only set to false *after* this
-    // initial check is complete, which prevents all race conditions.
+    // This robust pattern ensures redirect results are handled before the app renders.
+    // 1. We attach onAuthStateChanged to keep the user state in sync.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const currentUser: User = { uid: user.uid, email: user.email };
-        set({
-          currentUser,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
+        set({ currentUser, isAuthenticated: true, error: null });
       } else {
-        set({
-          currentUser: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+        set({ currentUser: null, isAuthenticated: false, error: null });
       }
     });
 
-    // Return the cleanup function.
+    // 2. We explicitly process the redirect result. The completion of this promise
+    //    is our signal that any pending authentication is finished.
+    getRedirectResult(auth)
+      .catch((error) => {
+        // Handle redirect-specific errors.
+        console.error("Google redirect sign-in error", error);
+        const errorMessage = formatAuthError(error.code);
+        set({ error: errorMessage });
+        toast.error(errorMessage);
+      })
+      .finally(() => {
+        // Whether a user was signed in or not, the check is complete.
+        // onAuthStateChanged will have already fired with the definitive state.
+        // Now it's safe to stop the initial loading screen.
+        set({ isLoading: false });
+      });
+
     return unsubscribe;
   },
 
@@ -115,12 +118,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null }); 
     try {
         const provider = new GoogleAuthProvider();
-        // We handle potential redirect errors here
-        await signInWithRedirect(auth, provider).catch(error => {
-          throw error;
-        });
-        // The page will redirect. The result is handled by initializeAuth on the next load.
+        await signInWithRedirect(auth, provider);
+        // After this call, the page unloads and redirects. Nothing further is executed.
     } catch (error: any) {
+        // This catch block is unlikely to be hit for redirect flows,
+        // but good to have for robustness (e.g., config errors).
         console.error("Google sign-in initiation error", error);
         const errorMessage = formatAuthError(error.code);
         set({ error: errorMessage, isLoading: false });
