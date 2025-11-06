@@ -56,27 +56,35 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // First, process the potential redirect result. This triggers the Firebase SDK
-    // to check the URL for an auth response from the redirect.
-    getRedirectResult(auth).catch((error) => {
-      console.error("Google Sign-In Redirect Error:", error);
-      toast.error(formatAuthError(error.code));
-    });
-
-    // onAuthStateChanged is the primary listener. It will fire with the user
-    // after getRedirectResult has been processed, or with null if there's no user.
-    // This is the single source of truth for the user's auth state.
-    onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        const user: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-        };
-        set({ currentUser: user, isAuthenticated: true, isLoading: false, error: null });
-      } else {
-        set({ currentUser: null, isAuthenticated: false, isLoading: false, error: null });
+    const handleAuth = async () => {
+      try {
+        // By awaiting this, we ensure that any redirect is processed before moving on.
+        // The result of this will then be available to onAuthStateChanged.
+        await getRedirectResult(auth);
+      } catch (error: any) {
+        // If getRedirectResult fails, we log it. onAuthStateChanged will likely
+        // receive a `null` user, which is the correct outcome.
+        console.error("Google Sign-In Redirect Error:", error);
+        toast.error(formatAuthError(error.code));
       }
-    });
+
+      // Now, set up the listener. It will fire with the correct state,
+      // whether from the processed redirect or from a stored session,
+      // and it will correctly set isLoading to false only once the state is certain.
+      onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+        if (firebaseUser) {
+          const user: User = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+          };
+          set({ currentUser: user, isAuthenticated: true, isLoading: false, error: null });
+        } else {
+          set({ currentUser: null, isAuthenticated: false, isLoading: false, error: null });
+        }
+      });
+    };
+
+    handleAuth();
   },
 
   signup: async (email, password) => {
