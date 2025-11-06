@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore.ts';
 import useTranslations from '../hooks/useTranslations.ts';
 import DropletLogoIcon from '../components/icons/DropletLogoIcon.tsx';
 import toast from 'react-hot-toast';
+import PaperPlaneIcon from '../components/icons/PaperPlaneIcon.tsx';
+import EmailExistsModal from '../components/EmailExistsModal.tsx';
 
 const AuthPage: React.FC = () => {
-  const { isLoading, login, signup, resetPassword } = useAuthStore();
+  const { isLoading, login, signup, resetPassword, error, clearError } = useAuthStore();
   const t = useTranslations();
   
-  const [view, setView] = useState<'login' | 'signup' | 'reset'>('login');
+  const [view, setView] = useState<'login' | 'signup' | 'reset' | 'reset-success'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showEmailExistsModal, setShowEmailExistsModal] = useState(false);
+
+  useEffect(() => {
+    if (error === 'auth/email-already-in-use') {
+      setShowEmailExistsModal(true);
+    }
+  }, [error]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,18 +50,41 @@ const AuthPage: React.FC = () => {
       toast.error(t.toast_invalidEmail);
       return;
     }
-    await resetPassword(email);
-    setView('login'); // Go back to login view after request
+    try {
+      await resetPassword(email);
+      setView('reset-success');
+    } catch (err) {
+      // Error is handled by the store's toast
+    }
   };
 
   const switchView = (targetView: 'login' | 'signup') => {
     if (view !== targetView) {
         setView(targetView);
-        setEmail('');
+        // Do not clear email when switching, it's a common UX pattern
         setPassword('');
         setConfirmPassword('');
     }
   }
+
+  const handleCloseEmailExistsModal = () => {
+    setShowEmailExistsModal(false);
+    clearError();
+  };
+
+  const handleGoToLoginFromModal = () => {
+      handleCloseEmailExistsModal();
+      setView('login');
+      setPassword('');
+      setConfirmPassword('');
+  };
+
+  const handleGoToResetFromModal = () => {
+      handleCloseEmailExistsModal();
+      setView('reset');
+      setPassword('');
+      setConfirmPassword('');
+  };
   
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
 
@@ -103,7 +135,7 @@ const AuthPage: React.FC = () => {
         
         {view === 'login' && (
             <div className="text-right">
-                <button type="button" onClick={() => { setEmail(''); setView('reset'); }} className="text-sm font-semibold text-emerald-main hover:underline">
+                <button type="button" onClick={() => { setView('reset'); }} className="text-sm font-semibold text-emerald-main hover:underline">
                     {t.auth_forgotPassword}
                 </button>
             </div>
@@ -151,6 +183,22 @@ const AuthPage: React.FC = () => {
     </div>
   );
 
+  const renderResetSuccess = () => (
+    <div key="reset-success" className="animate-fade-in-fast text-center">
+        <div className="w-20 h-20 flex items-center justify-center bg-mint-soft rounded-full mx-auto mb-4">
+            <PaperPlaneIcon className="w-10 h-10 text-emerald-main"/>
+        </div>
+        <h2 className="text-xl font-display font-bold text-text-title mb-2">{t.auth_resetSuccessTitle}</h2>
+        <p 
+            className="text-sm text-text-muted mb-6"
+            dangerouslySetInnerHTML={{ __html: t.auth_resetSuccessSubtitle(email) }}
+        />
+        <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">
+            {t.auth_backToLogin}
+        </button>
+    </div>
+  );
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient font-sans">
@@ -161,10 +209,20 @@ const AuthPage: React.FC = () => {
           <p className="text-white/80 mt-2">{t.auth_subtitle}</p>
         </div>
         
-        <div className="bg-white/[.85] rounded-card p-6 sm:p-8 shadow-glass border border-black/5 animate-card-open">
-          {view === 'reset' ? renderReset() : renderLoginSignup()}
+        <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5">
+          {view === 'reset' && renderReset()}
+          {view === 'reset-success' && renderResetSuccess()}
+          {(view === 'login' || view === 'signup') && renderLoginSignup()}
         </div>
       </div>
+      
+      {showEmailExistsModal && (
+        <EmailExistsModal 
+            onClose={handleCloseEmailExistsModal}
+            onGoToLogin={handleGoToLoginFromModal}
+            onGoToReset={handleGoToResetFromModal}
+        />
+      )}
     </div>
   );
 };

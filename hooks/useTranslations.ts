@@ -73,8 +73,6 @@ const fr = {
   toast_snackAdded: "Collation ajoutée au journal.",
   toast_titleRequired: "Le titre est requis.",
   toast_datetimeRequired: "La date et l'heure sont requises.",
-  toast_resetPasswordSuccess: "Un e-mail de réinitialisation a été envoyé.",
-  toast_resetPasswordError: "Erreur lors de l'envoi de l'e-mail.",
   // Auth Page
   auth_appTitle: "Diab'Assistant",
   auth_subtitle: "Votre assistant personnel pour la gestion du diabète de type 1.",
@@ -91,6 +89,11 @@ const fr = {
   auth_resetSubtitle: "Entrez votre e-mail pour recevoir un lien de réinitialisation.",
   auth_resetButton: "Envoyer le lien",
   auth_backToLogin: "Retour à la connexion",
+  auth_resetSuccessTitle: "Vérifiez vos e-mails",
+  auth_resetSuccessSubtitle: (email: string) => `Si un compte existe pour <strong>${email}</strong>, vous y trouverez un lien pour réinitialiser votre mot de passe.`,
+  auth_emailExistsTitle: "Compte Existant",
+  auth_emailExistsSubtitle: "Un compte existe déjà avec cette adresse e-mail. Que souhaitez-vous faire ?",
+  auth_goToLogin: "Se connecter",
   // Invitation Acceptance
   invitation_title: (patientName: string) => `Invitation de ${patientName}`,
   invitation_subtitle: (patientName: string, role: string) => `Vous avez été invité(e) à rejoindre le cercle de soins de **${patientName}** en tant que **${role}**.`,

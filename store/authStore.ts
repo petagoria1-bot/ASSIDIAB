@@ -96,9 +96,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // onAuthStateChanged will handle state update & invitation acceptance.
       toast.success("Compte créé avec succès !");
     } catch (error: any) {
-      const errorMessage = formatAuthError(error.code);
-      set({ error: errorMessage, isLoading: false });
-      toast.error(errorMessage);
+      if (error.code === 'auth/email-already-in-use') {
+        set({ error: 'auth/email-already-in-use', isLoading: false });
+        // Let the component handle this with a modal
+      } else {
+        const errorMessage = formatAuthError(error.code);
+        set({ error: errorMessage, isLoading: false });
+        toast.error(errorMessage);
+      }
     }
   },
 
@@ -126,13 +131,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await sendPasswordResetEmail(auth, email);
-      // Using a more generic message for security (prevents user enumeration)
-      toast.success("Si un compte est associé à cet e-mail, un lien de réinitialisation a été envoyé.");
       set({ isLoading: false });
     } catch (error: any) {
       const errorMessage = formatAuthError(error.code);
       set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
+      throw new Error(errorMessage); // Propagate error
     }
   },
 }));
