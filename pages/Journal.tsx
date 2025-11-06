@@ -1,125 +1,159 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { usePatientStore } from '../store/patientStore.ts';
-import { Mesure, Repas, Injection, Page } from '../types.ts';
+import { useUiStore } from '../store/uiStore.ts';
+import { Mesure, Repas, Injection, Page, MealTime } from '../types.ts';
 import useTranslations from '../hooks/useTranslations.ts';
-import TimelineEventCard from '../components/TimelineEventCard.tsx';
+import toast from 'react-hot-toast';
 
-type TimelineEvent = (Mesure | Repas | Injection) & { eventType: 'mesure' | 'repas' | 'injection' };
+import QuickAddItemModal from '../components/QuickAddItemModal.tsx';
+import DateNavigator from '../components/DateNavigator.tsx';
+import MealGroupCard from '../components/MealGroupCard.tsx';
+import TimeSlotCard from '../components/TimeSlotCard.tsx';
+import PlusIcon from '../components/icons/PlusIcon.tsx';
+import AddEventChoiceModal from '../components/AddEventChoiceModal.tsx';
+import AddSnackModal from '../components/AddSnackModal.tsx';
 
-const useAnimatedEntries = () => {
-  const observer = useRef<IntersectionObserver | null>(null);
-  const [visibleEntries, setVisibleEntries] = useState<Set<string>>(new Set());
+// Combined type for all possible events in the journal
+type JournalEvent = 
+    | { type: 'mealgroup'; ts: string; data: { repas: Repas; injection?: Injection; mesure?: Mesure } }
+    | { type: 'mesure'; ts: string; data: Mesure }
+    | { type: 'injection'; ts: string; data: { injection: Injection; mesure?: Mesure } };
 
-  useEffect(() => {
-    observer.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleEntries((prev) => new Set(prev).add(entry.target.id));
-          }
-        });
-      },
-      {
-        rootMargin: '0px 0px -10% 0px',
-        threshold: 0.1,
-      }
-    );
-
-    return () => observer.current?.disconnect();
-  }, []);
-
-  const observe = (element: HTMLElement | null) => {
-    if (element) {
-      observer.current?.observe(element);
-    }
-  };
-
-  return { visibleEntries, observe };
-};
 
 const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurrentPage }) => {
   const { mesures, repas, injections } = usePatientStore();
+  const { setCalculatorMealTime } = useUiStore();
   const t = useTranslations();
-  const { visibleEntries, observe } = useAnimatedEntries();
 
-  const allEvents: TimelineEvent[] = useMemo(() => {
-    const combined = [
-      ...mesures.map(m => ({ ...m, eventType: 'mesure' as const })),
-      ...repas.map(r => ({ ...r, eventType: 'repas' as const })),
-      ...injections.map(i => ({ ...i, eventType: 'injection' as const })),
-    ];
-    return combined.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-  }, [mesures, repas, injections]);
-  
-  const groupedEvents = useMemo(() => {
-    const groups: { [key: string]: TimelineEvent[] } = {};
-    allEvents.forEach(event => {
-      const date = new Date(event.ts).toDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(event);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isAddChoiceModalOpen, setAddChoiceModalOpen] = useState(false);
+  const [isAddSnackModalOpen, setAddSnackModalOpen] = useState(false);
+  const [isAddMeasureModalOpen, setAddMeasureModalOpen] = useState(false);
+  const [modalTimeHints, setModalTimeHints] = useState<{before: string, after: string} | null>(null);
+
+  const groupedEventsByDay = useMemo(() => {
+    const dayStart = new Date(currentDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(currentDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const dayMesures = mesures.filter(e => { const d = new Date(e.ts); return d >= dayStart && d <= dayEnd; });
+    const dayRepas = repas.filter(e => { const d = new Date(e.ts); return d >= dayStart && d <= dayEnd; });
+    const dayInjections = injections.filter(e => { const d = new Date(e.ts); return d >= dayStart && d <= dayEnd; });
+
+    let processedMesureIds = new Set<string>();
+    let processedInjectionIds = new Set<string>();
+    let processedRepasIds = new Set<string>();
+    const mealGroups: JournalEvent[] = [];
+
+    dayRepas.sort((a,b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()).forEach(r => {
+        const injection = dayInjections.find(i => i.lien_repas_id === r.id);
+        const mesure = injection ? dayMesures.find(m => m.id === injection.lien_mesure_id) : undefined;
+        mealGroups.push({ type: 'mealgroup', ts: r.ts, data: { repas: r, injection, mesure }});
+        processedRepasIds.add(r.id);
+        if(injection) processedInjectionIds.add(injection.id);
+        if(mesure) processedMesureIds.add(mesure.id);
     });
-    return Object.entries(groups);
-  }, [allEvents]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) return t.history_today;
-    if (date.toDateString() === yesterday.toDateString()) return t.history_yesterday;
     
-    return date.toLocaleDateString(t.locale, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
+    const standaloneInjections = dayInjections.filter(i => !processedInjectionIds.has(i.id)).map(injection => {
+        const mesure = dayMesures.find(m => m.id === injection.lien_mesure_id);
+        if(mesure) processedMesureIds.add(mesure.id);
+        return { type: 'injection', ts: injection.ts, data: { injection, mesure } } as JournalEvent;
     });
+
+    const standaloneMesures = dayMesures.filter(m => !processedMesureIds.has(m.id)).map(mesure => ({ type: 'mesure', ts: mesure.ts, data: mesure } as JournalEvent));
+
+    const allEvents = [...mealGroups, ...standaloneInjections, ...standaloneMesures];
+    return allEvents.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+  }, [currentDate, mesures, repas, injections]);
+  
+
+  const timeSlots = useMemo(() => [
+    { mealTime: 'petit_dej' as MealTime, start: 5, end: 10 },
+    { mealTime: 'dejeuner' as MealTime, start: 11, end: 14 },
+    { mealTime: 'gouter' as MealTime, start: 15, end: 17 },
+    { mealTime: 'diner' as MealTime, start: 18, end: 21 },
+  ], []);
+
+  const handleAddAction = (mealTime: MealTime) => {
+    setCalculatorMealTime(mealTime);
+    setCurrentPage('glucides');
+  }
+  
+  const handleOpenAddChoice = (beforeTs: string, afterTs: string) => {
+    setModalTimeHints({ before: beforeTs, after: afterTs });
+    setAddChoiceModalOpen(true);
+  };
+  
+  const closeAllModals = () => {
+    setAddChoiceModalOpen(false);
+    setAddSnackModalOpen(false);
+    setAddMeasureModalOpen(false);
+    setModalTimeHints(null);
   };
 
   return (
-    <div className="bg-history-gradient min-h-screen pb-24">
-        <header className="sticky top-0 bg-history-gradient/80 backdrop-blur-md py-4 z-20">
-            <h1 className="text-3xl font-display font-bold text-text-title text-center">{t.journal_title}</h1>
+    <div className="pb-24 min-h-screen">
+        <header className="sticky top-0 bg-emerald-main/90 backdrop-blur-md py-4 z-20 shadow-md">
+            <h1 className="text-3xl font-display font-bold text-white text-shadow text-center">{t.journal_title}</h1>
+            <div className="px-4 mt-2">
+                 <DateNavigator currentDate={currentDate} setCurrentDate={setCurrentDate} viewMode="day" />
+            </div>
         </header>
 
-      {allEvents.length === 0 ? (
-        <div className="text-center p-8 bg-white/50 rounded-card mt-10 mx-4">
-            <p className="font-semibold text-text-muted">{t.history_empty}</p>
-        </div>
-      ) : (
-        <div className="relative px-4 pt-4">
-          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-emerald-main/20 rounded-full" />
-          {groupedEvents.map(([date, events]) => (
-            <div key={date} className="relative mb-8">
-              <div id={`date-${date}`} ref={observe} className={`sticky top-20 z-10 flex justify-center py-2 ${visibleEntries.has(`date-${date}`) ? 'animate-timeline-point-pop' : 'opacity-0'}`}>
-                <span className="bg-white text-text-title font-display font-semibold text-sm px-4 py-1.5 rounded-pill shadow-lg border-2 border-white">
-                  {formatDate(date)}
-                </span>
-              </div>
-
-              {events.map((event, index) => {
-                const isVisible = visibleEntries.has(event.id);
-                const animationClass = index % 2 === 0
-                  ? (isVisible ? 'animate-timeline-card-left' : 'opacity-0')
-                  : (isVisible ? 'animate-timeline-card-right' : 'opacity-0');
-                const animationDelay = `${index * 80}ms`;
-
-                return (
-                  <div id={event.id} ref={observe} key={event.id} className="relative my-4">
-                     <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-emerald-main transition-transform duration-300 ${isVisible ? 'animate-timeline-point-pop scale-100' : 'scale-0'}`} style={{ transitionDelay: animationDelay }} />
-                    <div className={animationClass} style={{ animationDelay }}>
-                      <TimelineEventCard event={event} position={index % 2 === 0 ? 'left' : 'right'} />
-                    </div>
-                  </div>
-                );
-              })}
+        <div className="p-4 space-y-4">
+          {groupedEventsByDay.length === 0 ? (
+            <div className="text-center p-8 bg-white/50 rounded-card mt-10">
+                <p className="font-semibold text-text-muted">{t.journal_emptyDay}</p>
             </div>
-          ))}
+          ) : (
+            groupedEventsByDay.map(event => {
+                if(event.type === 'mealgroup') {
+                    return <MealGroupCard key={event.data.repas.id} event={event.data} />;
+                }
+                // Render standalone events here if needed, for now focusing on meal groups.
+                return null;
+            })
+          )}
         </div>
-      )}
+        
+        <button 
+            onClick={() => handleOpenAddChoice(new Date(0).toISOString(), new Date().toISOString())}
+            className="fixed bottom-24 right-5 w-16 h-16 rounded-full shadow-2xl z-30 btn-interactive"
+            aria-label={t.addEventChoice_title}
+        >
+            <PlusIcon />
+        </button>
+
+        {isAddChoiceModalOpen && (
+            <AddEventChoiceModal 
+                onClose={closeAllModals}
+                onSelectMeasure={() => { setAddChoiceModalOpen(false); setAddMeasureModalOpen(true); }}
+                onSelectSnack={() => { setAddChoiceModalOpen(false); setAddSnackModalOpen(true); }}
+            />
+        )}
+        
+        {isAddSnackModalOpen && modalTimeHints && (
+            <AddSnackModal 
+                onClose={closeAllModals}
+                beforeTs={modalTimeHints.before}
+                afterTs={modalTimeHints.after}
+            />
+        )}
+
+        {isAddMeasureModalOpen && modalTimeHints && (
+            <QuickAddItemModal 
+                onClose={closeAllModals}
+                onConfirm={(gly, cetone, ts) => {
+                    usePatientStore.getState().addMesure({ gly, cetone, source: 'doigt' }, ts);
+                    toast.success(t.toast_measureAdded(gly));
+                    closeAllModals();
+                }}
+                initialTs={new Date((new Date(modalTimeHints.before).getTime() + new Date(modalTimeHints.after).getTime()) / 2).toISOString()}
+            />
+        )}
+
     </div>
   );
 };
