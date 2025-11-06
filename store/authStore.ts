@@ -39,10 +39,12 @@ const formatAuthError = (errorCode: string): string => {
         case 'auth/weak-password':
             return 'Le mot de passe doit comporter au moins 6 caractères.';
         case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
             return 'La fenêtre de connexion a été fermée.';
         case 'auth/account-exists-with-different-credential':
             return 'Un compte existe déjà avec cet e-mail mais avec une méthode de connexion différente.';
         default:
+            console.error('Unhandled Firebase Auth Error:', errorCode);
             return 'Une erreur est survenue lors de l\'authentification.';
     }
 }
@@ -50,72 +52,50 @@ const formatAuthError = (errorCode: string): string => {
 export const useAuthStore = create<AuthState>((set) => ({
   currentUser: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: true, // Start loading immediately.
   error: null,
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // This persistent listener will react to all auth changes (login, logout, token refresh).
-    // Its only job is to keep the user state in sync with Firebase.
-    // It does NOT manage the initial loading state.
+    // This listener is Firebase's source of truth. It fires on initial load
+    // (after any redirect is processed), on sign-in, and on sign-out.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       const currentUser: User | null = user ? { uid: user.uid, email: user.email } : null;
+      
+      // The key fix: isLoading becomes false ONLY after this first, definitive check completes.
       set({
         currentUser,
         isAuthenticated: !!user,
+        isLoading: false,
         error: null,
       });
     });
 
-    // This one-time check runs on app startup. It forces the app to wait
-    // for any pending Google Sign-In redirect to be processed before hiding the loading screen.
-    const performStartupCheck = async () => {
-      try {
-        // This promise resolves after Firebase has processed any redirect from Google.
-        // After it resolves, the `onAuthStateChanged` listener above will have been triggered
-        // with the final, correct authentication state (either the new user or null).
-        await getRedirectResult(auth);
-      } catch (error: any) {
-        console.error("Google Sign-In startup error:", error);
+    // Also handle potential errors during the redirect process itself.
+    // This is useful for catching specific issues like account conflicts.
+    getRedirectResult(auth).catch((error: any) => {
+        console.error("Redirect Result Error:", error);
         const errorMessage = formatAuthError(error.code);
-        toast.error(errorMessage);
-        set({ error: errorMessage });
-      } finally {
-        // Now that we are CERTAIN that any redirect has been handled,
-        // we can hide the loading screen. The state is now definitive.
-        set({ isLoading: false });
-      }
-    };
+        if (errorMessage) { // Only show toast if it's a known error
+          toast.error(errorMessage);
+        }
+        set({ error: errorMessage, isLoading: false }); // Also stop loading on error.
+    });
 
-    performStartupCheck();
-
-    // Return the function to clean up the persistent listener when the app unmounts.
+    // Return the cleanup function for React's useEffect.
     return unsubscribe;
   },
 
   signup: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      const newUser: User = { uid: firebaseUser.uid, email: firebaseUser.email };
-
-      // We still keep a local copy for potential offline profile info
-      await db.users.add({ uid: newUser.uid, email: newUser.email ?? '' });
-
+      await createUserWithEmailAndPassword(auth, email, password);
       // onAuthStateChanged will handle the state update automatically.
       toast.success("Compte créé avec succès !");
-
     } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        set({ error: 'auth/email-already-in-use', isLoading: false });
-        toast.info("Ce compte existe déjà. Veuillez vous connecter.");
-      } else {
-        const errorMessage = formatAuthError(error.code);
-        set({ error: errorMessage, isLoading: false });
-        toast.error(errorMessage);
-      }
+      const errorMessage = formatAuthError(error.code);
+      set({ error: errorMessage, isLoading: false });
+      toast.error(errorMessage);
     }
   },
 
@@ -133,14 +113,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   loginWithGoogle: async () => {
-    // Set loading to true to give feedback to the user before the page unloads for redirect.
-    set({ isLoading: true, error: null });
+    set({ error: null }); // Clear previous errors before redirecting
     try {
         const provider = new GoogleAuthProvider();
         await signInWithRedirect(auth, provider);
-        // The result will be handled by the initializeAuth logic on the next page load.
+        // The page will redirect. The result is handled by initializeAuth on the next load.
     } catch (error: any) {
-        console.error("Google sign-in error", error);
+        console.error("Google sign-in initiation error", error);
         const errorMessage = formatAuthError(error.code);
         set({ error: errorMessage, isLoading: false });
         toast.error(errorMessage);
