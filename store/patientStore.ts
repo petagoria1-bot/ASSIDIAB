@@ -300,7 +300,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     };
     await updateDoc(patientRef, { caregivers: arrayUnion(newCaregiver) });
 
-    return `${window.location.origin}/invite/${inviteId}`;
+    // FIX: Use hash-based routing to prevent 404 errors on deep links.
+    return `${window.location.origin}/#/invite/${inviteId}`;
   },
 
   getInvitationDetails: async (inviteId) => {

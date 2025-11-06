@@ -14,10 +14,11 @@ const App: React.FC = () => {
   const [inviteId, setInviteId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simple routing for invitation links
-    const path = window.location.pathname;
-    if (path.startsWith('/invite/')) {
-        const id = path.split('/invite/')[1];
+    // FIX: Use hash-based routing for invitation links to prevent 404 errors.
+    // This allows deep links like /#/invite/some-id to be handled by the client-side router.
+    const hash = window.location.hash;
+    if (hash.startsWith('#/invite/')) {
+        const id = hash.split('#/invite/')[1];
         if (id) {
             setInviteId(id);
             // Store in session storage to survive auth redirect
