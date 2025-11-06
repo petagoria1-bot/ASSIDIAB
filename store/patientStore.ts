@@ -241,42 +241,38 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   createPatient: async (prenom, naissance, user) => {
     set({ isLoading: true });
     try {
-        const patientId = uuidv4();
-        const newPatient: Patient = {
+      const patientId = uuidv4();
+      const newPatient: Patient = {
         id: patientId,
         userUid: user.uid,
         prenom,
         naissance,
         ...DEFAULT_PATIENT_SETTINGS,
         caregivers: [{
-            userUid: user.uid,
-            email: user.email!,
-            role: 'owner',
-            status: 'active',
-            permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
+          userUid: user.uid,
+          email: user.email!,
+          role: 'owner',
+          status: 'active',
+          permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
         }]
-        };
+      };
 
-        const patientWithQueryFields = {
+      const patientWithQueryFields = {
         ...newPatient,
         activeCaregiverUids: [user.uid],
         pendingEmails: []
-        };
+      };
 
-        await setDoc(doc(firestore, "patients", patientId), patientWithQueryFields);
-        
-        await db.foodLibrary.bulkAdd(initialFoodData);
-        const foodLib = await db.foodLibrary.toArray();
+      await setDoc(doc(firestore, "patients", patientId), patientWithQueryFields);
+      
+      // Reload all data to ensure consistency and attach listeners.
+      // This avoids the onboarding loop.
+      await get().loadPatientData(user);
 
-        set({ 
-        patient: patientWithQueryFields,
-        foodLibrary: foodLib,
-        isLoading: false 
-        });
     } catch (error) {
-        console.error("Failed to create patient:", error);
-        toast.error("Erreur lors de la création du profil.");
-        set({ isLoading: false });
+      console.error("Failed to create patient:", error);
+      toast.error("Erreur lors de la création du profil.");
+      set({ isLoading: false, error: "CREATE_FAILED" });
     }
   },
   
