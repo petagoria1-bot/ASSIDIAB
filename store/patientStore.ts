@@ -226,8 +226,18 @@ export const usePatientStore = create<PatientState>((set, get) => ({
       }]
     };
     await setDoc(doc(firestore, "patients", patientId), newPatient);
-    // set({ patient: newPatient, isLoading: false }); // Removed to prevent race condition
-    await get().loadPatientData(user);
+    
+    // Populate the local food library for the new user.
+    await db.foodLibrary.bulkAdd(initialFoodData);
+    const foodLib = await db.foodLibrary.toArray();
+
+    // Atomically set the new patient and finish loading.
+    // This avoids the race condition of calling loadPatientData.
+    set({ 
+      patient: newPatient,
+      foodLibrary: foodLib,
+      isLoading: false 
+    });
   },
   
   updatePatient: async (patientData) => {
