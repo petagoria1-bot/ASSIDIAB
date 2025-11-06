@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import { db } from '../services/db';
 import { User } from '../types';
-import { usePatientStore } from './patientStore';
 import { auth } from '../services/firebase';
 import { 
   createUserWithEmailAndPassword, 
@@ -122,7 +121,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await signOut(auth);
-    usePatientStore.getState().clearPatientData(); // Clear patient data on logout
     // onAuthStateChanged will handle setting the user state to null
   },
 }));

@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
+import { usePatientStore } from './store/patientStore';
 import AuthPage from './pages/AuthPage';
 import PostAuthFlow from './pages/PostAuthFlow';
 import { Toaster } from 'react-hot-toast';
@@ -9,10 +10,19 @@ import LoadingScreen from './components/LoadingScreen';
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoading, checkSession } = useAuthStore();
+  const { clearPatientData } = usePatientStore();
 
   useEffect(() => {
     checkSession();
   }, [checkSession]);
+
+  // Clear patient data when user logs out.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      clearPatientData();
+    }
+  }, [isLoading, isAuthenticated, clearPatientData]);
+
 
   if (isLoading) {
     return <LoadingScreen />;

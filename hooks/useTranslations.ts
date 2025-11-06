@@ -396,8 +396,7 @@ const fr = {
 };
 const en = { ...fr, locale: 'en' }; // Placeholder for English
 
-// FIX: Export translations object for non-hook usage.
-export const translations = { fr, en };
+const translations = { fr, en };
 
 const useTranslations = () => {
   const { language } = useSettingsStore();

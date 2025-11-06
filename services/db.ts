@@ -25,6 +25,23 @@ db.version(5).stores({
   favoriteMeals: 'id, patient_id, name',
   events: 'id, ts, patient_id, status',
   dailyProgress: 'date, patient_id'
+}).upgrade(tx => {
+    // This migration handles the renaming of fields from v4 to v5 schema.
+    // It ensures existing users don't get a broken database.
+    return tx.table('patients').toCollection().modify(patient => {
+        if (patient.userId) {
+            patient.userUid = patient.userId;
+            delete patient.userId;
+        }
+    }).then(() => {
+        return tx.table('users').toCollection().modify(user => {
+            if (user.username) {
+                user.uid = user.username;
+                // email will be populated by auth state, can be null initially.
+                delete user.username;
+            }
+        });
+    });
 });
 
 

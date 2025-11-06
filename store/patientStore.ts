@@ -8,9 +8,6 @@ import { DEFAULT_PATIENT_SETTINGS } from '../constants';
 import { firestore } from '../services/firebase';
 import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, onSnapshot, Unsubscribe, addDoc, orderBy, writeBatch } from "firebase/firestore";
 import { useAuthStore } from './authStore';
-// FIX: Import useSettingsStore and translations to get translation data outside of a React component.
-import { useSettingsStore } from './settingsStore';
-import { translations } from '../hooks/useTranslations';
 
 // Define a type for the pending invitation check
 export interface PendingInvitation {
@@ -36,7 +33,7 @@ interface PatientState {
   clearPatientData: () => void;
   loadPatientData: (user: User) => Promise<boolean>;
   checkForPendingInvitation: (user: User) => Promise<boolean>;
-  handleInvitation: (invitation: PendingInvitation, accept: boolean, user: User) => Promise<void>;
+  handleInvitation: (invitation: PendingInvitation, accept: boolean, user: User, declineStrings?: { messageText: string, fromSystem: string }) => Promise<void>;
   createPatient: (prenom: string, naissance: string, user: User) => Promise<void>;
   updatePatient: (patientData: Patient) => Promise<void>;
   addMesure: (mesure: Omit<Mesure, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
@@ -164,7 +161,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     }
   },
   
-  handleInvitation: async (invitation, accept, user) => {
+  handleInvitation: async (invitation, accept, user, declineStrings) => {
     const patientRef = doc(firestore, "patients", invitation.patientId);
     const patientSnap = await getDoc(patientRef);
     if (!patientSnap.exists()) return;
@@ -192,16 +189,13 @@ export const usePatientStore = create<PatientState>((set, get) => ({
                 caregivers: updatedCaregivers,
                 pendingEmails: arrayRemove(user.email),
             });
-            if (owner && owner.userUid) {
-                 const lang = useSettingsStore.getState().language;
-                 const t = translations[lang] || translations.fr;
-                 const messageText = t.message_invitationDeclined(user.email!, invitation.patientName);
+            if (owner && owner.userUid && declineStrings) {
                  await addDoc(collection(firestore, `patients/${invitation.patientId}/messages`), {
                     patientId: invitation.patientId,
                     fromUid: 'system',
-                    fromEmail: t.inbox_fromSystem,
+                    fromEmail: declineStrings.fromSystem,
                     toUid: owner.userUid,
-                    text: messageText,
+                    text: declineStrings.messageText,
                     ts: new Date().toISOString(),
                     read: false
                  });

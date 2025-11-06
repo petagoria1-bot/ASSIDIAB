@@ -20,7 +20,11 @@ const RoleConfirmationModal: React.FC = () => {
   };
   
   const handleDecline = () => {
-    handleInvitation(pendingInvitation, false, currentUser);
+    const declineStrings = {
+        messageText: t.message_invitationDeclined(currentUser.email!, pendingInvitation.patientName),
+        fromSystem: t.inbox_fromSystem
+    };
+    handleInvitation(pendingInvitation, false, currentUser, declineStrings);
   };
   
   const roleLabel = t[`role_${pendingInvitation.caregiver.role}` as keyof typeof t] || pendingInvitation.caregiver.role;
