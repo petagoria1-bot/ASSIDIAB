@@ -11,7 +11,6 @@ import {
   User as FirebaseUser,
   GoogleAuthProvider,
   signInWithRedirect,
-  UserCredential,
   getRedirectResult
 } from 'firebase/auth';
 
@@ -56,32 +55,35 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // This listener is the single source of truth for the user's auth state.
-    // It reacts to any sign-in, sign-out, or the result of a redirect.
-    onAuthStateChanged(auth, (firebaseUser) => {
+    // This is the single, permanent listener for the app's lifetime.
+    onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // User is signed in. It's now safe to stop loading.
         const user: User = { uid: firebaseUser.uid, email: firebaseUser.email };
-        set({ currentUser: user, isAuthenticated: true });
+        set({ currentUser: user, isAuthenticated: true, isLoading: false });
       } else {
-        set({ currentUser: null, isAuthenticated: false });
+        // User is signed out, BUT we might be in the middle of a redirect sign-in.
+        // We must check for this before declaring the user as logged out.
+        try {
+          const result = await getRedirectResult(auth);
+          if (result) {
+            // A sign-in just occurred via redirect.
+            // `onAuthStateChanged` will be called AGAIN with the new user data.
+            // We do nothing here and wait for the next call which will go into the `if (firebaseUser)` block.
+            // `isLoading` remains `true` until that happens.
+          } else {
+            // No user, and no redirect result. We are truly logged out.
+            // It's now safe to stop loading.
+            set({ currentUser: null, isAuthenticated: false, isLoading: false });
+          }
+        } catch (error: any) {
+          // An error occurred during the redirect check.
+          console.error("Google Sign-In Redirect Error:", error);
+          toast.error(formatAuthError(error.code));
+          set({ currentUser: null, isAuthenticated: false, isLoading: false });
+        }
       }
     });
-
-    // On initial app load, we must check if we are returning from a
-    // Google Sign-In. The `getRedirectResult` promise's completion signals
-    // that this check is done and it's safe to render the app.
-    getRedirectResult(auth)
-      .catch((error: any) => {
-        // An error here means the redirect sign-in itself failed.
-        console.error("Google Sign-In Redirect Error:", error);
-        toast.error(formatAuthError(error.code));
-      })
-      .finally(() => {
-        // This is crucial: we only stop the main app loading after the redirect
-        // operation has been fully processed. By this time, onAuthStateChanged
-        // will have received the correct state and updated the store.
-        set({ isLoading: false });
-      });
   },
 
   signup: async (email, password) => {
@@ -108,8 +110,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         toast.error(errorMessage);
       }
     }
-    // Note: We don't set isLoading: false on success because the onAuthStateChanged
-    // listener will trigger a re-render that takes the user away from this page.
   },
 
   login: async (email, password) => {
@@ -130,7 +130,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
         const provider = new GoogleAuthProvider();
         await signInWithRedirect(auth, provider);
-        // The result will be handled by getRedirectResult on the next page load.
+        // The result will be handled by initializeAuth on the next page load.
     } catch (error: any) {
         console.error("Google sign-in error", error);
         const errorMessage = formatAuthError(error.code);
