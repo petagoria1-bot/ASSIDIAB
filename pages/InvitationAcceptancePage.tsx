@@ -14,7 +14,7 @@ const InvitationAcceptancePage: React.FC<InvitationAcceptancePageProps> = ({ inv
   const { getInvitationDetails } = usePatientStore();
   const t = useTranslations();
 
-  const [invitation, setInvitation] = useState<{ patientName: string; role: string } | null>(null);
+  const [invitation, setInvitation] = useState<{ patientName: string; role: string; email: string; } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

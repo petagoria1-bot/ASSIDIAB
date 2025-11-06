@@ -41,7 +41,7 @@ interface PatientState {
   logActivity: (duration_min: number) => Promise<void>;
   logQuizCompleted: () => Promise<void>;
   generateInvitationLink: (email: string, role: CaregiverRole) => Promise<string | null>;
-  getInvitationDetails: (inviteId: string) => Promise<{ patientName: string; role: string } | null>;
+  getInvitationDetails: (inviteId: string) => Promise<{ patientName: string; role: string; email: string; } | null>;
   acceptInvitation: (inviteId: string, user: User) => Promise<void>;
   removeCaregiver: (caregiver: Caregiver) => Promise<void>;
   updateCaregiverPermissions: (caregiverEmail: string, permissions: CaregiverPermissions) => Promise<void>;
@@ -283,7 +283,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         throw new Error("User is already a caregiver.");
     }
     const inviteId = uuidv4();
-    const inviteRef = doc(firestore, `patients/${patient.id}/invitations`, inviteId);
+    const inviteRef = doc(firestore, `invitations`, inviteId);
     
     await setDoc(inviteRef, {
         email,
@@ -304,60 +304,71 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   },
 
   getInvitationDetails: async (inviteId) => {
-    // This is a bit tricky since we don't know the patientId.
-    // This requires a root-level collection query, which is less ideal for security.
-    // For now, we assume the invite link includes the patientId or we find it.
-    // A better way would be a collectionGroup query on 'invitations'.
-    // Let's assume a simpler structure for now or a Cloud Function handles this lookup.
-    // To implement without collectionGroup queries, we can iterate through patients.
-    // This is NOT scalable, but for a small app it works.
-    const patientsSnapshot = await getDocs(collection(firestore, "patients"));
-    for (const patientDoc of patientsSnapshot.docs) {
-        const inviteRef = doc(firestore, `patients/${patientDoc.id}/invitations`, inviteId);
-        const inviteSnap = await getDoc(inviteRef);
-        if (inviteSnap.exists()) {
-            const data = inviteSnap.data();
-            const expiresAt = (data.expiresAt as Timestamp).toDate();
-            if (expiresAt < new Date()) {
-                await deleteDoc(inviteRef);
-                return null; // Expired
-            }
-            return { patientName: data.patientName, role: data.role };
+    const inviteRef = doc(firestore, `invitations`, inviteId);
+    const inviteSnap = await getDoc(inviteRef);
+    
+    if (inviteSnap.exists()) {
+        const data = inviteSnap.data();
+        const expiresAt = (data.expiresAt as Timestamp).toDate();
+        if (expiresAt < new Date()) {
+            await deleteDoc(inviteRef);
+            return null; // Expired
         }
+        return { patientName: data.patientName, role: data.role, email: data.email };
     }
     return null;
   },
 
   acceptInvitation: async (inviteId, user) => {
-    const patientsSnapshot = await getDocs(collection(firestore, "patients"));
-    for (const patientDoc of patientsSnapshot.docs) {
-        const inviteRef = doc(firestore, `patients/${patientDoc.id}/invitations`, inviteId);
-        const inviteSnap = await getDoc(inviteRef);
+    const inviteRef = doc(firestore, "invitations", inviteId);
+    const inviteSnap = await getDoc(inviteRef);
 
-        if (inviteSnap.exists()) {
-            const inviteData = inviteSnap.data();
-            const patientRef = doc(firestore, "patients", patientDoc.id);
-            const patientSnap = await getDoc(patientRef);
-            if (!patientSnap.exists()) continue;
-
-            const patientData = patientSnap.data() as Patient;
-            const updatedCaregivers = patientData.caregivers.map(c => {
-                if (c.email === inviteData.email && c.status === 'awaiting_confirmation') {
-                    return { ...c, status: 'active' as const, userUid: user.uid };
-                }
-                return c;
-            });
-
-            await updateDoc(patientRef, {
-                caregivers: updatedCaregivers,
-                caregiversUids: arrayUnion(user.uid)
-            });
-
-            await deleteDoc(inviteRef);
-            return;
-        }
+    if (!inviteSnap.exists()) {
+        throw new Error("Invitation not found or invalid.");
     }
-    throw new Error("Invitation not found or invalid.");
+    
+    const inviteData = inviteSnap.data();
+    if (user.email !== inviteData.email) {
+        await deleteDoc(inviteRef);
+        throw new Error("Logged-in user does not match invitation email.");
+    }
+
+    const patientRef = doc(firestore, "patients", inviteData.patientId);
+
+    // ARCHITECTURAL NOTE: The following read-modify-write operation will fail for a new user
+    // if secure Firestore rules are in place (i.e., allow read only if user is already a caregiver).
+    // A new user doesn't have read permission yet, so getDoc() will be denied.
+    // The robust solution for this chicken-and-egg problem is to use a Cloud Function
+    // with admin privileges to handle the acceptance logic securely.
+    // For now, this code assumes either relaxed security rules or will fail gracefully.
+    try {
+        const patientSnap = await getDoc(patientRef);
+        if (!patientSnap.exists()) {
+            await deleteDoc(inviteRef);
+            throw new Error("Patient profile not found.");
+        }
+
+        const patientData = patientSnap.data() as Patient;
+        const updatedCaregivers = patientData.caregivers.map(c => {
+            if (c.email === inviteData.email && c.status === 'awaiting_confirmation') {
+                return { ...c, status: 'active' as const, userUid: user.uid };
+            }
+            return c;
+        });
+
+        await updateDoc(patientRef, {
+            caregivers: updatedCaregivers,
+            caregiversUids: arrayUnion(user.uid)
+        });
+
+        await deleteDoc(inviteRef);
+        return;
+    } catch (error) {
+        console.error("Permission error during invitation acceptance:", error);
+        toast.error("Impossible de rejoindre le cercle de soins. Le propriétaire du profil doit vous ajouter manuellement pour le moment.");
+        // We don't delete the invite here, maybe it can be retried.
+        throw error;
+    }
   },
 
   removeCaregiver: async (caregiverToRemove) => {
