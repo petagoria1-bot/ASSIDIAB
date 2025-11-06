@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useUiStore } from '../store/uiStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { calculateDose } from '../services/calculator';
 import { DoseCalculationOutput, MealTime, Page, MealItem } from '../types';
 import toast from 'react-hot-toast';
@@ -16,6 +18,7 @@ import BreakfastIcon from '../components/icons/BreakfastIcon';
 import LunchIcon from '../components/icons/LunchIcon';
 import SnackIcon from '../components/icons/SnackIcon';
 import DinnerIcon from '../components/icons/DinnerIcon';
+import RatioReminderModal from '../components/RatioReminderModal';
 
 interface DoseCalculatorProps {
   setCurrentPage: (page: Page) => void;
@@ -24,6 +27,7 @@ interface DoseCalculatorProps {
 const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const { patient, getLastCorrection, addFullBolus } = usePatientStore();
   const { calculatorMealTime, setCalculatorMealTime } = useUiStore();
+  const { showRatioReminder } = useSettingsStore();
   const t = useTranslations();
 
   const [glyPre, setGlyPre] = useState('');
@@ -33,6 +37,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
   const [calculation, setCalculation] = useState<DoseCalculationOutput | null>(null);
   const [isExplanationOpen, setExplanationOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [isReminderModalOpen, setReminderModalOpen] = useState(false);
 
   useEffect(() => {
     if (calculatorMealTime) {
@@ -70,41 +75,49 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
     setShowSuccessAnimation(true);
   };
   
-  const handleSaveBolus = async () => {
-      if (!calculation || !patient) {
-          toast.error(t.toast_calculationIncomplete);
-          return;
-      }
-      const glyValue = parseFloat(glyPre.replace(',', '.'));
-       if (isNaN(glyValue)) return;
-       
-      const timestamp = new Date().toISOString();
-      
-      const mesure = {
-          gly: glyValue,
-          source: 'doigt' as const
-      };
-      
-      const repas = {
-          moment,
-          items: mealItems.map(i => ({ nom: i.food.name, carbs_g: i.carbs_g, poids_g: i.poids_g })),
-          total_carbs_g: totalCarbs
-      };
-      
-      const injection = {
-          type: 'rapide' as const,
-          dose_U: calculation.doseTotale,
-          calc_details: t.calculator_bolusDetails(calculation.doseRepas_U, calculation.addCorr_U)
-      };
+  const executeSaveBolus = async () => {
+    if (!calculation || !patient) {
+        toast.error(t.toast_calculationIncomplete);
+        return;
+    }
+    const glyValue = parseFloat(glyPre.replace(',', '.'));
+    if (isNaN(glyValue)) return;
+    
+    const timestamp = new Date().toISOString();
+    
+    const mesure = {
+        gly: glyValue,
+        source: 'doigt' as const
+    };
+    
+    const repas = {
+        moment,
+        items: mealItems.map(i => ({ nom: i.food.name, carbs_g: i.carbs_g, poids_g: i.poids_g })),
+        total_carbs_g: totalCarbs
+    };
+    
+    const injection = {
+        type: 'rapide' as const,
+        dose_U: calculation.doseTotale,
+        calc_details: t.calculator_bolusDetails(calculation.doseRepas_U, calculation.addCorr_U)
+    };
 
-      try {
-        await addFullBolus({ mesure, repas, injection }, timestamp);
-        toast.success(t.toast_bolusSaved(calculation.doseTotale));
-        setCurrentPage('journal');
-      } catch (error) {
-        console.error(error);
-        toast.error(t.toast_bolusSaveError);
-      }
+    try {
+      await addFullBolus({ mesure, repas, injection }, timestamp);
+      toast.success(t.toast_bolusSaved(calculation.doseTotale));
+      setCurrentPage('journal');
+    } catch (error) {
+      console.error(error);
+      toast.error(t.toast_bolusSaveError);
+    }
+  };
+
+  const handleSaveBolus = () => {
+    if (showRatioReminder) {
+      setReminderModalOpen(true);
+    } else {
+      executeSaveBolus();
+    }
   };
 
   const mealTimeOptions = [
@@ -197,6 +210,19 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
           glyPre={glyPre}
           totalCarbs={totalCarbs}
           moment={moment}
+        />
+      )}
+      
+      {isReminderModalOpen && calculation && patient && (
+        <RatioReminderModal
+          onClose={() => setReminderModalOpen(false)}
+          onConfirm={() => {
+            setReminderModalOpen(false);
+            executeSaveBolus();
+          }}
+          mealTime={moment}
+          ratio={patient.ratios[moment]}
+          totalDose={calculation.doseTotale}
         />
       )}
 
