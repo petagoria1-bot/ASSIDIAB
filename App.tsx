@@ -1,5 +1,3 @@
-
-
 import React, { useEffect } from 'react';
 import { useAuthStore } from './store/authStore.ts';
 import { usePatientStore } from './store/patientStore.ts';
@@ -10,12 +8,12 @@ import DynamicBackground from './components/DynamicBackground.tsx';
 import LoadingScreen from './components/LoadingScreen.tsx';
 
 const App: React.FC = () => {
-  const { isAuthenticated, isLoading, checkSession } = useAuthStore();
+  const { isAuthenticated, isLoading, initializeAuth } = useAuthStore();
   const { clearPatientData } = usePatientStore();
 
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    initializeAuth();
+  }, [initializeAuth]);
 
   // Clear patient data when user logs out.
   useEffect(() => {

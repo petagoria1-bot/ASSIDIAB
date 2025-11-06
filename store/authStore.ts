@@ -11,7 +11,8 @@ import {
   User as FirebaseUser,
   GoogleAuthProvider,
   signInWithRedirect,
-  UserCredential
+  UserCredential,
+  getRedirectResult
 } from 'firebase/auth';
 
 interface AuthState {
@@ -24,7 +25,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
-  checkSession: () => void;
+  initializeAuth: () => void;
 }
 
 const formatAuthError = (errorCode: string): string => {
@@ -54,16 +55,26 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
   clearError: () => set({ error: null }),
 
-  checkSession: () => {
+  initializeAuth: () => {
+    // First, process the potential redirect result. This triggers the Firebase SDK
+    // to check the URL for an auth response from the redirect.
+    getRedirectResult(auth).catch((error) => {
+      console.error("Google Sign-In Redirect Error:", error);
+      toast.error(formatAuthError(error.code));
+    });
+
+    // onAuthStateChanged is the primary listener. It will fire with the user
+    // after getRedirectResult has been processed, or with null if there's no user.
+    // This is the single source of truth for the user's auth state.
     onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const user: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
         };
-        set({ currentUser: user, isAuthenticated: true, isLoading: false });
+        set({ currentUser: user, isAuthenticated: true, isLoading: false, error: null });
       } else {
-        set({ currentUser: null, isAuthenticated: false, isLoading: false });
+        set({ currentUser: null, isAuthenticated: false, isLoading: false, error: null });
       }
     });
   },
@@ -113,12 +124,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
         const provider = new GoogleAuthProvider();
-        // Using signInWithRedirect instead of signInWithPopup is more robust
-        // in embedded environments (iframes) where popups may be blocked or restricted.
         await signInWithRedirect(auth, provider);
-        // The result of the redirect is handled by the onAuthStateChanged listener
-        // in checkSession, so we don't need to process the result here. The page will
-        // reload, and checkSession will pick up the authenticated user.
     } catch (error: any) {
         console.error("Google sign-in error", error);
         const errorMessage = formatAuthError(error.code);
@@ -129,6 +135,5 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await signOut(auth);
-    // onAuthStateChanged will handle setting the user state to null
   },
 }));
