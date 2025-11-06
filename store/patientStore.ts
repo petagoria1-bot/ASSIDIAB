@@ -124,6 +124,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
 
     if (patientDoc) {
       const patientId = patientDoc.id;
+      const initialPatientData = patientDoc.data() as Patient;
       
       const unsubPatient = onSnapshot(doc(firestore, "patients", patientId), (doc) => {
           const patientData = doc.data() as Patient;
@@ -156,7 +157,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
           await db.dailyProgress.put(progress);
       }
 
-      set({ foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
+      set({ patient: initialPatientData, foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
       return true;
     } else {
       const hasInvitation = await get().checkForPendingInvitation(user);
