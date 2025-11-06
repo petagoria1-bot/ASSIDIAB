@@ -9,7 +9,7 @@ const fr = {
   // Nav
   nav_home: "Accueil",
   nav_calculator: "Calcul",
-  nav_journal: "Journal",
+  nav_journal: "Activité",
   nav_reports: "Rapports",
   nav_settings: "Profil",
   nav_inbox: "Messages",
@@ -200,7 +200,7 @@ const fr = {
   editMeal_title: "Modifier la quantité",
   editMeal_newQuantityLabel: "Nouvelle quantité",
   // Journal
-  journal_title: "Journal de bord",
+  journal_title: "Journal d'activité",
   journal_viewDay: "Jour",
   journal_viewWeek: "Semaine",
   journal_viewMonth: "Mois",

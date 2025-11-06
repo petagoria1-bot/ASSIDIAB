@@ -2,7 +2,7 @@ import React from 'react';
 import { Page } from '../types.ts';
 import HomeIcon from './icons/HomeIcon.tsx';
 import CalculatorIcon from './icons/CalculatorIcon.tsx';
-import JournalIcon from './icons/JournalIcon.tsx';
+import HistoryIcon from './icons/HistoryIcon.tsx';
 import ChartIcon from './icons/ChartIcon.tsx';
 import SettingsIcon from './icons/SettingsIcon.tsx';
 import useTranslations from '../hooks/useTranslations.ts';
@@ -43,7 +43,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
   const navItems = [
     { page: 'dashboard', label: t.nav_home, icon: <HomeIcon /> },
     { page: 'glucides', label: t.nav_calculator, icon: <CalculatorIcon /> },
-    { page: 'journal', label: t.nav_journal, icon: <JournalIcon /> },
+    { page: 'journal', label: t.nav_journal, icon: <HistoryIcon /> },
     { page: 'rapports', label: t.nav_reports, icon: <ChartIcon /> },
     { page: 'settings', label: t.nav_settings, icon: <SettingsIcon /> },
   ];
