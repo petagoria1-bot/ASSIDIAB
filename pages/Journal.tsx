@@ -13,6 +13,7 @@ import TimeSlotCard from '../components/TimeSlotCard.tsx';
 import PlusIcon from '../components/icons/PlusIcon.tsx';
 import AddEventChoiceModal from '../components/AddEventChoiceModal.tsx';
 import AddSnackModal from '../components/AddSnackModal.tsx';
+import HistoryIcon from '../components/icons/HistoryIcon.tsx';
 
 // Combined type for all possible events in the journal
 type JournalEvent = 
@@ -96,7 +97,15 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
   return (
     <div className="pb-24 min-h-screen">
         <header className="sticky top-0 bg-emerald-main/90 backdrop-blur-md py-4 z-20 shadow-md">
-            <h1 className="text-3xl font-display font-bold text-white text-shadow text-center">{t.journal_title}</h1>
+            <div className="px-4 flex items-center justify-between">
+                <div className="flex-1"></div>
+                <h1 className="text-3xl font-display font-bold text-white text-shadow text-center flex-1">{t.journal_title}</h1>
+                <div className="flex-1 flex justify-end">
+                    <button onClick={() => setCurrentPage('history')} className="flex items-center gap-1 text-white text-sm font-semibold p-2 rounded-lg hover:bg-white/20 transition-colors" aria-label={t.journal_timelineView}>
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    </button>
+                </div>
+            </div>
             <div className="px-4 mt-2">
                  <DateNavigator currentDate={currentDate} setCurrentDate={setCurrentDate} viewMode="day" />
             </div>

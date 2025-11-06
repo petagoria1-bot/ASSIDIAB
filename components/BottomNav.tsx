@@ -50,7 +50,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
 
   useEffect(() => {
     const updateIndicator = () => {
-        const activeIndex = navItems.findIndex(item => item.page === currentPage);
+        const pageToFind = currentPage === 'history' ? 'journal' : currentPage;
+        const activeIndex = navItems.findIndex(item => item.page === pageToFind);
         const activeItem = itemRefs.current[activeIndex];
         
         if (activeItem) {
@@ -97,7 +98,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
             ref={el => { if (el) itemRefs.current[index] = el; }}
             label={item.label}
             icon={item.icon}
-            isActive={currentPage === item.page}
+            isActive={currentPage === item.page || (item.page === 'journal' && currentPage === 'history')}
             onClick={() => setCurrentPage(item.page as Page)}
           />
         ))}

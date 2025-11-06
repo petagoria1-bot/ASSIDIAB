@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
-import { Mesure, Repas, Injection } from '../types.ts';
+import { Mesure, Repas, Injection, Page } from '../types.ts';
 import useTranslations from '../hooks/useTranslations.ts';
 import TimelineEventCard from '../components/TimelineEventCard.tsx';
+import ArrowLeftIcon from '../components/icons/ArrowLeftIcon.tsx';
 
 type TimelineEvent = (Mesure | Repas | Injection | { id: string; ts: string; type: 'activity' | 'note', details: any }) & { eventType: 'mesure' | 'repas' | 'injection' | 'activity' | 'note' };
 
@@ -37,7 +38,7 @@ const useAnimatedEntries = () => {
   return { visibleEntries, observe };
 };
 
-const History: React.FC = () => {
+const History: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurrentPage }) => {
   const { mesures, repas, injections } = usePatientStore();
   const t = useTranslations();
   const { visibleEntries, observe } = useAnimatedEntries();
@@ -83,22 +84,29 @@ const History: React.FC = () => {
   };
 
   return (
-    <div className="p-4 space-y-4 pb-24 min-h-screen">
-      <header className="py-4 text-center">
-        <h1 className="text-3xl font-display font-bold text-text-title">{t.history_title}</h1>
+    <div className="p-4 space-y-4 pb-24 min-h-screen bg-history-gradient">
+        <header className="py-4 text-center relative flex items-center justify-center">
+            <button 
+              onClick={() => setCurrentPage('journal')} 
+              className="absolute left-0 text-text-title p-2 rounded-full hover:bg-black/10 transition-colors"
+              aria-label="Retour au journal"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <h1 className="text-3xl font-display font-bold text-text-title">{t.history_title}</h1>
       </header>
-
+      
       {allEvents.length === 0 ? (
         <div className="text-center p-8 bg-white/50 rounded-card mt-10">
             <p className="font-semibold text-text-muted">{t.history_empty}</p>
         </div>
       ) : (
         <div className="relative px-4">
-          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-turquoise-light/30 rounded-full" />
+          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-emerald-main/20 rounded-full" />
           {groupedEvents.map(([date, events]) => (
             <div key={date} className="relative mb-8">
               <div id={`date-${date}`} ref={observe} className={`sticky top-4 z-10 flex justify-center py-2 ${visibleEntries.has(`date-${date}`) ? 'animate-timeline-point-pop' : 'opacity-0'}`}>
-                <span className="bg-honey-yellow text-text-title font-display font-semibold text-sm px-4 py-1.5 rounded-pill shadow-md border-2 border-white">
+                <span className="bg-white text-text-title font-display font-semibold text-sm px-4 py-1.5 rounded-pill shadow-md border-2 border-white">
                   {formatDate(date)}
                 </span>
               </div>
@@ -108,11 +116,11 @@ const History: React.FC = () => {
                 const animationClass = index % 2 === 0
                   ? (isVisible ? 'animate-timeline-card-left' : 'opacity-0')
                   : (isVisible ? 'animate-timeline-card-right' : 'opacity-0');
-                const animationDelay = `${index * 100}ms`;
+                const animationDelay = `${index * 50}ms`;
 
                 return (
                   <div id={event.id} ref={observe} key={event.id} className="relative my-4">
-                     <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-turquoise-light transition-transform duration-300 ${isVisible ? 'animate-timeline-point-pop scale-100' : 'scale-0'}`} style={{ transitionDelay: animationDelay }} />
+                     <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-emerald-main transition-transform duration-300 ${isVisible ? 'animate-timeline-point-pop scale-100' : 'scale-0'}`} style={{ transitionDelay: animationDelay }} />
                     <div className={animationClass} style={{ animationDelay }}>
                       <TimelineEventCard event={event} position={index % 2 === 0 ? 'left' : 'right'} />
                     </div>

@@ -12,6 +12,7 @@ import Pai from './Pai.tsx';
 import FoodLibrary from './FoodLibrary.tsx';
 import Inbox from './Inbox.tsx';
 import Illustrations from './Illustrations.tsx';
+import History from './History.tsx';
 import BottomNav from '../components/BottomNav.tsx';
 import { Page } from '../types.ts';
 import RoleConfirmationModal from '../components/RoleConfirmationModal.tsx';
@@ -83,6 +84,8 @@ const PostAuthFlow: React.FC = () => {
         return <DoseCalculator setCurrentPage={setCurrentPage} />;
       case 'journal':
         return <Journal setCurrentPage={setCurrentPage} />;
+      case 'history':
+        return <History setCurrentPage={setCurrentPage} />;
       case 'rapports':
         return <Reports setCurrentPage={setCurrentPage} />;
       case 'settings':
