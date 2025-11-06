@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { usePatientStore } from '../store/patientStore';
 import { useAuthStore } from '../store/authStore';
@@ -15,6 +16,7 @@ import Illustrations from './Illustrations';
 import BottomNav from '../components/BottomNav';
 import { Page } from '../types';
 import RoleConfirmationModal from '../components/RoleConfirmationModal';
+import LoadingScreen from '../components/LoadingScreen';
 
 const PostAuthFlow: React.FC = () => {
   const { currentUser } = useAuthStore();
@@ -28,11 +30,7 @@ const PostAuthFlow: React.FC = () => {
   }, [currentUser, loadPatientData]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-main-gradient">
-        <div className="w-12 h-12 border-4 border-white/50 border-t-white rounded-full animate-loader-spin"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (pendingInvitation) {

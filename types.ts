@@ -1,3 +1,4 @@
+
 export type Page = 'dashboard' | 'glucides' | 'journal' | 'rapports' | 'settings' | 'emergency' | 'pai' | 'food' | 'history' | 'inbox' | 'illustrations';
 
 export type MealTime = 'petit_dej' | 'dejeuner' | 'gouter' | 'diner' | 'collation';
@@ -62,6 +63,8 @@ export interface Patient {
     contacts: EmergencyContact[];
     notes_pai: string;
     caregivers: Caregiver[];
+    activeCaregiverUids?: string[];
+    pendingEmails?: string[];
 }
 
 export interface Mesure {

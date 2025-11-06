@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { db } from '../services/db';
 import { Patient, Mesure, Repas, Injection, Food, FullBolusPayload, Event, DailyProgress, User, Caregiver, CaregiverRole, CaregiverPermissions, Message } from '../types';
@@ -89,11 +90,13 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   },
   
   checkForPendingInvitation: async (user: User) => {
-    const q = query(collection(firestore, "patients"));
+    if (!user.email) return false;
+    const q = query(collection(firestore, "patients"), where("pendingEmails", "array-contains", user.email));
     const querySnapshot = await getDocs(q);
     
-    for (const doc of querySnapshot.docs) {
-        const patientData = doc.data() as Patient;
+    if (!querySnapshot.empty) {
+        const patientDoc = querySnapshot.docs[0];
+        const patientData = patientDoc.data() as Patient;
         const pendingCaregiver = patientData.caregivers.find(c => c.email === user.email && c.status === 'awaiting_confirmation');
         if (pendingCaregiver) {
             set({
@@ -113,14 +116,9 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     set({ isLoading: true });
     get().clearPatientData();
 
-    const querySnapshot = await getDocs(collection(firestore, "patients"));
-    let patientDoc;
-    querySnapshot.forEach((doc) => {
-        const patientData = doc.data() as Patient;
-        if (patientData.caregivers.some(c => c.userUid === user.uid && c.status === 'active')) {
-            patientDoc = doc;
-        }
-    });
+    const q = query(collection(firestore, "patients"), where("activeCaregiverUids", "array-contains", user.uid));
+    const querySnapshot = await getDocs(q);
+    const patientDoc = querySnapshot.empty ? null : querySnapshot.docs[0];
 
     if (patientDoc) {
       const patientId = patientDoc.id;
@@ -181,14 +179,20 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         if (accept) {
             updatedCaregivers[caregiverIndex].status = 'active';
             updatedCaregivers[caregiverIndex].userUid = user.uid;
-            await updateDoc(patientRef, { caregivers: updatedCaregivers });
+            await updateDoc(patientRef, { 
+                caregivers: updatedCaregivers,
+                pendingEmails: arrayRemove(user.email),
+                activeCaregiverUids: arrayUnion(user.uid)
+            });
             set({ pendingInvitation: null });
             await get().loadPatientData(user); // Reload to get patient access
         } else {
             updatedCaregivers[caregiverIndex].status = 'declined';
-            await updateDoc(patientRef, { caregivers: updatedCaregivers });
+            await updateDoc(patientRef, { 
+                caregivers: updatedCaregivers,
+                pendingEmails: arrayRemove(user.email),
+            });
             if (owner && owner.userUid) {
-                 // FIX: Replaced useTranslations hook with Zustand's getState to access translations outside of a component.
                  const lang = useSettingsStore.getState().language;
                  const t = translations[lang] || translations.fr;
                  const messageText = t.message_invitationDeclined(user.email!, invitation.patientName);
@@ -225,16 +229,21 @@ export const usePatientStore = create<PatientState>((set, get) => ({
           permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
       }]
     };
-    await setDoc(doc(firestore, "patients", patientId), newPatient);
+
+    const patientWithQueryFields = {
+      ...newPatient,
+      activeCaregiverUids: [user.uid],
+      pendingEmails: []
+    };
+
+    await setDoc(doc(firestore, "patients", patientId), patientWithQueryFields);
     
     // Populate the local food library for the new user.
     await db.foodLibrary.bulkAdd(initialFoodData);
     const foodLib = await db.foodLibrary.toArray();
 
-    // Atomically set the new patient and finish loading.
-    // This avoids the race condition of calling loadPatientData.
     set({ 
-      patient: newPatient,
+      patient: patientWithQueryFields,
       foodLibrary: foodLib,
       isLoading: false 
     });
@@ -322,7 +331,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     }));
   },
 
-  logWater: async (amount_ml) => {
+  logWater: async (amount_ml: number) => {
     const { todayProgress } = get();
     if (!todayProgress) return;
     const newProgress = { ...todayProgress, water_ml: todayProgress.water_ml + amount_ml };
@@ -330,7 +339,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     set({ todayProgress: newProgress });
   },
 
-  logActivity: async (duration_min) => {
+  logActivity: async (duration_min: number) => {
     const { todayProgress } = get();
     if (!todayProgress) return;
     const newProgress = { ...todayProgress, activity_min: todayProgress.activity_min + duration_min };
@@ -374,7 +383,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
 
     const patientRef = doc(firestore, "patients", patient.id);
     await updateDoc(patientRef, {
-        caregivers: arrayUnion(newCaregiver)
+        caregivers: arrayUnion(newCaregiver),
+        pendingEmails: arrayUnion(email)
     });
   },
 
@@ -382,14 +392,22 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     const { patient } = get();
     if (!patient) return;
 
-    // Find the full object to remove, as arrayRemove requires an exact match.
     const caregiverInState = patient.caregivers.find(c => c.email === caregiverToRemove.email);
     if (!caregiverInState) return;
 
     const patientRef = doc(firestore, "patients", patient.id);
-    await updateDoc(patientRef, {
+    
+    const updatePayload: any = {
         caregivers: arrayRemove(caregiverInState)
-    });
+    };
+
+    if (caregiverInState.status === 'awaiting_confirmation') {
+        updatePayload.pendingEmails = arrayRemove(caregiverInState.email);
+    } else if (caregiverInState.status === 'active' && caregiverInState.userUid) {
+        updatePayload.activeCaregiverUids = arrayRemove(caregiverInState.userUid);
+    }
+    
+    await updateDoc(patientRef, updatePayload);
   },
   
   updateCaregiverPermissions: async (caregiverEmail, newPermissions) => {

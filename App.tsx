@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import PostAuthFlow from './pages/PostAuthFlow';
 import { Toaster } from 'react-hot-toast';
 import DynamicBackground from './components/DynamicBackground';
+import LoadingScreen from './components/LoadingScreen';
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoading, checkSession } = useAuthStore();
@@ -14,11 +15,7 @@ const App: React.FC = () => {
   }, [checkSession]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-main-gradient">
-        <p className="text-white font-semibold">Chargement...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
