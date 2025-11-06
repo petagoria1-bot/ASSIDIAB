@@ -24,7 +24,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
-  initializeAuth: () => void;
+  initializeAuth: () => () => void; // Returns the unsubscribe function
 }
 
 const formatAuthError = (errorCode: string): string => {
@@ -55,35 +55,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 
   initializeAuth: () => {
-    // This is the single, permanent listener for the app's lifetime.
-    onAuthStateChanged(auth, async (firebaseUser) => {
+    // This listener is the single source of truth. It's called on app start
+    // and whenever the auth state changes. It correctly handles redirect results
+    // before firing. We keep `isLoading` true until this gives us a definitive answer.
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is signed in. It's now safe to stop loading.
         const user: User = { uid: firebaseUser.uid, email: firebaseUser.email };
-        set({ currentUser: user, isAuthenticated: true, isLoading: false });
+        set({
+          currentUser: user,
+          isAuthenticated: true,
+          isLoading: false, // Definitive state: Logged IN
+          error: null,
+        });
       } else {
-        // User is signed out, BUT we might be in the middle of a redirect sign-in.
-        // We must check for this before declaring the user as logged out.
-        try {
-          const result = await getRedirectResult(auth);
-          if (result) {
-            // A sign-in just occurred via redirect.
-            // `onAuthStateChanged` will be called AGAIN with the new user data.
-            // We do nothing here and wait for the next call which will go into the `if (firebaseUser)` block.
-            // `isLoading` remains `true` until that happens.
-          } else {
-            // No user, and no redirect result. We are truly logged out.
-            // It's now safe to stop loading.
-            set({ currentUser: null, isAuthenticated: false, isLoading: false });
-          }
-        } catch (error: any) {
-          // An error occurred during the redirect check.
-          console.error("Google Sign-In Redirect Error:", error);
-          toast.error(formatAuthError(error.code));
-          set({ currentUser: null, isAuthenticated: false, isLoading: false });
-        }
+        // No user is signed in.
+        set({
+          currentUser: null,
+          isAuthenticated: false,
+          isLoading: false, // Definitive state: Logged OUT
+          error: null,
+        });
       }
     });
+
+    // Return the unsubscribe function to be called on cleanup.
+    return unsubscribe;
   },
 
   signup: async (email, password) => {
@@ -130,7 +126,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
         const provider = new GoogleAuthProvider();
         await signInWithRedirect(auth, provider);
-        // The result will be handled by initializeAuth on the next page load.
+        // The result will be handled by the onAuthStateChanged listener on the next page load.
     } catch (error: any) {
         console.error("Google sign-in error", error);
         const errorMessage = formatAuthError(error.code);

@@ -12,7 +12,10 @@ const App: React.FC = () => {
   const { clearPatientData } = usePatientStore();
 
   useEffect(() => {
-    initializeAuth();
+    // initializeAuth now returns an unsubscribe function.
+    // We call it here and useEffect will handle cleanup on component unmount.
+    const unsubscribe = initializeAuth();
+    return () => unsubscribe();
   }, [initializeAuth]);
 
   // Clear patient data when user logs out.
