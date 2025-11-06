@@ -83,7 +83,6 @@ export const usePatientStore = create<PatientState>((set, get) => ({
       todayProgress: null,
       messages: [],
       unreadMessagesCount: 0,
-      isLoading: false,
       unsubscribePatient: null,
       unsubscribeMessages: null,
     });
