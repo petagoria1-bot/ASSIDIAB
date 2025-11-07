@@ -9,9 +9,12 @@ import CheckmarkPopAnimation from '../components/animations/CheckmarkPopAnimatio
 import EyeIcon from '../components/icons/EyeIcon.tsx';
 import EyeOffIcon from '../components/icons/EyeOffIcon.tsx';
 import ErrorIcon from '../components/icons/ErrorIcon.tsx';
+import { useAuthStore } from '../store/authStore.ts';
 
 const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) => {
+    const { login } = useAuthStore();
     const [status, setStatus] = useState<'verify' | 'form' | 'success' | 'error'>('verify');
+    const [email, setEmail] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,7 +26,8 @@ const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) =>
     useEffect(() => {
         const verifyCode = async () => {
             try {
-                await verifyPasswordResetCode(auth, oobCode);
+                const userEmail = await verifyPasswordResetCode(auth, oobCode);
+                setEmail(userEmail);
                 setStatus('form');
             } catch (err) {
                 setError(t.auth_resetError);
@@ -34,13 +38,13 @@ const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) =>
     }, [oobCode, t]);
 
     useEffect(() => {
-        if (status === 'success') {
-            const timer = setTimeout(() => {
-                window.location.href = '/';
-            }, 5000);
+        if (status === 'success' && email) {
+            const timer = setTimeout(async () => {
+                await login(email, newPassword);
+            }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [status]);
+    }, [status, email, newPassword, login]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -94,9 +98,8 @@ const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) =>
                 return (
                     <div className="text-center">
                         <CheckmarkPopAnimation className="w-24 h-24 mx-auto"/>
-                        <h2 className="text-2xl font-display font-bold text-text-title mt-4">{t.auth_resetSuccessTitle}</h2>
-                        <p className="text-sm text-text-muted mt-2">{t.auth_resetSuccessMessage}</p>
-                        <button onClick={() => window.location.href = '/'} className="mt-6 text-sm font-semibold text-emerald-main hover:underline">{t.auth_backToLogin}</button>
+                        <h2 className="text-2xl font-display font-bold text-text-title mt-4">Mot de passe modifié !</h2>
+                        <p className="text-sm text-text-muted mt-2">Connexion en cours...</p>
                     </div>
                 );
             case 'error':
