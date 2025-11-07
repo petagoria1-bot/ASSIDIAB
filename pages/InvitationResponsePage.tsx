@@ -48,7 +48,7 @@ const InvitationResponsePage: React.FC<{ children: React.ReactNode }> = ({ child
                         />
                         <div className="mt-6 grid grid-cols-2 gap-3">
                             <button onClick={() => handleResponse(invite, 'refused')} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50">{t.common_cancel}</button>
-                            <button onClick={() => handleResponse(invite, 'accepted')} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark">{t.common_confirm}</button>
+                            <button onClick={() => handleResponse(invite, 'accepted')} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:opacity-90">{t.common_confirm}</button>
                         </div>
                     </Card>
                 ))}

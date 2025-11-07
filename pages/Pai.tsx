@@ -40,7 +40,7 @@ const Pai: React.FC = () => {
         <h2 className="text-lg font-semibold text-text-title mb-2">{t.pai_glycemicTargets}</h2>
         <div className="text-center bg-mint-soft/50 p-3 rounded-lg">
             <p className="text-sm font-semibold text-text-muted">{t.pai_target}</p>
-            <p className="text-2xl font-bold text-emerald-main">{patient.cibles.gly_min.toFixed(2)} - {patient.cibles.gly_max.toFixed(2)} g/L</p>
+            <p className="text-2xl font-bold text-jade">{patient.cibles.gly_min.toFixed(2)} - {patient.cibles.gly_max.toFixed(2)} g/L</p>
         </div>
       </Card>
 
@@ -64,7 +64,7 @@ const Pai: React.FC = () => {
             {patient.corrections.sort((a,b) => a.max - b.max).map((rule, index) => (
                 <div key={index} className="flex justify-between items-center bg-input-bg p-2 rounded-md">
                     <p className="text-text-main">{getCorrectionRuleText(rule, index)}</p>
-                    <p className="font-bold text-emerald-main">+{rule.addU} U</p>
+                    <p className="font-bold text-jade">+{rule.addU} U</p>
                 </div>
             ))}
         </div>

@@ -35,7 +35,7 @@ const PatientReports: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ se
 
     return (
         <div className="pb-24 min-h-screen bg-off-white">
-            <header className="sticky top-0 bg-emerald-main/90 backdrop-blur-md py-4 z-20 shadow-md">
+            <header className="sticky top-0 bg-jade/90 backdrop-blur-md py-4 z-20 shadow-md">
                 <div className="px-4 flex items-center justify-center relative">
                     <h1 className="text-3xl font-display font-bold text-white text-shadow text-center">{t.reports_title}</h1>
                 </div>
@@ -53,7 +53,7 @@ const PatientReports: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ se
                             <h2 className="text-lg font-semibold text-text-title mb-3">{t.reports_keyStats}</h2>
                             <div className="grid grid-cols-2 gap-3">
                                 <StatCard title={t.reports_avgGlucose} value={`${summary.avg.toFixed(2)} g/L`} />
-                                <StatCard title={t.reports_tir} value={`${summary.tir}%`} icon={<TargetIcon className="w-4 h-4 text-emerald-main" />} />
+                                <StatCard title={t.reports_tir} value={`${summary.tir}%`} icon={<TargetIcon className="w-4 h-4 text-jade" />} />
                                 <StatCard title={t.reports_hypos} value={summary.hypo.toString()} icon={<ArrowDownIcon className="w-4 h-4 text-warning" />} />
                                 <StatCard title={t.reports_hypers} value={summary.hyper.toString()} icon={<ArrowUpIcon className="w-4 h-4 text-danger" />} />
                             </div>
@@ -64,7 +64,7 @@ const PatientReports: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ se
                             <GlucoseChart events={entries as any} patient={patient} />
                         </Card>
                         
-                        <button onClick={handleExport} className="w-full bg-white text-emerald-main font-bold py-3 rounded-button border border-slate-300 hover:bg-mint-soft/50 transition-colors">
+                        <button onClick={handleExport} className="w-full bg-white text-jade font-bold py-3 rounded-button border border-slate-300 hover:bg-mint-soft/50 transition-colors">
                             Exporter le rapport PDF (7 jours)
                         </button>
                     </>

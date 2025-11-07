@@ -27,20 +27,20 @@ const ShareInvitationModal: React.FC<ShareInvitationModalProps> = ({ onClose, in
       <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-sm border border-slate-200/75 animate-card-open" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col items-center text-center">
             <div className="w-16 h-16 flex items-center justify-center bg-mint-soft rounded-full mb-3">
-                <UsersIcon className="w-8 h-8 text-emerald-main"/>
+                <UsersIcon className="w-8 h-8 text-jade"/>
             </div>
             <h3 className="text-xl font-display font-semibold text-text-title">{t.shareInvite_title}</h3>
             <p className="text-text-muted text-sm mt-2">{t.shareInvite_description}</p>
         </div>
 
-        <div className="mt-4 p-3 bg-input-bg rounded-lg text-emerald-main font-mono text-sm break-all border border-slate-200">
+        <div className="mt-4 p-3 bg-input-bg rounded-lg text-jade font-mono text-sm break-all border border-slate-200">
             {invitationLink}
         </div>
 
         <div className="mt-4">
           <button 
             onClick={handleCopy} 
-            className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm flex items-center justify-center gap-2"
+            className="w-full bg-jade text-white font-bold py-3 rounded-button hover:opacity-90 transition-colors shadow-sm flex items-center justify-center gap-2"
           >
             {copied ? <CheckCircleIcon /> : null}
             {copied ? t.shareInvite_copied : t.shareInvite_copyLink}

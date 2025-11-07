@@ -55,7 +55,7 @@ const PermissionsModal: React.FC<PermissionsModalProps> = ({ onClose, onSave, on
           </div>
           
           <div className="mt-6 border-t pt-4 space-y-2">
-            <button onClick={handleSave} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_save}</button>
+            <button onClick={handleSave} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:opacity-90 transition-colors shadow-sm">{t.common_save}</button>
             <button onClick={() => setConfirmDeleteOpen(true)} className="w-full bg-transparent text-danger font-bold py-2 rounded-button hover:bg-danger-soft/50 transition-colors">Retirer l'accès</button>
             <button onClick={onClose} className="w-full text-text-muted font-semibold py-2 rounded-button hover:bg-slate-100 transition-colors">{t.common_cancel}</button>
           </div>

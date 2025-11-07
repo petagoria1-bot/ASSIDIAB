@@ -90,20 +90,20 @@ const AuthPage: React.FC = () => {
       setView('reset');
   };
   
-  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150";
 
   const renderLoginSignup = () => (
     <div key="login-signup">
       <div className="flex justify-center bg-slate-200/60 rounded-pill p-1 mb-6">
         <button 
           onClick={() => switchView('login')}
-          className={`w-1/2 py-2 rounded-pill font-semibold transition-all duration-300 ${view === 'login' ? 'bg-white shadow-md text-emerald-main' : 'text-text-muted'}`}
+          className={`w-1/2 py-2 rounded-pill font-semibold transition-all duration-300 ${view === 'login' ? 'bg-white shadow-md text-jade' : 'text-text-muted'}`}
         >
           {t.auth_loginTitle}
         </button>
         <button 
           onClick={() => switchView('signup')}
-          className={`w-1/2 py-2 rounded-pill font-semibold transition-all duration-300 ${view === 'signup' ? 'bg-white shadow-md text-emerald-main' : 'text-text-muted'}`}
+          className={`w-1/2 py-2 rounded-pill font-semibold transition-all duration-300 ${view === 'signup' ? 'bg-white shadow-md text-jade' : 'text-text-muted'}`}
         >
           {t.auth_signupTitle}
         </button>
@@ -158,7 +158,7 @@ const AuthPage: React.FC = () => {
         
         {view === 'login' && (
             <div className="text-right">
-                <button type="button" onClick={() => { setView('reset'); }} className="text-sm font-semibold text-emerald-main hover:underline">
+                <button type="button" onClick={() => { setView('reset'); }} className="text-sm font-semibold text-jade hover:underline">
                     {t.auth_forgotPassword}
                 </button>
             </div>
@@ -168,7 +168,7 @@ const AuthPage: React.FC = () => {
           id="login-form-submit-button"
           type="submit"
           disabled={isLoading}
-          className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
+          className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-jade text-white shadow-button-jade hover:shadow-button-jade-hover transform hover:-translate-y-1 transition-all duration-300 ease-fast disabled:opacity-60"
         >
           {isLoading ? t.common_loading : (view === 'login' ? t.auth_loginButton : t.auth_signupButton)}
         </button>
@@ -182,12 +182,12 @@ const AuthPage: React.FC = () => {
         <p className="text-sm text-center text-text-muted mb-6">{t.auth_resetSubtitle}</p>
         <form onSubmit={handlePasswordReset} className="space-y-4">
             <input type="email" placeholder={t.auth_emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} required autoFocus />
-            <button type="submit" disabled={isSubmitting} className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60">
+            <button type="submit" disabled={isSubmitting} className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-jade text-white shadow-button-jade hover:shadow-button-jade-hover transform hover:-translate-y-1 transition-all duration-300 ease-fast disabled:opacity-60">
               {isSubmitting ? t.common_loading : t.auth_resetButton}
             </button>
         </form>
         <div className="text-center mt-4">
-            <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">{t.auth_backToLogin}</button>
+            <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-jade hover:underline">{t.auth_backToLogin}</button>
         </div>
     </div>
   );
@@ -195,11 +195,11 @@ const AuthPage: React.FC = () => {
   const renderResetSuccess = () => (
     <div key="reset-success" className="animate-fade-in-fast text-center">
         <div className="w-20 h-20 flex items-center justify-center bg-mint-soft rounded-full mx-auto mb-4">
-            <PaperPlaneIcon className="w-10 h-10 text-emerald-main"/>
+            <PaperPlaneIcon className="w-10 h-10 text-jade"/>
         </div>
         <h2 className="text-xl font-display font-bold text-text-title mb-2">{t.auth_resetSuccessTitle}</h2>
         <p className="text-sm text-text-muted mb-6" dangerouslySetInnerHTML={{ __html: t.auth_resetSuccessSubtitle(email) }} />
-        <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">{t.auth_backToLogin}</button>
+        <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-jade hover:underline">{t.auth_backToLogin}</button>
     </div>
   );
 

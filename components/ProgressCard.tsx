@@ -19,20 +19,20 @@ const DAILY_GOALS = {
 
 const TaskItem: React.FC<{ title: string; progress: string; isCompleted: boolean; onAction?: () => void; children: React.ReactNode; }> =
     ({ title, progress, isCompleted, onAction, children }) => (
-        <div className={`flex items-center justify-between p-2 rounded-lg transition-all ${isCompleted ? 'bg-emerald-main/10' : 'bg-slate-100/70'}`}>
+        <div className={`flex items-center justify-between p-2 rounded-lg transition-all ${isCompleted ? 'bg-jade/10' : 'bg-slate-100/70'}`}>
             <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${isCompleted ? 'bg-emerald-main text-white' : 'bg-white'}`}>
+                <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${isCompleted ? 'bg-jade text-white' : 'bg-white'}`}>
                     {isCompleted ? <CheckCircleIcon className="w-5 h-5" /> : children}
                 </div>
                 <div>
-                    <p className={`font-semibold text-sm ${isCompleted ? 'text-emerald-main' : 'text-text-main'}`}>{title}</p>
+                    <p className={`font-semibold text-sm ${isCompleted ? 'text-jade' : 'text-text-main'}`}>{title}</p>
                     <p className="text-xs text-text-muted">{progress}</p>
                 </div>
             </div>
             {onAction && !isCompleted && (
                 <button
                     onClick={onAction}
-                    className="text-lg font-bold bg-white text-emerald-main px-3 py-0 leading-none rounded-md border border-emerald-main/50 hover:bg-emerald-main/10 transition-colors"
+                    className="text-lg font-bold bg-white text-jade px-3 py-0 leading-none rounded-md border border-jade/50 hover:bg-jade/10 transition-colors"
                     aria-label={`Ajouter ${title}`}
                 >
                     +
@@ -107,7 +107,7 @@ const ProgressCard: React.FC = () => {
                         isCompleted={progressValues.activity >= DAILY_GOALS.activity_min}
                         onAction={handleLogActivity}
                     >
-                        <WalkIcon className="w-5 h-5 text-emerald-main" />
+                        <WalkIcon className="w-5 h-5 text-jade" />
                     </TaskItem>
                     <TaskItem
                         title={t.progress_checks}

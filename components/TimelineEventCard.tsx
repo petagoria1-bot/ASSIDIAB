@@ -23,7 +23,7 @@ const getIcon = (type: EventType) => {
         case 'mesure': return <GlucoseDropIcon className={`${commonClasses} text-turquoise-light`} />;
         case 'repas': return <BowlIcon className={`${commonClasses} text-coral`} />;
         case 'injection': return <SyringeIcon className={`${commonClasses} text-jade-deep`} />;
-        case 'activity': return <WalkIcon className={`${commonClasses} text-mint-soft bg-emerald-main p-0.5 rounded-full`} />;
+        case 'activity': return <WalkIcon className={`${commonClasses} text-mint-soft bg-jade p-0.5 rounded-full`} />;
         case 'note': return <NoteIcon className={`${commonClasses} text-honey-yellow`} />;
         default: return null;
     }

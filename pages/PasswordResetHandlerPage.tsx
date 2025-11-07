@@ -67,7 +67,7 @@ const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) =>
         setIsSubmitting(false);
     };
 
-    const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+    const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150";
 
     const renderContent = () => {
         switch (status) {
@@ -89,7 +89,7 @@ const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) =>
                                 {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                             </button>
                         </div>
-                        <button type="submit" disabled={isSubmitting} className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60">
+                        <button type="submit" disabled={isSubmitting} className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-jade text-white shadow-button-jade hover:shadow-button-jade-hover transform hover:-translate-y-1 transition-all duration-300 ease-fast disabled:opacity-60">
                             {isSubmitting ? t.common_loading : t.auth_saveNewPassword}
                         </button>
                     </form>
@@ -108,7 +108,7 @@ const PasswordResetHandlerPage: React.FC<{ oobCode: string }> = ({ oobCode }) =>
                         <ErrorIcon className="w-20 h-20 mx-auto" />
                         <h2 className="text-2xl font-display font-bold text-danger-dark mt-4">Erreur</h2>
                         <p className="text-sm text-text-muted mt-2">{error}</p>
-                        <button onClick={() => window.location.href = '/'} className="mt-6 w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.auth_backToLogin}</button>
+                        <button onClick={() => window.location.href = '/'} className="mt-6 w-full bg-jade text-white font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors shadow-sm">{t.auth_backToLogin}</button>
                     </div>
                 );
         }

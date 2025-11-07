@@ -32,7 +32,7 @@ const EmailExistsModal: React.FC<EmailExistsModalProps> = ({ onClose, onGoToLogi
 
         <div className="flex flex-col items-center text-center">
             <div className="w-16 h-16 flex items-center justify-center bg-mint-soft rounded-full mb-3">
-                <UsersIcon className="w-8 h-8 text-emerald-main"/>
+                <UsersIcon className="w-8 h-8 text-jade"/>
             </div>
             <h3 className="text-xl font-display font-semibold text-text-title">{t.auth_emailExistsTitle}</h3>
             <p className="text-text-muted text-sm mt-2">{t.auth_emailExistsSubtitle}</p>
@@ -41,7 +41,7 @@ const EmailExistsModal: React.FC<EmailExistsModalProps> = ({ onClose, onGoToLogi
         <div className="mt-6 flex flex-col space-y-3">
           <button 
             onClick={onGoToLogin} 
-            className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm btn-interactive"
+            className="w-full bg-jade text-white font-bold py-3 rounded-button hover:opacity-90 transition-colors shadow-sm btn-interactive"
           >
             {t.auth_goToLogin}
           </button>

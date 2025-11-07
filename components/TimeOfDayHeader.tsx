@@ -76,7 +76,7 @@ const TimeOfDayHeader: React.FC<TimeOfDayHeaderProps> = ({ greeting, unreadCount
                 <button onClick={onInboxClick} className="relative p-2 rounded-full hover:bg-white/10 transition-colors -mr-2">
                     <InboxIcon className="w-8 h-8"/>
                     {unreadCount > 0 && (
-                        <span className={`absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-white text-[10px] font-bold ring-2 ring-emerald-main/50 ${ unreadCount > 0 ? 'animate-pulse' : ''}`}>
+                        <span className={`absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-white text-[10px] font-bold ring-2 ring-jade/50 ${ unreadCount > 0 ? 'animate-pulse' : ''}`}>
                             {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                     )}

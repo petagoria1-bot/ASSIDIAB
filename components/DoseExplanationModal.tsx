@@ -35,11 +35,11 @@ const DoseExplanationModal: React.FC<DoseExplanationModalProps> = ({
           {/* Meal Bolus */}
           <div className="bg-white p-3 rounded-lg border border-slate-200">
             <div className="flex items-center gap-2 mb-1">
-              <MealIcon className="w-5 h-5 text-emerald-main" />
+              <MealIcon className="w-5 h-5 text-jade" />
               <p className="font-semibold text-text-title">{t.doseExplanation_mealTitle}</p>
             </div>
             <p className="text-sm text-text-muted ps-7">{t.doseExplanation_mealDetail(totalCarbs, patient.ratios[moment])}</p>
-            <p className="text-end font-bold text-lg text-emerald-main">{calculation.doseRepas_U.toFixed(1)} U</p>
+            <p className="text-end font-bold text-lg text-jade">{calculation.doseRepas_U.toFixed(1)} U</p>
           </div>
 
           {/* Correction Bolus */}
@@ -66,14 +66,14 @@ const DoseExplanationModal: React.FC<DoseExplanationModalProps> = ({
           )}
 
           {/* Total */}
-          <div className="bg-emerald-main/10 p-3 rounded-lg border border-emerald-main/20 text-center">
+          <div className="bg-jade/10 p-3 rounded-lg border border-jade/20 text-center">
             <p className="font-semibold text-text-title">{t.doseExplanation_totalTitle}</p>
-            <p className="font-display text-4xl font-bold text-emerald-main">{calculation.doseTotale} U</p>
+            <p className="font-display text-4xl font-bold text-jade">{calculation.doseTotale} U</p>
           </div>
         </div>
 
         <div className="mt-6">
-          <button onClick={onClose} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.doseExplanation_close}</button>
+          <button onClick={onClose} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors shadow-sm">{t.doseExplanation_close}</button>
         </div>
       </div>
     </div>

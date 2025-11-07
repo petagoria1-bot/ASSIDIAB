@@ -11,8 +11,8 @@ interface DoctorDashboardProps {
 }
 
 const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => {
-  const { userProfile } = useAuthStore();
-  const { fetchDoctorPatients, respondToInvitation, doctorPatients, isLoading } = usePatientStore();
+  const { userProfile, logout } = useAuthStore();
+  const { fetchDoctorPatients, respondToInvitation, doctorPatients, isLoading, setDoctorViewedPatient, error } = usePatientStore();
   const t = useTranslations();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,13 +36,26 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
   }
 
   const openPatientRecord = (patient: PatientProfile) => {
-    // In a real router, you would navigate to `/medecin/patient/${patient.id}`
-    // Here we'll just switch the page and rely on state to pass the patient ID
-    // TODO: A better state management for the currently viewed patient by the doctor
+    setDoctorViewedPatient(patient.id);
     setCurrentPage('doctor_patient_view');
   }
   
   if (isLoading && doctorPatients.length === 0) return <LoadingScreen />;
+  
+  if (error) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient text-white text-center">
+             <h1 className="text-2xl font-display font-bold">Erreur de chargement</h1>
+             <p className="mt-4 max-w-md bg-red-800/50 p-3 rounded-lg">{error}</p>
+             <button onClick={() => { if(userProfile?.uid) fetchDoctorPatients(userProfile.uid); }} className="mt-8 border-2 border-white text-white font-bold py-3 px-8 rounded-pill hover:bg-white/10 transition-colors">
+                Réessayer
+            </button>
+             <button onClick={logout} className="mt-4 text-white/70 font-semibold py-2 px-6 rounded-pill hover:bg-white/10 transition-colors">
+                {t.settings_logout}
+            </button>
+        </div>
+    )
+  }
 
   return (
     <div className="p-4 space-y-4 pb-24">
@@ -64,7 +77,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
                   <button 
                     key={status}
                     onClick={() => setStatusFilter(status)}
-                    className={`w-1/4 py-2 rounded-pill font-semibold text-sm transition-all duration-300 ${statusFilter === status ? 'bg-white shadow-md text-emerald-main' : 'text-text-muted'}`}
+                    className={`w-1/4 py-2 rounded-pill font-semibold text-sm transition-all duration-300 ${statusFilter === status ? 'bg-white shadow-md text-jade' : 'text-text-muted'}`}
                   >
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                   </button>
@@ -84,7 +97,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
                           <p className="text-sm text-text-muted">Invité le {member.invitedAt?.toDate().toLocaleDateString() || 'N/A'}</p>
                       </div>
                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                           member.status === 'accepted' ? 'bg-emerald-main/20 text-emerald-main' : 
+                           member.status === 'accepted' ? 'bg-jade/20 text-jade' : 
                            member.status === 'pending' ? 'bg-amber-500/20 text-amber-600' : 'bg-danger/20 text-danger'
                        }`}>
                            {member.status}
@@ -93,7 +106,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
                   {member.status === 'pending' && (
                       <div className="mt-4 grid grid-cols-2 gap-3">
                           <button onClick={() => handleResponse(member, 'refused')} className="w-full bg-white text-danger font-bold py-2 rounded-button border border-slate-300">Refuser</button>
-                          <button onClick={() => handleResponse(member, 'accepted')} className="w-full bg-emerald-main text-white font-bold py-2 rounded-button">Accepter</button>
+                          <button onClick={() => handleResponse(member, 'accepted')} className="w-full bg-jade text-white font-bold py-2 rounded-button">Accepter</button>
                       </div>
                   )}
                   {member.status === 'accepted' && (
@@ -104,6 +117,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
                   )}
               </Card>
           ))}
+      </div>
+       <div className="pt-4">
+          <button onClick={logout} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-danger-soft/50 transition-colors">
+              {t.settings_logout}
+          </button>
       </div>
     </div>
   );

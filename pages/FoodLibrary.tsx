@@ -23,7 +23,7 @@ const FoodLibrary: React.FC = () => {
     ).sort((a, b) => a.name.localeCompare(b.name));
   }, [searchTerm, foodLibrary]);
   
-  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150";
 
   const handleCloseModal = () => {
     setAddModalOpen(false);
@@ -51,12 +51,12 @@ const FoodLibrary: React.FC = () => {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <p className="font-semibold text-text-main">{food.name}</p>
-                 <button onClick={() => setEditingFood(food)} className="text-text-muted hover:text-emerald-main transition-colors">
+                 <button onClick={() => setEditingFood(food)} className="text-text-muted hover:text-jade transition-colors">
                     <EditIcon />
                 </button>
               </div>
               <div className="text-end">
-                <p className="font-bold text-emerald-main">{food.carbs_per_100g_net}g</p>
+                <p className="font-bold text-jade">{food.carbs_per_100g_net}g</p>
                 <p className="text-xs text-text-muted">{t.foodLibrary_per100(food.unit_type)}</p>
               </div>
             </div>
@@ -71,7 +71,7 @@ const FoodLibrary: React.FC = () => {
       
       <button 
         onClick={() => setAddModalOpen(true)} 
-        className="fixed bottom-24 end-5 bg-emerald-main text-white rounded-full p-4 shadow-lg hover:bg-jade-deep-dark transition-all duration-200 transform hover:scale-105"
+        className="fixed bottom-24 end-5 bg-jade text-white rounded-full p-4 shadow-lg hover:bg-opacity-90 transition-all duration-200 transform hover:scale-105"
         aria-label={t.foodLibrary_addFood}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>

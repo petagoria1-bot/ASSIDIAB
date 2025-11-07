@@ -24,7 +24,7 @@ const AddEventChoiceModal: React.FC<AddEventChoiceModalProps> = ({ onClose, onSe
                 onClick={onSelectMeasure}
                 className="flex flex-col items-center justify-center p-4 bg-white rounded-card hover:shadow-lg transition-all transform hover:-translate-y-1 space-y-2 border border-slate-200 ring-1 ring-white/20 btn-interactive"
             >
-                <GlucoseDropIcon className="w-10 h-10 text-emerald-main"/>
+                <GlucoseDropIcon className="w-10 h-10 text-jade"/>
                 <span className="text-md font-bold text-text-title">{t.addEventChoice_measure}</span>
             </button>
             <button 

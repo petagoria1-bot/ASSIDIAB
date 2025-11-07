@@ -52,7 +52,7 @@ const AddSnackModal: React.FC<AddSnackModalProps> = ({ onClose, beforeTs, afterT
     onClose();
   };
 
-  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150";
 
   const modalContent = (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
@@ -95,7 +95,7 @@ const AddSnackModal: React.FC<AddSnackModalProps> = ({ onClose, beforeTs, afterT
         </div>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
-          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_confirm}</button>
+          <button onClick={handleConfirm} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors shadow-sm">{t.common_confirm}</button>
         </div>
       </div>
     </div>

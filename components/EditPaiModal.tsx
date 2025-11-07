@@ -49,7 +49,7 @@ const EditPaiModal: React.FC<EditPaiModalProps> = ({ onClose, onSave, patient })
         }
     };
     
-    const inputClasses = "w-full p-2 bg-input-bg rounded-md border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-1 focus:ring-emerald-main/30 transition-all duration-150";
+    const inputClasses = "w-full p-2 bg-input-bg rounded-md border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-1 focus:ring-jade/30 transition-all duration-150";
 
     const modalContent = (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
@@ -92,7 +92,7 @@ const EditPaiModal: React.FC<EditPaiModalProps> = ({ onClose, onSave, patient })
                                 <button onClick={() => removeCorrectionRule(index)} className="text-danger hover:text-danger-dark p-1"><TrashIcon /></button>
                             </div>
                         ))}
-                        <button onClick={addCorrectionRule} className="text-sm font-semibold text-emerald-main">+ Ajouter une règle</button>
+                        <button onClick={addCorrectionRule} className="text-sm font-semibold text-jade">+ Ajouter une règle</button>
                         </div>
                     </div>
                     {/* Autres */}
@@ -118,7 +118,7 @@ const EditPaiModal: React.FC<EditPaiModalProps> = ({ onClose, onSave, patient })
                 </div>
                 <div className="mt-auto p-6 bg-slate-50 border-t grid grid-cols-2 gap-3">
                     <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
-                    <button onClick={handleSave} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_save}</button>
+                    <button onClick={handleSave} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors shadow-sm">{t.common_save}</button>
                 </div>
             </div>
         </div>

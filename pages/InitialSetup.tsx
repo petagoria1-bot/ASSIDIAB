@@ -32,7 +32,7 @@ const InitialSetup: React.FC = () => {
     }
   };
   
-  const inputClasses = "w-full p-4 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-lg";
+  const inputClasses = "w-full p-4 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150 text-lg";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient font-sans animate-fade-in">
@@ -54,7 +54,7 @@ const InitialSetup: React.FC = () => {
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-4 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
+                    className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-4 px-6 rounded-button bg-jade text-white shadow-button-jade hover:shadow-button-jade-hover transform hover:-translate-y-1 transition-all duration-300 ease-fast disabled:opacity-60"
                 >
                     {isLoading ? t.common_creating : t.initialSetup_createProfileButton}
                     {!isLoading && <ArrowRightIcon className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />}

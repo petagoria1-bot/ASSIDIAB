@@ -33,7 +33,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, value, onChange })
     setIsOpen(false);
   };
 
-  const inputClasses = "w-full p-3 bg-white rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center text-lg";
+  const inputClasses = "w-full p-3 bg-white rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150 text-center text-lg";
 
   return (
     <div className="relative" ref={selectRef}>

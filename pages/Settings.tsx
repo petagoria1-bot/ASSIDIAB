@@ -14,9 +14,7 @@ import EditIcon from '../components/icons/EditIcon.tsx';
 import InviteCaregiverModal from '../components/InviteCaregiverModal.tsx';
 import PermissionsModal from '../components/PermissionsModal.tsx';
 import EditPaiModal from '../components/EditPaiModal.tsx';
-// FIX: Import FlagFR component to fix 'Cannot find name' error.
 import FlagFR from '../components/icons/FlagFR.tsx';
-// FIX: Import FlagEN component to fix 'Cannot find name' error.
 import FlagEN from '../components/icons/FlagEN.tsx';
 
 interface SettingsProps {

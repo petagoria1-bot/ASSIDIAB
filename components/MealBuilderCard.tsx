@@ -71,7 +71,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t.mealBuilder_searchPlaceholder}
-            className="w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150"
+            className="w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150"
           />
           {searchTerm && (
             <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-slate-200 max-h-60 overflow-y-auto">
@@ -114,7 +114,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setEditingItem(item)} className="text-text-muted hover:text-emerald-main p-1"><EditIcon /></button>
+                    <button onClick={() => setEditingItem(item)} className="text-text-muted hover:text-jade p-1"><EditIcon /></button>
                     <button onClick={() => handleRemoveItem(item.listId)} className="text-text-muted hover:text-danger p-1"><TrashIcon /></button>
                   </div>
                 </div>
@@ -132,7 +132,7 @@ const MealBuilderCard: React.FC<MealBuilderCardProps> = ({ onTotalCarbsChange, o
             </div>
           <div>
             <span className="text-sm font-semibold text-text-muted">{t.mealBuilder_totalCarbs}: </span>
-            <span className="font-display font-bold text-2xl text-emerald-main">{totalCarbs.toFixed(0)}g</span>
+            <span className="font-display font-bold text-2xl text-jade">{totalCarbs.toFixed(0)}g</span>
           </div>
         </div>
       </Card>

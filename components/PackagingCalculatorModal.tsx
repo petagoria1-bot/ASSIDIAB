@@ -21,7 +21,7 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
   const [unit, setUnit] = useState<'g' | 'ml'>('g');
   const t = useTranslations();
 
-  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
+  const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150";
 
   const calculatedCarbs = useMemo(() => {
     const refCarbsValue = parseFloat(refCarbs.replace(',', '.'));
@@ -109,10 +109,10 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
           </div>
           
           <div className="flex gap-2">
-            <button onClick={() => setUnit('g')} className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-colors ${unit === 'g' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
+            <button onClick={() => setUnit('g')} className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-colors ${unit === 'g' ? 'bg-jade text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
               {t.packaging_grams}
             </button>
-            <button onClick={() => setUnit('ml')} className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-colors ${unit === 'ml' ? 'bg-emerald-main text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
+            <button onClick={() => setUnit('ml')} className={`flex-1 py-2 rounded-pill text-sm font-semibold transition-colors ${unit === 'ml' ? 'bg-jade text-white shadow-sm' : 'bg-white text-text-main border border-slate-300 hover:bg-slate-50'}`}>
               {t.packaging_milliliters}
             </button>
           </div>
@@ -174,7 +174,7 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
         {calculatedCarbs !== null && (
             <div className="mt-4 text-center bg-mint-soft/50 p-3 rounded-xl animate-fade-in">
                 <p className="text-sm text-text-muted">{t.packaging_totalCarbsResult} ({useNetCarbs ? t.mealBuilder_netCarbs : t.mealBuilder_totalCarbs})</p>
-                <p className="font-display font-bold text-3xl text-emerald-main">
+                <p className="font-display font-bold text-3xl text-jade">
                     {calculatedCarbs.toFixed(0)}
                     <span className="text-lg font-semibold text-text-muted ml-1">g</span>
                 </p>
@@ -183,7 +183,7 @@ const PackagingCalculatorModal: React.FC<PackagingCalculatorModalProps> = ({ onC
         
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
-          <button onClick={handleConfirm} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.packaging_addToMeal}</button>
+          <button onClick={handleConfirm} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors shadow-sm">{t.packaging_addToMeal}</button>
         </div>
       </div>
     </div>

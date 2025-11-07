@@ -77,7 +77,7 @@ const Emergency: React.FC = () => {
                             <p className="font-semibold text-text-title">{contact.lien}</p>
                             <p className="text-sm text-text-muted">{contact.nom}</p>
                         </div>
-                        <a href={`tel:${contact.tel}`} className="btn-interactive font-bold bg-emerald-main text-white flex items-center gap-2 py-2 px-4 rounded-button hover:bg-jade-deep-dark transition-colors shadow">
+                        <a href={`tel:${contact.tel}`} className="btn-interactive font-bold bg-jade text-white flex items-center gap-2 py-2 px-4 rounded-button hover:bg-opacity-90 transition-colors shadow">
                             <PhoneIcon className="w-5 h-5" />
                             <span>{contact.tel}</span>
                         </a>
@@ -120,7 +120,7 @@ const Emergency: React.FC = () => {
         <div className="space-y-4">
           {stepKeys.map((key, index) => (
             <div key={key} className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-main text-white flex items-center justify-center font-bold me-3">{index + 1}</div>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-jade text-white flex items-center justify-center font-bold me-3">{index + 1}</div>
               <p className="text-text-main">{getStepText(key)}</p>
             </div>
           ))}

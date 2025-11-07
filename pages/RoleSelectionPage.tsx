@@ -15,7 +15,7 @@ const RoleSelectionPage: React.FC = () => {
     };
 
     const roles: { role: UserRole; label: string; description: string; icon: React.ReactNode }[] = [
-        { role: 'patient', label: 'Patient', description: "Je suis le patient et je souhaite gérer mon suivi.", icon: <UserIcon className="w-10 h-10 text-emerald-main"/> },
+        { role: 'patient', label: 'Patient', description: "Je suis le patient et je souhaite gérer mon suivi.", icon: <UserIcon className="w-10 h-10 text-jade"/> },
         { role: 'famille', label: 'Famille / Proche', description: "Je souhaite rejoindre le cercle d'un patient.", icon: <UsersIcon className="w-10 h-10 text-info"/> },
         { role: 'medecin', label: 'Médecin', description: "Je suis un professionnel de santé.", icon: <UsersIcon className="w-10 h-10 text-info"/> },
         { role: 'infirmier', label: 'Infirmier', description: "Je suis un professionnel de santé.", icon: <UsersIcon className="w-10 h-10 text-info"/> },

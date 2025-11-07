@@ -43,7 +43,7 @@ const Inbox: React.FC<InboxProps> = ({ setCurrentPage }) => {
       ) : (
         <div className="space-y-3">
           {messages.map((message) => (
-            <div key={message.id} className={`p-4 rounded-card border-l-4 transition-opacity duration-500 ${!message.read ? 'bg-white shadow-lg border-emerald-main' : 'bg-white/70 border-slate-300 opacity-80'}`}>
+            <div key={message.id} className={`p-4 rounded-card border-l-4 transition-opacity duration-500 ${!message.read ? 'bg-white shadow-lg border-jade' : 'bg-white/70 border-slate-300 opacity-80'}`}>
               <div className="flex justify-between items-start text-xs text-text-muted mb-2">
                 <p className="font-bold">{message.fromEmail}</p>
                 <p>{new Date(message.ts).toLocaleString(t.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>

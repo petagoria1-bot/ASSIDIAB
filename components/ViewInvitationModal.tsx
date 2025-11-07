@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import useTranslations from '../hooks/useTranslations.ts';
-// FIX: Changed non-existent 'Caregiver' type to 'CircleMember' to match the application's types.
 import { CircleMember } from '../types.ts';
 import { usePatientStore } from '../store/patientStore.ts';
 import UsersIcon from './icons/UsersIcon.tsx';
@@ -11,20 +10,17 @@ import ConfirmDeleteModal from './ConfirmDeleteModal.tsx';
 
 interface ViewInvitationModalProps {
   onClose: () => void;
-  // FIX: Renamed prop from 'caregiver' to 'member' for consistency with 'CircleMember' type.
   member: CircleMember;
 }
 
 const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, member }) => {
   const t = useTranslations();
-  // FIX: Use 'removeCircleMember' from the store, as 'removeCaregiver' does not exist.
   const { removeCircleMember } = usePatientStore();
   
   const [copied, setCopied] = useState(false);
   const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const canShare = typeof navigator.share === 'function';
 
-  // FIX: Replaced non-existent store function 'getInvitationLinkForPendingCaregiver' with manual link construction.
   const invitationLink = `${window.location.origin}/invitation/${member.id}`;
 
   const handleCopy = () => {
@@ -51,7 +47,6 @@ const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, memb
 
   const handleDelete = async () => {
     try {
-        // FIX: Call the correct store function 'removeCircleMember'.
         await removeCircleMember(member);
         toast.success(t.toast_invitationDeleted);
         onClose();
@@ -69,19 +64,18 @@ const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, memb
             <div className="w-16 h-16 flex items-center justify-center bg-amber-100 rounded-full mb-3">
               <UsersIcon className="w-8 h-8 text-amber-600" />
             </div>
-            {/* FIX: Use 'member.memberEmail' instead of non-existent 'caregiver.email'. */}
             <h3 className="text-xl font-display font-semibold text-text-title">{t.viewInvite_pendingTitle(member.memberEmail)}</h3>
             <p className="text-text-muted text-sm mt-2">{t.viewInvite_pendingDesc}</p>
           </div>
 
           {invitationLink ? (
             <>
-              <div className="mt-4 p-3 bg-input-bg rounded-lg text-emerald-main font-mono text-sm break-all border border-slate-200">
+              <div className="mt-4 p-3 bg-input-bg rounded-lg text-jade font-mono text-sm break-all border border-slate-200">
                   {invitationLink}
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <button onClick={handleCopy} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm flex items-center justify-center gap-2">
+                <button onClick={handleCopy} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors shadow-sm flex items-center justify-center gap-2">
                     {copied ? <CheckCircleIcon /> : null}
                     {copied ? t.shareInvite_copied : t.shareInvite_copyLink}
                 </button>

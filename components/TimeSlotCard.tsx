@@ -45,7 +45,7 @@ const TimeSlotCard: React.FC<TimeSlotCardProps> = ({ event, children, onAdd }) =
                     ) : (
                         <button 
                             onClick={onAdd}
-                            className="w-full text-center py-3 bg-emerald-main/10 text-emerald-main font-semibold rounded-lg border-2 border-dashed border-emerald-main/30 hover:bg-emerald-main/20 transition-colors"
+                            className="w-full text-center py-3 bg-jade/10 text-jade font-semibold rounded-lg border-2 border-dashed border-jade/30 hover:bg-jade/20 transition-colors"
                         >
                             {addActionLabels[event.mealTime]}
                         </button>

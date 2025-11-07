@@ -78,8 +78,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                   const patientRef = doc(firestore, 'patients', user.uid);
                   const patientSnap = await getDoc(patientRef);
                   if (patientSnap.exists()) {
-                      // Fire-and-forget data loading. The UI will handle the loading state.
-                      usePatientStore.getState().loadPatientData(userProfile);
+                      await usePatientStore.getState().loadPatientData(userProfile);
+                      if (usePatientStore.getState().loadStatus === 'error') {
+                        throw new Error(`Failed to load patient data: ${usePatientStore.getState().error}`);
+                      }
                       set({ status: 'ready' });
                   } else {
                       set({ status: 'needs_patient_profile' });
@@ -112,19 +114,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       } catch (e: any) {
         let errorMessage = "Une erreur critique est survenue. Veuillez vous reconnecter.";
-        if (e.code === 'permission-denied') {
+        if (e.code === 'permission-denied' || e.message.includes('permission-denied') || e.message.includes('Failed to load patient data')) {
             console.error("CRITICAL: Firestore permission denied during auth state change. This is likely due to misconfigured security rules or missing indexes.", e);
-            errorMessage = "Erreur de permissions. Vérifiez la configuration Firebase.";
+            errorMessage = `Erreur de permissions: ${e.message}. Assurez-vous d'avoir déployé les règles de sécurité et les index Firestore. Consultez le README.`;
+            toast.error(errorMessage, { duration: 15000 });
         } else {
             console.error("CRITICAL: Unhandled error in onAuthStateChanged. Logging out.", e);
+            toast.error(errorMessage);
         }
         
-        toast.error(errorMessage);
         await signOut(auth);
         usePatientStore.getState().clearPatientData();
         set({
             firebaseUser: null, userProfile: null, isAuthenticated: false,
-            error: "A critical error occurred while loading your profile.",
+            error: errorMessage,
             status: 'ready',
         });
       } finally {

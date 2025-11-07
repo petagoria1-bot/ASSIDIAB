@@ -45,6 +45,8 @@ interface PatientState {
 
   // For Doctor Dashboard
   doctorPatients: DoctorPatientData[];
+  doctorViewedPatientId: string | null;
+  doctorViewedPatientEntries: any[];
 
   // Actions
   loadPatientData: (user: UserProfile) => Promise<void>;
@@ -77,6 +79,8 @@ interface PatientState {
   fetchDoctorPatients: (doctorId: string) => Promise<void>;
   loadSpecificPatientData: (patientId: string) => Promise<PatientProfile | null>;
   getMemberRightsForPatient: (patientId: string, memberId: string) => Promise<CircleMemberRights | null>;
+  setDoctorViewedPatient: (patientId: string | null) => void;
+  loadEntriesForDoctorView: (patientId: string) => Promise<void>;
 
   // Reports
   loadReportDataForDay: (dayId: string) => Promise<void>;
@@ -114,6 +118,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     loadStatus: 'idle',
     doctorPatients: [],
     reportData: { summary: null, entries: [] },
+    doctorViewedPatientId: null,
+    doctorViewedPatientEntries: [],
     
     clearPatientData: () => set({
         patient: null, circleMembers: [], mesures: [], repas: [], injections: [], events: [],
@@ -205,7 +211,12 @@ export const usePatientStore = create<PatientState>((set, get) => ({
 
         } catch (e: any) {
             console.error("Error loading patient data:", e);
-            set({ patient: null, isLoading: false, loadStatus: 'error', error: e.message });
+            let errorMsg = "Erreur lors du chargement des données du patient.";
+            if (e.code === 'permission-denied') {
+                errorMsg = "Erreur de permission. Règles de sécurité ou index manquants? Détails: " + e.message;
+                toast.error(errorMsg, { duration: 15000 });
+            }
+            set({ patient: null, isLoading: false, loadStatus: 'error', error: errorMsg });
         }
     },
 
@@ -323,9 +334,19 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     },
     
     getPendingInvitations: async (userId: string) => {
-        const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', userId), where('status', '==', 'pending'));
-        const snap = await getDocs(q);
-        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CircleMember));
+        try {
+            const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', userId), where('status', '==', 'pending'));
+            const snap = await getDocs(q);
+            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CircleMember));
+        } catch (e: any) {
+            console.error("Error getting pending invitations:", e);
+            if (e.code === 'permission-denied') {
+                const errorMsg = "Erreur de permission en cherchant les invitations. Les règles de sécurité ou les index Firestore sont probablement manquants. Détails: " + e.message;
+                toast.error(errorMsg, { duration: 15000 });
+                set({ error: errorMsg });
+            }
+            return [];
+        }
     },
 
     getInvitationDetails: async (patientId: string, memberId: string) => {
@@ -351,21 +372,31 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     },
 
     fetchDoctorPatients: async (doctorId: string) => {
-        set({ isLoading: true });
-        const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', doctorId));
-        const membersSnap = await getDocs(q);
-        
-        const patientDataPromises = membersSnap.docs.map(async (memberDoc) => {
-            const member = { id: memberDoc.id, ...memberDoc.data() } as CircleMember;
-            const patientSnap = await getDoc(doc(firestore, 'patients', member.patientId));
-            if (patientSnap.exists()) {
-                return { member, patient: { id: patientSnap.id, ...patientSnap.data() } as PatientProfile };
+        set({ isLoading: true, error: null });
+        try {
+            const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', doctorId));
+            const membersSnap = await getDocs(q);
+            
+            const patientDataPromises = membersSnap.docs.map(async (memberDoc) => {
+                const member = { id: memberDoc.id, ...memberDoc.data() } as CircleMember;
+                const patientSnap = await getDoc(doc(firestore, 'patients', member.patientId));
+                if (patientSnap.exists()) {
+                    return { member, patient: { id: patientSnap.id, ...patientSnap.data() } as PatientProfile };
+                }
+                return null;
+            });
+    
+            const doctorPatients = (await Promise.all(patientDataPromises)).filter(Boolean) as DoctorPatientData[];
+            set({ doctorPatients, isLoading: false });
+        } catch (e: any) {
+            console.error("Error fetching doctor's patients:", e);
+            let errorMsg = "Erreur lors de la récupération des patients.";
+            if (e.code === 'permission-denied') {
+                errorMsg = "Erreur de permission : les règles de sécurité ou les index Firestore sont probablement manquants. Veuillez déployer les index et rafraîchir la page. Détails: " + e.message;
+                toast.error(errorMsg, { duration: 15000 });
             }
-            return null;
-        });
-
-        const doctorPatients = (await Promise.all(patientDataPromises)).filter(Boolean) as DoctorPatientData[];
-        set({ doctorPatients, isLoading: false });
+            set({ isLoading: false, error: errorMsg, doctorPatients: [] });
+        }
     },
 
     loadSpecificPatientData: async (patientId) => {
@@ -383,6 +414,62 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             }
         }
         return null;
+    },
+    
+    setDoctorViewedPatient: (patientId) => set({ doctorViewedPatientId: patientId }),
+    
+    loadEntriesForDoctorView: async (patientId: string) => {
+        set({ isLoading: true, doctorViewedPatientEntries: [], error: null });
+        try {
+            const entriesQuery = query(collection(firestore, 'entries'), where('uid', '==', patientId), orderBy('ts', 'desc'), limit(100));
+            const entriesSnap = await getDocs(entriesQuery);
+            
+            const dayMesures: Mesure[] = [];
+            const dayRepas: Repas[] = [];
+            const dayInjections: Injection[] = [];
+            
+            entriesSnap.forEach(docSnap => {
+                const entry = { id: docSnap.id, ...docSnap.data() };
+                const { type, ts, value, meta, uid } = entry;
+                switch(type) {
+                    case 'glucose': dayMesures.push({ id: docSnap.id, patient_id: uid, ts, gly: value, source: meta?.source || 'doigt', cetone: meta?.cetone }); break;
+                    case 'meal': dayRepas.push({ id: docSnap.id, patient_id: uid, ts, moment: meta?.moment, items: meta?.items || [], total_carbs_g: value, note: meta?.note }); break;
+                    case 'bolus': dayInjections.push({ id: docSnap.id, patient_id: uid, ts, type: meta?.subType, dose_U: value, calc_details: meta?.calc_details, lien_repas_id: meta?.lien_repas_id, lien_mesure_id: meta?.lien_mesure_id }); break;
+                }
+            });
+    
+            let processedMesureIds = new Set<string>();
+            let processedInjectionIds = new Set<string>();
+            
+            const mealGroups = dayRepas.map(r => {
+              const injection = dayInjections.find(i => i.lien_repas_id === r.id);
+              const mesure = injection ? dayMesures.find(m => m.id === injection.lien_mesure_id) : undefined;
+              if (injection) processedInjectionIds.add(injection.id);
+              if (mesure) processedMesureIds.add(mesure.id);
+              return { type: 'mealgroup', ts: r.ts, id: r.id, data: { repas: r, injection, mesure } };
+            });
+    
+            const standaloneInjections = dayInjections.filter(i => !processedInjectionIds.has(i.id)).map(injection => {
+              const mesure = dayMesures.find(m => m.id === injection.lien_mesure_id);
+              if(mesure) processedMesureIds.add(mesure.id);
+              return { type: 'mealgroup', id: injection.id, ts: injection.ts, data: { injection, mesure } };
+            });
+    
+            const standaloneMesures = dayMesures.filter(m => !processedMesureIds.has(m.id)).map(mesure => ({ type: 'mealgroup', id: mesure.id, ts: mesure.ts, data: { mesure } }));
+    
+            const timelineItems = [...mealGroups, ...standaloneInjections, ...standaloneMesures].sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+    
+            set({ doctorViewedPatientEntries: timelineItems, isLoading: false });
+    
+        } catch (e: any) {
+            console.error("Error loading entries for doctor view:", e);
+            let errorMsg = "Erreur lors du chargement du journal du patient.";
+            if (e.code === 'permission-denied') {
+                errorMsg = "Erreur de permission. Règles de sécurité ou index manquants? Détails: " + e.message;
+                toast.error(errorMsg, { duration: 15000 });
+            }
+            set({ isLoading: false, error: errorMsg });
+        }
     },
 
     addMesure: async (mesureData, ts) => {
@@ -519,25 +606,33 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     loadReportDataForDay: async (dayId) => {
         const patient = get().patient;
         if (!patient) return;
-        set(state => ({ reportData: { ...state.reportData, summary: null, entries: [] }, isLoading: true }));
+        set(state => ({ reportData: { ...state.reportData, summary: null, entries: [] }, isLoading: true, error: null }));
         
-        const summaryResult: any = await dailySummary({ dayId });
-        
-        // This is inefficient but necessary with the subcollection model.
-        // A better backend would provide an endpoint for this.
-        const dayEntriesRef = collection(firestore, 'entries');
-        const q = query(dayEntriesRef, where('uid', '==', patient.id), where('dayId', '==', dayId), orderBy('ts', 'asc'));
-        const entriesSnap = await getDocs(q);
-        
-        const entries: (Mesure | Repas | Injection)[] = [];
-        entriesSnap.forEach(doc => {
-            const data = doc.data();
-            if (data.type === 'glucose') entries.push({ id: doc.id, ...data, type: 'mesure' } as unknown as Mesure);
-            if (data.type === 'meal') entries.push({ id: doc.id, ...data, type: 'repas' } as unknown as Repas);
-            if (data.type === 'bolus') entries.push({ id: doc.id, ...data, type: 'injection' } as unknown as Injection);
-        });
-
-        set({ reportData: { summary: summaryResult.data, entries }, isLoading: false });
+        try {
+            const summaryResult: any = await dailySummary({ dayId });
+            
+            const dayEntriesRef = collection(firestore, 'entries');
+            const q = query(dayEntriesRef, where('uid', '==', patient.id), where('dayId', '==', dayId), orderBy('ts', 'asc'));
+            const entriesSnap = await getDocs(q);
+            
+            const entries: (Mesure | Repas | Injection)[] = [];
+            entriesSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.type === 'glucose') entries.push({ id: doc.id, ...data, type: 'mesure' } as unknown as Mesure);
+                if (data.type === 'meal') entries.push({ id: doc.id, ...data, type: 'repas' } as unknown as Repas);
+                if (data.type === 'bolus') entries.push({ id: doc.id, ...data, type: 'injection' } as unknown as Injection);
+            });
+    
+            set({ reportData: { summary: summaryResult.data, entries }, isLoading: false });
+        } catch (e: any) {
+            console.error("Error loading report data:", e);
+            let errorMsg = "Erreur lors du chargement des données du rapport.";
+            if (e.code === 'permission-denied') {
+                errorMsg = "Erreur de permission. Règles de sécurité ou index manquants? Détails: " + e.message;
+                toast.error(errorMsg, { duration: 15000 });
+            }
+            set({ isLoading: false, error: errorMsg });
+        }
     },
 
     exportPatientPdf: async (range) => {

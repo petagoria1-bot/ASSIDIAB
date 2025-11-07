@@ -52,14 +52,14 @@ const GlucoQuizCard: React.FC = () => {
 
                     if (isAnswered) {
                         if (isCorrect) {
-                            buttonClass += ' bg-emerald-main text-white border-emerald-main';
+                            buttonClass += ' bg-jade text-white border-jade';
                         } else if (isSelected) {
                             buttonClass += ' bg-danger text-white border-danger';
                         } else {
-                            buttonClass += ' bg-white border-slate-300 opacity-60';
+                            buttonClass += ' bg-slate-100 border-slate-200 text-text-muted';
                         }
                     } else {
-                        buttonClass += ' bg-white border-slate-300 hover:bg-slate-50 text-text-main';
+                        buttonClass += ' bg-white border-slate-300 hover:bg-slate-50';
                     }
 
                     return (
@@ -71,12 +71,9 @@ const GlucoQuizCard: React.FC = () => {
             </div>
             
             {isAnswered && (
-                <div className="mt-4 p-3 bg-mint-soft/50 rounded-lg animate-fade-in">
-                    <p className="text-sm text-text-muted">{question.explanation}</p>
-                    <button 
-                        onClick={selectNewQuestion} 
-                        className="w-full mt-3 bg-emerald-main text-white text-sm font-bold py-2 rounded-button hover:bg-jade-deep-dark transition-colors"
-                    >
+                <div className="mt-4 p-3 bg-mint/50 rounded-lg animate-fade-in">
+                    <p className="text-sm text-text-main">{question.explanation}</p>
+                    <button onClick={selectNewQuestion} className="w-full mt-3 bg-jade text-white text-sm font-bold py-2 rounded-button hover:bg-opacity-90 transition-colors">
                         {quiz_nextQuestion}
                     </button>
                 </div>
