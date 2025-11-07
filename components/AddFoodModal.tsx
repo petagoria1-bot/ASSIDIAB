@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
-import { usePatientStore } from '../store/patientStore';
-import { Food } from '../types';
-import useTranslations from '../hooks/useTranslations';
+import { usePatientStore } from '../store/patientStore.ts';
+import { Food } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
 
 interface AddFoodModalProps {
   onClose: () => void;

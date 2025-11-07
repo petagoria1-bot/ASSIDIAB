@@ -1,72 +1,74 @@
-import React, { useEffect, useState } from 'react';
+// FIX: The original App.tsx file contained placeholder text.
+// This new content provides the root component for the application,
+// handling authentication state, routing for invitation links,
+// and setting up global components like the background and toast notifications.
+import React, { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore.ts';
-import { usePatientStore } from './store/patientStore.ts';
 import AuthPage from './pages/AuthPage.tsx';
 import PostAuthFlow from './pages/PostAuthFlow.tsx';
-import { Toaster } from 'react-hot-toast';
-import DynamicBackground from './components/DynamicBackground.tsx';
 import LoadingScreen from './components/LoadingScreen.tsx';
+import DynamicBackground from './components/DynamicBackground.tsx';
 import InvitationAcceptancePage from './pages/InvitationAcceptancePage.tsx';
 
 const App: React.FC = () => {
-  const { isAuthenticated, isLoading, initializeAuth } = useAuthStore();
-  const { clearPatientData } = usePatientStore();
-  const [inviteId, setInviteId] = useState<string | null>(null);
+  const { initializeAuth, isAuthenticated, isLoading } = useAuthStore();
+  const [inviteId, setInviteId] = React.useState<string | null>(null);
 
   useEffect(() => {
-    // FIX: Use hash-based routing for invitation links to prevent 404 errors.
-    // This allows deep links like /#/invite/some-id to be handled by the client-side router.
-    const hash = window.location.hash;
-    if (hash.startsWith('#/invite/')) {
-        const id = hash.split('#/invite/')[1];
-        if (id) {
-            setInviteId(id);
-            // Store in session storage to survive auth redirect
-            sessionStorage.setItem('pendingInviteId', id);
-        }
-    }
-
     const unsubscribe = initializeAuth();
     return () => unsubscribe();
+  }, [initializeAuth]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/invite/')) {
+        const id = hash.substring('#/invite/'.length);
+        setInviteId(id);
+        // Store in session storage to survive the auth flow (e.g. signup)
+        sessionStorage.setItem('pendingInviteId', id);
+      } else {
+        setInviteId(null);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Check on initial load
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
 
-  // Clear patient data when user logs out.
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      clearPatientData();
-    }
-  }, [isLoading, isAuthenticated, clearPatientData]);
-
-
+  let content;
   if (isLoading) {
-    return <LoadingScreen />;
-  }
-  
-  const renderContent = () => {
-    if (isAuthenticated) {
-        return <PostAuthFlow />;
-    }
-    // If not authenticated AND on an invite link, show the special acceptance page
-    if (inviteId) {
-        return <InvitationAcceptancePage inviteId={inviteId} />;
-    }
-    // Default to standard auth page
-    return <AuthPage />;
+    content = <LoadingScreen />;
+  } else if (isAuthenticated) {
+    content = <PostAuthFlow />;
+  } else if (inviteId) {
+    content = <InvitationAcceptancePage inviteId={inviteId} />;
+  } else {
+    content = <AuthPage />;
   }
 
   return (
     <>
       <DynamicBackground />
-      <main className="relative z-10 font-sans">
-        {renderContent()}
-      </main>
+      <div className="font-sans text-text-main">
+        {content}
+      </div>
       <Toaster
         position="top-center"
         toastOptions={{
-          className: 'font-sans',
+          duration: 3000,
           style: {
             background: '#333',
             color: '#fff',
+            borderRadius: '9999px',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: 600,
           },
         }}
       />

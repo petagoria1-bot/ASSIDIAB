@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { createPortal } from 'react-dom';
-import useTranslations from '../hooks/useTranslations';
-import { DoseCalculationOutput, Patient, MealTime } from '../types';
-import MealIcon from './icons/MealIcon';
-import SyringeIcon from './icons/SyringeIcon';
-import EmergencyIcon from './icons/EmergencyIcon';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import { DoseCalculationOutput, Patient, MealTime } from '../types.ts';
+import MealIcon from './icons/MealIcon.tsx';
+import SyringeIcon from './icons/SyringeIcon.tsx';
+import EmergencyIcon from './icons/EmergencyIcon.tsx';
 
 interface DoseExplanationModalProps {
   onClose: () => void;

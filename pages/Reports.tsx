@@ -1,9 +1,8 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import { Page, Mesure, Repas, Injection } from '../types.ts';
 import Card from '../components/Card.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import StatCard from '../components/StatCard.tsx';
 import GlucoseChart from '../components/GlucoseChart.tsx';

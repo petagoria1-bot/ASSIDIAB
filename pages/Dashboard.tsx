@@ -1,10 +1,7 @@
-
-
-
-
 import React, { useMemo, useState } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import Card from '../components/Card.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import { Page, Mesure, Event, MealTime } from '../types.ts';
 import QuickAddItemModal from '../components/QuickAddItemModal.tsx';

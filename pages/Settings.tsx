@@ -1,30 +1,14 @@
 import React, { useState } from 'react';
-import { usePatientStore } from '../store/patientStore.ts';
 import { useAuthStore } from '../store/authStore.ts';
 import { useSettingsStore, Language } from '../store/settingsStore.ts';
+import { usePatientStore } from '../store/patientStore.ts';
 import Card from '../components/Card.tsx';
 import useTranslations from '../hooks/useTranslations.ts';
-import { Page, Patient, EmergencyContact, Caregiver, CaregiverPermissions } from '../types.ts';
-import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
-
-import CustomSelect from '../components/CustomSelect.tsx';
+// FIX: Imported the 'Patient' type to resolve a 'Cannot find name' error.
+import { Page, Patient, Caregiver, CaregiverPermissions } from '../types.ts';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon.tsx';
 import LanguageIcon from '../components/icons/LanguageIcon.tsx';
-import UserIcon from '../components/icons/UserIcon.tsx';
-import TargetIcon from '../components/icons/TargetIcon.tsx';
-import RatioIcon from '../components/icons/RatioIcon.tsx';
-import EmergencyIcon from '../components/icons/EmergencyIcon.tsx';
-import CloseIcon from '../components/icons/CloseIcon.tsx';
 import ToggleSwitch from '../components/ToggleSwitch.tsx';
-import UsersIcon from '../components/icons/UsersIcon.tsx';
-import TrashIcon from '../components/icons/TrashIcon.tsx';
-import CalculatorIcon from '../components/icons/CalculatorIcon.tsx';
-import InviteCaregiverModal from '../components/InviteCaregiverModal.tsx';
-import ShareInvitationModal from '../components/ShareInvitationModal.tsx';
-import PermissionsModal from '../components/PermissionsModal.tsx';
-import EditIcon from '../components/icons/EditIcon.tsx';
-
-
 import FlagFR from '../components/icons/FlagFR.tsx';
 import FlagEN from '../components/icons/FlagEN.tsx';
 import FlagTR from '../components/icons/FlagTR.tsx';
@@ -32,262 +16,147 @@ import FlagAR from '../components/icons/FlagAR.tsx';
 import FlagUR from '../components/icons/FlagUR.tsx';
 import FlagPS from '../components/icons/FlagPS.tsx';
 import FlagUK from '../components/icons/FlagUK.tsx';
+import RatioIcon from '../components/icons/RatioIcon.tsx';
+import UsersIcon from '../components/icons/UsersIcon.tsx';
+import UserIcon from '../components/icons/UserIcon.tsx';
+import StatsIcon from '../components/icons/StatsIcon.tsx';
+import EditIcon from '../components/icons/EditIcon.tsx';
+import InviteCaregiverModal from '../components/InviteCaregiverModal.tsx';
+import PermissionsModal from '../components/PermissionsModal.tsx';
+import ViewInvitationModal from '../components/ViewInvitationModal.tsx';
+import EditPaiModal from '../components/EditPaiModal.tsx';
 
 interface SettingsProps {
   setCurrentPage: (page: Page) => void;
 }
 
+const SettingsRow: React.FC<{
+  title: string;
+  description?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}> = ({ title, description, onClick, children, action }) => (
+  <div
+    className={`flex items-center justify-between p-4 bg-white rounded-lg transition-colors ${onClick ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+    onClick={onClick}
+  >
+    <div className="flex items-center gap-4">
+      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-input-bg rounded-full">{children}</div>
+      <div>
+        <p className="font-semibold text-text-title">{title}</p>
+        {description && <p className="text-sm text-text-muted">{description}</p>}
+      </div>
+    </div>
+    {action || (onClick && <ArrowRightIcon className="w-6 h-6 text-text-muted" />)}
+  </div>
+);
+
 const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
-  const { patient, updatePatient, removeCaregiver, updateCaregiverPermissions } = usePatientStore();
-  const { logout, currentUser } = useAuthStore();
-  const { language, setLanguage, translateFood, toggleTranslateFood, showRatioReminder, toggleShowRatioReminder } = useSettingsStore();
   const t = useTranslations();
-
-  const [localPatient, setLocalPatient] = useState<Patient | null>(patient);
+  const { logout, currentUser } = useAuthStore();
+  const { language, setLanguage, showRatioReminder, toggleShowRatioReminder } = useSettingsStore();
+  const { patient, updatePatient, updateCaregiverPermissions } = usePatientStore();
+  
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [editingCaregiver, setEditingCaregiver] = useState<Caregiver | null>(null);
-  
-  if (!localPatient || !currentUser) return null;
+  const [editingPermissions, setEditingPermissions] = useState<Caregiver | null>(null);
+  const [viewingInvitation, setViewingInvitation] = useState<Caregiver | null>(null);
+  const [isEditPaiModalOpen, setEditPaiModalOpen] = useState(false);
 
-  const isOwner = localPatient.caregivers.find(c => c.userUid === currentUser.uid)?.role === 'owner';
-  
-  const handleSave = () => {
-      if (!localPatient.prenom || !localPatient.naissance) {
-          toast.error(t.toast_nameAndBirthdateRequired);
-          return;
-      }
-      updatePatient(localPatient);
-      toast.success(t.toast_settingsSaved);
+  const handleSavePermissions = (email: string, permissions: CaregiverPermissions) => {
+    updateCaregiverPermissions(email, permissions);
+    setEditingPermissions(null);
   };
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setLocalPatient(p => p ? { ...p, [name]: value } : null);
+  const handleSavePai = (updatedPatient: Patient) => {
+    updatePatient(updatedPatient);
+    setEditPaiModalOpen(false);
   };
 
-  const handleNestedChange = (path: (string|number)[], value: any) => {
-    setLocalPatient(p => {
-      if (!p) return null;
-      const newPatient = JSON.parse(JSON.stringify(p)); // Deep copy
-      let current: any = newPatient;
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return newPatient;
-    });
-  };
-
-  const handleAddContact = () => {
-    const newContact: EmergencyContact = { id: uuidv4(), lien: '', nom: '', tel: '' };
-    handleNestedChange(['contacts', localPatient.contacts.length], newContact);
-  };
-
-  const handleRemoveContact = (id: string) => {
-     handleNestedChange(['contacts'], localPatient.contacts.filter(c => c.id !== id));
-  };
-  
-  const handleRemoveCaregiver = async (caregiver: Caregiver) => {
-      try {
-        await removeCaregiver(caregiver);
-        toast.success(t.toast_caregiverRemoved);
-      } catch (error) {
-        console.error("Failed to remove caregiver:", error);
-        toast.error(t.toast_caregiverRemoveError);
-      }
-  };
-
-  const handleSavePermissions = async (caregiverEmail: string, permissions: CaregiverPermissions) => {
-    try {
-        await updateCaregiverPermissions(caregiverEmail, permissions);
-        toast.success(t.toast_permissionsUpdated);
-        setEditingCaregiver(null);
-    } catch (error) {
-        console.error("Failed to update permissions:", error);
-        toast.error("Erreur lors de la mise à jour des permissions.");
-    }
-  };
-
-  const languageOptions = [
-    { value: 'fr', label: 'Français', icon: <FlagFR /> },
-    { value: 'en', label: 'English', icon: <FlagEN /> },
-    { value: 'ar', label: 'العربية', icon: <FlagAR /> },
-    { value: 'tr', label: 'Türkçe', icon: <FlagTR /> },
-    { value: 'ur', label: 'اردو', icon: <FlagUR /> },
-    { value: 'ps', label: 'پښتو', icon: <FlagPS /> },
-    { value: 'uk', label: 'Українська', icon: <FlagUK /> },
+  const languages: { code: Language; name: string; flag: React.ReactNode }[] = [
+    { code: 'fr', name: 'Français', flag: <FlagFR /> },
+    { code: 'en', name: 'English', flag: <FlagEN /> },
+    { code: 'tr', name: 'Türkçe', flag: <FlagTR /> },
+    { code: 'ar', name: 'العربية', flag: <FlagAR /> },
+    { code: 'ur', name: 'اردو', flag: <FlagUR /> },
+    { code: 'ps', name: 'پښتو', flag: <FlagPS /> },
+    { code: 'uk', name: 'Українська', flag: <FlagUK /> },
   ];
-  
-  const getRoleLabel = (role: string) => {
-    const key = `role_${role}` as keyof typeof t;
-    return t[key] || role;
-  }
-  
-  const inputClasses = "w-full p-2 bg-input-bg rounded-md border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-1 focus:ring-emerald-main/30";
-  const iconClasses = "w-5 h-5 text-text-muted";
-  
+
+  if (!patient) return null;
+
+  const owner = patient.caregivers.find(c => c.role === 'owner');
+
   return (
-    <div className="p-4 space-y-4 pb-24">
+    <div className="p-4 space-y-6 pb-24">
       <header className="py-4 text-center">
         <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.settings_title}</h1>
       </header>
-      
-      {isInviteModalOpen && <InviteCaregiverModal onClose={() => setInviteModalOpen(false)} onLinkGenerated={(link) => { setInviteModalOpen(false); setGeneratedLink(link); }} />}
-      {generatedLink && <ShareInvitationModal invitationLink={generatedLink} onClose={() => setGeneratedLink(null)} />}
-      {editingCaregiver && <PermissionsModal caregiver={editingCaregiver} onClose={() => setEditingCaregiver(null)} onSave={handleSavePermissions} />}
 
-      <Card>
-        <div className="flex items-center gap-2 mb-3">
-          <LanguageIcon className={iconClasses} />
-          <h2 className="text-lg font-semibold text-text-title">{t.settings_language}</h2>
-        </div>
-        <CustomSelect options={languageOptions} value={language} onChange={(val) => setLanguage(val as Language)} />
-        
-        <div className="mt-4 pt-4 border-t border-slate-200/80">
-          <div className="flex justify-between items-center">
-            <label htmlFor="translate-toggle" className="font-medium text-text-main cursor-pointer" onClick={toggleTranslateFood}>
-              {t.settings_translateFood}
-            </label>
-            <ToggleSwitch 
-              isOn={translateFood}
-              onToggle={toggleTranslateFood}
-              ariaLabel={t.settings_translateFood}
-            />
-          </div>
-          <p className="text-xs text-text-muted mt-1 pr-14">{t.settings_translateFood_description}</p>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="flex items-center gap-2 mb-3">
-          <CalculatorIcon className={iconClasses} />
-          <h2 className="text-lg font-semibold text-text-title">{t.settings_calculation_title}</h2>
-        </div>
-        <div className="flex justify-between items-center">
-            <label htmlFor="ratio-reminder-toggle" className="font-medium text-text-main cursor-pointer" onClick={toggleShowRatioReminder}>
-              {t.settings_ratio_reminder}
-            </label>
-            <ToggleSwitch 
-              isOn={showRatioReminder}
-              onToggle={toggleShowRatioReminder}
-              ariaLabel={t.settings_ratio_reminder}
-            />
-          </div>
-          <p className="text-xs text-text-muted mt-1 pr-14">{t.settings_ratio_reminder_desc}</p>
-      </Card>
+      <div className="space-y-2">
+        <h2 className="text-sm font-bold uppercase text-text-muted px-2">{t.settings_profile}</h2>
+        <SettingsRow title={patient.prenom} description={currentUser?.email || ''} onClick={() => setCurrentPage('pai')}>
+          <UserIcon className="w-6 h-6 text-emerald-main" />
+        </SettingsRow>
+        <SettingsRow title={t.settings_pai} description="Ratios, cibles, corrections..." onClick={() => setEditPaiModalOpen(true)}>
+          <RatioIcon className="w-6 h-6 text-emerald-main" />
+        </SettingsRow>
+         <SettingsRow title={t.settings_food} description="Gérer la bibliothèque d'aliments" onClick={() => setCurrentPage('food')}>
+          <StatsIcon className="w-6 h-6 text-emerald-main" />
+        </SettingsRow>
+      </div>
       
-      <Card>
-        <div className="flex items-center gap-2 mb-3">
-          <UsersIcon className={iconClasses} />
-          <h2 className="text-lg font-semibold text-text-title">{t.settings_family_title}</h2>
-        </div>
-        <p className="text-sm text-text-muted mb-4">{t.settings_family_description}</p>
-        <div className="space-y-2">
-            {localPatient.caregivers.map((caregiver) => (
-                <div key={caregiver.email} className="flex items-center justify-between bg-input-bg p-2 rounded-lg">
-                    <div>
-                        <p className="font-semibold text-text-main">{caregiver.email}</p>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${caregiver.role === 'owner' ? 'bg-emerald-main/20 text-emerald-main' : caregiver.status === 'awaiting_confirmation' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-text-muted'}`}>
-                            {getRoleLabel(caregiver.role)} - {caregiver.status === 'awaiting_confirmation' ? t.settings_family_pending_invitation : t.settings_family_active}
-                        </span>
-                    </div>
-                    {isOwner && caregiver.role !== 'owner' && (
-                        <div className="flex items-center gap-1">
-                            <button onClick={() => setEditingCaregiver(caregiver)} className="text-text-muted p-2 hover:bg-white rounded-full" aria-label={t.settings_editPermissionsAria(caregiver.email)}>
-                                <EditIcon />
-                            </button>
-                            <button onClick={() => handleRemoveCaregiver(caregiver)} className="text-danger p-2 hover:bg-danger-soft rounded-full" aria-label={t.settings_removeCaregiverAria(caregiver.email)}>
-                                <TrashIcon />
-                            </button>
-                        </div>
-                    )}
+       <div className="space-y-2">
+        <h2 className="text-sm font-bold uppercase text-text-muted px-2">{t.settings_caregivers}</h2>
+        {patient.caregivers.map(c => (
+           <div key={c.email} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                <div>
+                    <p className="font-semibold text-text-title">{c.email}</p>
+                    <p className="text-xs text-text-muted">{t[`role_${c.role}` as keyof typeof t]} - <span className={c.status === 'active' ? 'text-emerald-main' : 'text-amber-600'}>{c.status}</span></p>
                 </div>
-            ))}
-        </div>
-        {isOwner && (
-            <button onClick={() => setInviteModalOpen(true)} className="w-full mt-4 text-emerald-main text-sm font-bold py-2 rounded-button hover:bg-mint-soft transition-colors">
-                {t.settings_family_invite}
+                {owner?.userUid === currentUser?.uid && c.role !== 'owner' && (
+                    <button onClick={() => c.status === 'active' ? setEditingPermissions(c) : setViewingInvitation(c) } className="text-text-muted hover:text-emerald-main p-1"><EditIcon /></button>
+                )}
+           </div>
+        ))}
+         {owner?.userUid === currentUser?.uid && (
+            <button onClick={() => setInviteModalOpen(true)} className="w-full mt-2 text-emerald-main text-sm font-bold py-2 rounded-button bg-white hover:bg-mint-soft transition-colors">
+                + {t.invite_title}
             </button>
-        )}
-      </Card>
-
-      <Card>
-        <div className="flex items-center gap-2 mb-3">
-          <UserIcon className={iconClasses} />
-          <h2 className="text-lg font-semibold text-text-title">{t.settings_profile}</h2>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium text-text-muted">{t.common_firstName}</label>
-            <input name="prenom" value={localPatient.prenom} onChange={handleInputChange} className={inputClasses} disabled={!isOwner} />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-text-muted">{t.common_birthDate}</label>
-            <input name="naissance" type="date" value={localPatient.naissance} onChange={handleInputChange} className={inputClasses} disabled={!isOwner} />
-          </div>
-        </div>
-      </Card>
-      
-      <Card>
-        <div className="flex items-center gap-2 mb-3">
-          <TargetIcon className={iconClasses} />
-          <h2 className="text-lg font-semibold text-text-title">{t.settings_glycemicTargets}</h2>
-        </div>
-        <div className="flex gap-4 items-center justify-center">
-          <div>
-            <label className="text-sm font-medium text-text-muted">{t.common_min} (g/L)</label>
-            <input type="number" step="0.01" value={localPatient.cibles.gly_min} onChange={e => handleNestedChange(['cibles', 'gly_min'], parseFloat(e.target.value))} className={inputClasses} disabled={!isOwner && currentUser.uid !== localPatient.userUid}/>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-text-muted">{t.common_max} (g/L)</label>
-            <input type="number" step="0.01" value={localPatient.cibles.gly_max} onChange={e => handleNestedChange(['cibles', 'gly_max'], parseFloat(e.target.value))} className={inputClasses} disabled={!isOwner && currentUser.uid !== localPatient.userUid}/>
-          </div>
-        </div>
-      </Card>
-
-      <Card>
-         <div className="flex items-center gap-2 mb-3">
-          <RatioIcon className={iconClasses} />
-          <h2 className="text-lg font-semibold text-text-title">{t.settings_ratios}</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-           {Object.keys(localPatient.ratios).map(moment => (
-             <div key={moment}>
-                <label className="text-sm font-medium text-text-muted">{t.mealTimes[moment as keyof typeof t.mealTimes]}</label>
-                <input type="number" value={localPatient.ratios[moment as keyof typeof localPatient.ratios]} onChange={e => handleNestedChange(['ratios', moment], parseInt(e.target.value, 10))} className={inputClasses} disabled={!isOwner && currentUser.uid !== localPatient.userUid}/>
-             </div>
-           ))}
-        </div>
-      </Card>
-      
-      <Card>
-        <div className="flex items-center gap-2 mb-3">
-            <EmergencyIcon className={iconClasses} />
-            <h2 className="text-lg font-semibold text-text-title">{t.settings_emergencyContacts}</h2>
-        </div>
-        <div className="space-y-3">
-            {localPatient.contacts.map((contact, index) => (
-                <div key={contact.id} className="grid grid-cols-12 gap-2 items-center">
-                    <input placeholder={t.settings_contactRelation} value={contact.lien} onChange={e => handleNestedChange(['contacts', index, 'lien'], e.target.value)} className={`${inputClasses} col-span-4`} />
-                    <input placeholder={t.common_name} value={contact.nom} onChange={e => handleNestedChange(['contacts', index, 'nom'], e.target.value)} className={`${inputClasses} col-span-4`} />
-                    <input type="tel" placeholder={t.settings_contactPhone} value={contact.tel} onChange={e => handleNestedChange(['contacts', index, 'tel'], e.target.value)} className={`${inputClasses} col-span-3`} />
-                    <button onClick={() => handleRemoveContact(contact.id)} className="text-danger hover:text-danger-dark col-span-1"><CloseIcon /></button>
-                </div>
-            ))}
-            <button onClick={handleAddContact} className="text-sm font-semibold text-emerald-main hover:underline">{t.settings_addContact}</button>
-        </div>
-      </Card>
-
-      <Card>
-        <button onClick={() => setCurrentPage('pai')} className="w-full text-center text-lg font-semibold text-emerald-main hover:bg-mint-soft p-3 rounded-lg transition-colors">{t.settings_viewPai}</button>
-      </Card>
-      
-      <div className="mt-6 flex flex-col space-y-2">
-         <button onClick={handleSave} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors shadow-sm">{t.common_saveChanges}</button>
-        <button onClick={logout} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.settings_logout}</button>
+         )}
       </div>
 
+      <div className="space-y-2">
+        <h2 className="text-sm font-bold uppercase text-text-muted px-2">{t.settings_display}</h2>
+        <SettingsRow title={t.settings_language} description={languages.find(l => l.code === language)?.name}>
+            <LanguageIcon className="w-6 h-6 text-emerald-main" />
+            <select value={language} onChange={e => setLanguage(e.target.value as Language)} className="bg-transparent font-semibold text-text-title focus:outline-none">
+                {languages.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+            </select>
+        </SettingsRow>
+        <SettingsRow title={t.settings_animations} description={t.settings_animations_desc} onClick={() => setCurrentPage('illustrations')}>
+            <StatsIcon className="w-6 h-6 text-emerald-main" />
+        </SettingsRow>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-bold uppercase text-text-muted px-2">{t.settings_notifications}</h2>
+        <SettingsRow title={t.settings_ratioReminder} description={t.settings_ratioReminder_desc}>
+          <RatioIcon className="w-6 h-6 text-emerald-main" />
+          <ToggleSwitch isOn={showRatioReminder} onToggle={toggleShowRatioReminder} ariaLabel={t.settings_ratioReminder} />
+        </SettingsRow>
+      </div>
+      
+      <div className="pt-4">
+        <button onClick={logout} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-danger-soft/50 transition-colors">
+          {t.settings_logout}
+        </button>
+      </div>
+      
+      {isInviteModalOpen && <InviteCaregiverModal onClose={() => setInviteModalOpen(false)} />}
+      {editingPermissions && <PermissionsModal caregiver={editingPermissions} onClose={() => setEditingPermissions(null)} onSave={handleSavePermissions} />}
+      {viewingInvitation && <ViewInvitationModal caregiver={viewingInvitation} onClose={() => setViewingInvitation(null)} />}
+      {isEditPaiModalOpen && <EditPaiModal patient={patient} onClose={() => setEditPaiModalOpen(false)} onSave={handleSavePai} />}
     </div>
   );
 };

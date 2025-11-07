@@ -1,8 +1,7 @@
-
-
 import React from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import Card from '../components/Card.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import { MealTime, CorrectionRule } from '../types.ts';
 

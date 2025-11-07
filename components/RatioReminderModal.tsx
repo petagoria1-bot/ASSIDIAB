@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { createPortal } from 'react-dom';
-import useTranslations from '../hooks/useTranslations';
-import { MealTime } from '../types';
-import RatioIcon from './icons/RatioIcon';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import { MealTime } from '../types.ts';
+import RatioIcon from './icons/RatioIcon.tsx';
 
 interface RatioReminderModalProps {
   onClose: () => void;

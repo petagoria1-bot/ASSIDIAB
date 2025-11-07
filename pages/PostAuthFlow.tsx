@@ -6,6 +6,7 @@ import Dashboard from './Dashboard.tsx';
 import DoseCalculator from './DoseCalculator.tsx';
 import Journal from './Journal.tsx';
 import Reports from './Reports.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import Settings from './Settings.tsx';
 import Emergency from './Emergency.tsx';
 import Pai from './Pai.tsx';
@@ -16,6 +17,7 @@ import History from './History.tsx';
 import BottomNav from '../components/BottomNav.tsx';
 import { Page } from '../types.ts';
 import LoadingScreen from '../components/LoadingScreen.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import ErrorIcon from '../components/icons/ErrorIcon.tsx';
 

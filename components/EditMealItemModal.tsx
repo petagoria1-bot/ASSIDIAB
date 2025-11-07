@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { MealItem } from '../types';
-import useTranslations from '../hooks/useTranslations';
+import { MealItem } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
 
 interface EditMealItemModalProps {
   itemToEdit: MealItem;
@@ -18,7 +19,8 @@ const EditMealItemModal: React.FC<EditMealItemModalProps> = ({ itemToEdit, onClo
   const handleSave = () => {
     const poids_g = parseFloat(weight.replace(',', '.'));
     if (isNaN(poids_g) || poids_g < 0) {
-      toast.error(t.toast_invalidQuantity);
+      // FIX: Changed `t.toast_invalidQuantity` to `t.toast_invalidWeight` to match existing translation key.
+      toast.error(t.toast_invalidWeight);
       return;
     }
 

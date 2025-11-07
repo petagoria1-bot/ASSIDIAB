@@ -1,426 +1,564 @@
 import { create } from 'zustand';
-import { db } from '../services/db.ts';
-import { Patient, Mesure, Repas, Injection, Food, FullBolusPayload, Event, DailyProgress, User, Caregiver, CaregiverRole, CaregiverPermissions, Message } from '../types.ts';
 import { v4 as uuidv4 } from 'uuid';
+import toast from 'react-hot-toast';
+import { db } from '../services/db.ts';
+import { 
+    Patient, User, Mesure, Repas, Injection, Food, FullBolusPayload, 
+    Event, Caregiver, CaregiverRole, CaregiverPermissions, DailyProgress, Message
+} from '../types.ts';
 import { initialFoodData } from '../data/foodLibrary.ts';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants.ts';
+import { 
+    doc, getDoc, setDoc, updateDoc, arrayUnion, 
+    collection, addDoc, query, where, getDocs, writeBatch, serverTimestamp, deleteDoc, orderBy
+} from 'firebase/firestore';
 import { firestore } from '../services/firebase.ts';
-import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, onSnapshot, Unsubscribe, addDoc, orderBy, writeBatch, Timestamp, serverTimestamp, deleteDoc } from "firebase/firestore";
-import { useAuthStore } from './authStore.ts';
-import toast from 'react-hot-toast';
-import Dexie from 'dexie';
 
+// Helper to get today's date string
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
 interface PatientState {
   patient: Patient | null;
   mesures: Mesure[];
   repas: Repas[];
   injections: Injection[];
-  events: Event[];
   foodLibrary: Food[];
-  todayProgress: DailyProgress | null;
+  events: Event[];
   messages: Message[];
   unreadMessagesCount: number;
+  todayProgress: DailyProgress | null;
   isLoading: boolean;
   error: string | null;
-  unsubscribePatient: Unsubscribe | null;
-  unsubscribeMessages: Unsubscribe | null;
-  clearPatientData: () => void;
-  loadPatientData: (user: User) => Promise<boolean>;
+
+  // Actions
+  loadPatientData: (user: User) => Promise<void>;
   createPatient: (prenom: string, naissance: string, user: User) => Promise<void>;
-  updatePatient: (patientData: Patient) => Promise<void>;
-  addMesure: (mesure: Omit<Mesure, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
-  addRepas: (repas: Omit<Repas, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
-  addInjection: (injection: Omit<Injection, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
+  updatePatient: (updatedPatient: Patient) => Promise<void>;
+  
+  // Data logging
+  addMesure: (mesureData: Omit<Mesure, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
+  addRepas: (repasData: Omit<Repas, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
+  addInjection: (injectionData: Omit<Injection, 'id' | 'patient_id' | 'ts'>, ts: string) => Promise<void>;
   addFullBolus: (payload: FullBolusPayload, ts: string) => Promise<void>;
-  addOrUpdateFood: (food: Food) => Promise<void>;
   getLastCorrection: () => Promise<Injection | null>;
+
+  // Events
   addEvent: (eventData: Omit<Event, 'id' | 'patient_id' | 'status'>) => Promise<void>;
-  updateEventStatus: (eventId: string, status: 'pending' | 'completed') => Promise<void>;
-  logWater: (amount_ml: number) => Promise<void>;
-  logActivity: (duration_min: number) => Promise<void>;
-  logQuizCompleted: () => Promise<void>;
+  updateEventStatus: (eventId: string, status: 'completed' | 'pending') => Promise<void>;
+
+  // Food Library
+  addOrUpdateFood: (food: Food) => Promise<void>;
+  
+  // Caregivers & Invitations
   generateInvitationLink: (email: string, role: CaregiverRole) => Promise<string | null>;
   getInvitationDetails: (inviteId: string) => Promise<{ patientName: string; role: string; email: string; } | null>;
   acceptInvitation: (inviteId: string, user: User) => Promise<void>;
-  removeCaregiver: (caregiver: Caregiver) => Promise<void>;
+  removeCaregiver: (caregiverToRemove: Caregiver) => Promise<void>;
   updateCaregiverPermissions: (caregiverEmail: string, permissions: CaregiverPermissions) => Promise<void>;
+  getInvitationLinkForPendingCaregiver: (email: string) => string | null;
+  resendInvitation: (caregiver: Caregiver) => Promise<string | null>;
+
+  // Progress
+  logWater: (amount_ml: number) => Promise<void>;
+  logActivity: (duration_min: number) => Promise<void>;
+  logQuizCompleted: () => Promise<void>;
+
+  // Messages
   markMessagesAsRead: () => Promise<void>;
+
+  // Local state management
+  clearPatientData: () => void;
 }
 
 export const usePatientStore = create<PatientState>((set, get) => ({
-  patient: null,
-  mesures: [],
-  repas: [],
-  injections: [],
-  events: [],
-  foodLibrary: [],
-  todayProgress: null,
-  messages: [],
-  unreadMessagesCount: 0,
-  isLoading: true,
-  error: null,
-  unsubscribePatient: null,
-  unsubscribeMessages: null,
+    patient: null,
+    mesures: [],
+    repas: [],
+    injections: [],
+    foodLibrary: [],
+    events: [],
+    messages: [],
+    unreadMessagesCount: 0,
+    todayProgress: null,
+    isLoading: true,
+    error: null,
+    
+    clearPatientData: () => set({
+        patient: null,
+        mesures: [],
+        repas: [],
+        injections: [],
+        events: [],
+        messages: [],
+        unreadMessagesCount: 0,
+        todayProgress: null,
+        isLoading: false,
+        error: null,
+    }),
 
-  clearPatientData: () => {
-    get().unsubscribePatient?.();
-    get().unsubscribeMessages?.();
-    set({
-      patient: null,
-      mesures: [],
-      repas: [],
-      injections: [],
-      events: [],
-      todayProgress: null,
-      messages: [],
-      unreadMessagesCount: 0,
-      unsubscribePatient: null,
-      unsubscribeMessages: null,
-    });
-  },
-  
-  loadPatientData: async (user: User) => {
-    set({ isLoading: true, error: null });
-    get().clearPatientData();
-
-    try {
-        const q = query(collection(firestore, "patients"), where("caregiversUids", "array-contains", user.uid));
-        const querySnapshot = await getDocs(q);
-        const patientDoc = querySnapshot.empty ? null : querySnapshot.docs[0];
-
-        if (patientDoc) {
-            const patientId = patientDoc.id;
+    loadPatientData: async (user: User) => {
+        set({ isLoading: true, error: null });
+        try {
+            const userProfileRef = doc(firestore, 'users', user.uid);
+            const userProfileSnap = await getDoc(userProfileRef);
+    
+            let patientDoc: Patient | null = null;
             
-            const unsubPatient = onSnapshot(doc(firestore, "patients", patientId), (doc) => {
-                if (doc.exists()) set({ patient: doc.data() as Patient });
-            });
-
-            const unsubMessages = onSnapshot(query(collection(firestore, `patients/${patientId}/messages`), where("toUid", "==", user.uid), orderBy("ts", "desc")), (snapshot) => {
-                const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-                const unreadCount = messages.filter(m => !m.read).length;
-                set({ messages, unreadMessagesCount: unreadCount });
-            });
-
-            set({ unsubscribePatient: unsubPatient, unsubscribeMessages: unsubMessages });
-
+            if (userProfileSnap.exists()) {
+                const { patientId } = userProfileSnap.data();
+                if (patientId) {
+                    const patientRef = doc(firestore, 'patients', patientId);
+                    try {
+                        const patientSnap = await getDoc(patientRef);
+                        if (patientSnap.exists()) {
+                            const patientData = patientSnap.data() as Omit<Patient, 'id'>;
+                            if (patientData.caregiversUids?.includes(user.uid)) {
+                                patientDoc = { id: patientSnap.id, ...patientData };
+                            } else {
+                                console.warn(`User ${user.uid} is linked to patient ${patientId} but not in caregiversUids. Activation may be pending.`);
+                            }
+                        }
+                    } catch (e: any) {
+                        if (e.code === 'permission-denied') {
+                            console.warn(`Permission denied reading patient doc ${patientId}. Activation may be pending.`);
+                            // This is an expected state for a new user accepting an invite.
+                            // We treat it as if they have no patient profile yet, avoiding a critical error.
+                            // patientDoc will remain null.
+                        } else {
+                            throw e; // Re-throw other unexpected errors to be caught by the outer block.
+                        }
+                    }
+                }
+            }
+            
+            if (patientDoc) {
+                const patientId = patientDoc.id;
+    
+                const [mesuresDocs, repasDocs, injectionsDocs, eventsDocs, messagesDocs] = await Promise.all([
+                    getDocs(query(collection(firestore, `patients/${patientId}/mesures`), orderBy('ts', 'desc'))),
+                    getDocs(query(collection(firestore, `patients/${patientId}/repas`), orderBy('ts', 'desc'))),
+                    getDocs(query(collection(firestore, `patients/${patientId}/injections`), orderBy('ts', 'desc'))),
+                    getDocs(query(collection(firestore, `patients/${patientId}/events`), orderBy('ts', 'desc'))),
+                    getDocs(query(collection(firestore, `patients/${patientId}/messages`), where('toUid', '==', user.uid), orderBy('ts', 'desc'))),
+                ]);
+    
+                const mesures = mesuresDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mesure));
+                const repas = repasDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Repas));
+                const injections = injectionsDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Injection));
+                const events = eventsDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Event));
+                const messages = messagesDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+                const unreadMessagesCount = messages.filter(m => !m.read).length;
+                
+                const todayStr = getTodayDateString();
+                const progressDocRef = doc(firestore, `patients/${patientId}/dailyProgress`, todayStr);
+                const progressDoc = await getDoc(progressDocRef);
+                let todayProgress: DailyProgress;
+                if (progressDoc.exists()) {
+                    todayProgress = progressDoc.data() as DailyProgress;
+                } else {
+                    todayProgress = { date: todayStr, patient_id: patientId, water_ml: 0, activity_min: 0, quiz_completed: false };
+                    await setDoc(progressDocRef, todayProgress);
+                }
+    
+                set({ patient: patientDoc, mesures, repas, injections, events, messages, unreadMessagesCount, todayProgress, isLoading: false, error: null });
+            } else {
+                // This path is now taken for new users, users with pending activation, or users whose link is broken.
+                // It's not a critical error state, so we clear the error.
+                set({ patient: null, isLoading: false, error: null });
+            }
+    
+            // Food library management (offline-first) should happen regardless of patient status
             const foodCount = await db.foodLibrary.count();
-            if(foodCount === 0) await db.foodLibrary.bulkAdd(initialFoodData);
+            if (foodCount === 0) {
+                await db.foodLibrary.bulkAdd(initialFoodData);
+            }
+            const foodLibrary = await db.foodLibrary.toArray();
+            set({ foodLibrary });
+    
+        } catch (e) {
+            console.error("CRITICAL: Unhandled error in loadPatientData.", e);
+            set({ isLoading: false, error: "Missing or insufficient permissions." });
+        }
+    },
+
+    createPatient: async (prenom: string, naissance: string, user: User) => {
+        set({ isLoading: true });
+        const patientId = uuidv4();
+        const ownerCaregiver: Caregiver = {
+            userUid: user.uid,
+            email: user.email || 'proprietaire@diabassis.com',
+            role: 'owner',
+            status: 'active',
+            permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true },
+        };
+        const newPatient: Patient = {
+            id: patientId,
+            userUid: user.uid,
+            prenom,
+            naissance,
+            ...DEFAULT_PATIENT_SETTINGS,
+            caregivers: [ownerCaregiver],
+            caregiversUids: [user.uid],
+        };
+
+        try {
+            const batch = writeBatch(firestore);
+
+            // 1. Create the patient document
+            const patientRef = doc(firestore, "patients", patientId);
+            batch.set(patientRef, newPatient);
+
+            // 2. Create the user profile document for direct lookup
+            const userProfileRef = doc(firestore, "users", user.uid);
+            batch.set(userProfileRef, { patientId: patientId });
+
+            await batch.commit();
             
-            const [foodLib, allMesures, allRepas, allInjections, allEvents] = await Promise.all([
-                db.foodLibrary.orderBy('name').toArray(),
-                db.mesures.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
-                db.repas.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
-                db.injections.where('[patient_id+ts]').between([patientId, Dexie.minKey], [patientId, Dexie.maxKey]).reverse().toArray(),
-                db.events.where('[patient_id+status]').equals([patientId, 'pending']).sortBy('ts')
-            ]);
-
-            const todayStr = new Date().toISOString().split('T')[0];
-            let progress = await db.dailyProgress.get(todayStr);
-            if (!progress) {
-                progress = { date: todayStr, patient_id: patientId, water_ml: 0, activity_min: 0, quiz_completed: false };
-                await db.dailyProgress.put(progress);
-            }
-
-            set({ patient: patientDoc.data() as Patient, foodLibrary: foodLib, mesures: allMesures, repas: allRepas, injections: allInjections, events: allEvents, todayProgress: progress, isLoading: false });
-            return true;
-        } else {
+            await get().loadPatientData(user); // Reload all data for the new patient
+        } catch (error) {
+            console.error("Error creating patient:", error);
+            toast.error("Erreur lors de la création du profil.");
+            set({ isLoading: false, error: "Failed to create profile." });
+        }
+    },
+    
+    updatePatient: async (updatedPatient: Patient) => {
+        if (!get().patient) return;
+        set({ isLoading: true });
+        try {
+            const patientRef = doc(firestore, "patients", updatedPatient.id);
+            await updateDoc(patientRef, updatedPatient as any); // Use `any` to bypass deep type checks
+            set({ patient: updatedPatient, isLoading: false });
+            toast.success("Profil mis à jour !");
+        } catch (error) {
+            console.error("Error updating patient:", error);
+            toast.error("Erreur lors de la mise à jour.");
             set({ isLoading: false });
-            return false;
         }
-    } catch (error) {
-        console.error("CRITICAL: Failed to load patient data.", error);
-        toast.error("Une erreur critique est survenue. Impossible de charger vos données. Veuillez réessayer.");
-        set({ isLoading: false, patient: null, error: "LOAD_FAILED" });
-        return false;
-    }
-  },
-
-  createPatient: async (prenom, naissance, user) => {
-    set({ isLoading: true });
-    try {
-      const patientId = uuidv4();
-      const ownerCaregiver: Caregiver = {
-          userUid: user.uid,
-          email: user.email!,
-          role: 'owner',
-          status: 'active',
-          permissions: { canViewJournal: true, canEditJournal: true, canEditPAI: true, canManageFamily: true }
-      };
-      const newPatient: Patient = {
-        id: patientId,
-        userUid: user.uid,
-        prenom,
-        naissance,
-        ...DEFAULT_PATIENT_SETTINGS,
-        caregivers: [ownerCaregiver]
-      };
-
-      await setDoc(doc(firestore, "patients", patientId), {
-          ...newPatient,
-          caregiversUids: [user.uid] // For querying
-      });
-      
-      await get().loadPatientData(user);
-
-    } catch (error) {
-      console.error("Failed to create patient:", error);
-      toast.error("Erreur lors de la création du profil.");
-      set({ isLoading: false, error: "CREATE_FAILED" });
-    }
-  },
-  
-  updatePatient: async (patientData) => {
-    const { patient } = get();
-    if (!patient) return;
-    const patientRef = doc(firestore, "patients", patient.id);
-    await setDoc(patientRef, patientData, { merge: true });
-  },
-
-  addMesure: async (mesureData, ts) => {
-      const { patient } = get();
-      if (!patient) return;
-      const newMesure: Mesure = { ...mesureData, id: uuidv4(), patient_id: patient.id, ts };
-      await db.mesures.add(newMesure);
-      set(state => ({ mesures: [newMesure, ...state.mesures].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
-  },
-
-  addRepas: async (repasData, ts) => {
-      const { patient } = get();
-      if (!patient) return;
-      const newRepas: Repas = { ...repasData, id: uuidv4(), patient_id: patient.id, ts };
-      await db.repas.add(newRepas);
-      set(state => ({ repas: [newRepas, ...state.repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
-  },
-  
-  addInjection: async (injectionData, ts) => {
-      const { patient } = get();
-      if (!patient) return;
-      const newInjection: Injection = { ...injectionData, id: uuidv4(), patient_id: patient.id, ts };
-      await db.injections.add(newInjection);
-      set(state => ({ injections: [newInjection, ...state.injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
-  },
-  
-  addFullBolus: async (payload, ts) => {
-      const { patient } = get();
-      if (!patient) return;
-      const mesureId = uuidv4();
-      const repasId = uuidv4();
-      const injectionId = uuidv4();
-      const newMesure: Mesure = { ...payload.mesure, id: mesureId, patient_id: patient.id, ts };
-      const newRepas: Repas = { ...payload.repas, id: repasId, patient_id: patient.id, ts };
-      const newInjection: Injection = { ...payload.injection, id: injectionId, patient_id: patient.id, ts, lien_mesure_id: mesureId, lien_repas_id: repasId };
-      await db.transaction('rw', db.mesures, db.repas, db.injections, async () => {
-          await db.mesures.add(newMesure);
-          await db.repas.add(newRepas);
-          await db.injections.add(newInjection);
-      });
-      set(state => ({
-          mesures: [newMesure, ...state.mesures].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()),
-          repas: [newRepas, ...state.repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()),
-          injections: [newInjection, ...state.injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()),
-      }));
-  },
-  
-  addOrUpdateFood: async (food) => {
-      await db.foodLibrary.put(food);
-      const foodLib = await db.foodLibrary.toArray();
-      set({ foodLibrary: foodLib });
-  },
-
-  getLastCorrection: async () => {
-    const { patient } = get();
-    if (!patient) return null;
-    return await db.injections
-        .where({ patient_id: patient.id })
-        .filter(inj => inj.type === 'correction' || (inj.calc_details || '').toLowerCase().includes('correction'))
-        .last() || null;
-  },
-
-  addEvent: async (eventData) => {
-    const { patient } = get();
-    if (!patient) return;
-    const newEvent: Event = { ...eventData, id: uuidv4(), patient_id: patient.id, status: 'pending' };
-    await db.events.add(newEvent);
-    set(state => ({ events: [...state.events, newEvent].sort((a,b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()) }));
-  },
-
-  updateEventStatus: async (eventId, status) => {
-    await db.events.update(eventId, { status });
-    set(state => ({
-        events: state.events.map(e => e.id === eventId ? { ...e, status } : e).filter(e => e.status === 'pending')
-    }));
-  },
-
-  logWater: async (amount_ml: number) => {
-    const { todayProgress } = get();
-    if (!todayProgress) return;
-    const newProgress = { ...todayProgress, water_ml: todayProgress.water_ml + amount_ml };
-    await db.dailyProgress.put(newProgress);
-    set({ todayProgress: newProgress });
-  },
-
-  logActivity: async (duration_min: number) => {
-    const { todayProgress } = get();
-    if (!todayProgress) return;
-    const newProgress = { ...todayProgress, activity_min: todayProgress.activity_min + duration_min };
-    await db.dailyProgress.put(newProgress);
-    set({ todayProgress: newProgress });
-  },
-
-  logQuizCompleted: async () => {
-    const { todayProgress } = get();
-    if (!todayProgress || todayProgress.quiz_completed) return;
-    const newProgress = { ...todayProgress, quiz_completed: true };
-    await db.dailyProgress.put(newProgress);
-    set({ todayProgress: newProgress });
-  },
-
-  generateInvitationLink: async (email, role) => {
-    const { patient } = get();
-    if (!patient) throw new Error("Patient not loaded");
-    if (patient.caregivers.some(c => c.email === email)) {
-        throw new Error("User is already a caregiver.");
-    }
-    const inviteId = uuidv4();
-    const inviteRef = doc(firestore, `invitations`, inviteId);
+    },
     
-    await setDoc(inviteRef, {
-        email,
-        role,
-        patientId: patient.id,
-        patientName: patient.prenom,
-        expiresAt: Timestamp.fromDate(new Date(Date.now() + 72 * 60 * 60 * 1000)), // 72 hours
-    });
-
-    const patientRef = doc(firestore, "patients", patient.id);
-    const newCaregiver: Caregiver = {
-        userUid: null, email, role, status: 'awaiting_confirmation',
-        permissions: { canViewJournal: true, canEditJournal: role === 'parent', canEditPAI: false, canManageFamily: false }
-    };
-    await updateDoc(patientRef, { caregivers: arrayUnion(newCaregiver) });
-
-    // FIX: Use hash-based routing to prevent 404 errors on deep links.
-    return `${window.location.origin}/#/invite/${inviteId}`;
-  },
-
-  getInvitationDetails: async (inviteId) => {
-    const inviteRef = doc(firestore, `invitations`, inviteId);
-    const inviteSnap = await getDoc(inviteRef);
+    addMesure: async (mesureData, ts) => {
+        const patient = get().patient;
+        if (!patient) return;
+        const newMesure: Mesure = { ...mesureData, id: uuidv4(), patient_id: patient.id, ts };
+        set(state => ({ mesures: [newMesure, ...state.mesures].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
+        await setDoc(doc(firestore, `patients/${patient.id}/mesures`, newMesure.id), newMesure);
+    },
     
-    if (inviteSnap.exists()) {
-        const data = inviteSnap.data();
-        const expiresAt = (data.expiresAt as Timestamp).toDate();
-        if (expiresAt < new Date()) {
-            await deleteDoc(inviteRef);
-            return null; // Expired
-        }
-        return { patientName: data.patientName, role: data.role, email: data.email };
-    }
-    return null;
-  },
+    addRepas: async (repasData, ts) => {
+        const patient = get().patient;
+        if (!patient) return;
+        const newRepas: Repas = { ...repasData, id: uuidv4(), patient_id: patient.id, ts };
+        set(state => ({ repas: [newRepas, ...state.repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
+        await setDoc(doc(firestore, `patients/${patient.id}/repas`, newRepas.id), newRepas);
+    },
 
-  acceptInvitation: async (inviteId, user) => {
-    const inviteRef = doc(firestore, "invitations", inviteId);
-    const inviteSnap = await getDoc(inviteRef);
+    addInjection: async (injectionData, ts) => {
+        const patient = get().patient;
+        if (!patient) return;
+        const newInjection: Injection = { ...injectionData, id: uuidv4(), patient_id: patient.id, ts };
+        set(state => ({ injections: [newInjection, ...state.injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
+        await setDoc(doc(firestore, `patients/${patient.id}/injections`, newInjection.id), newInjection);
+    },
 
-    if (!inviteSnap.exists()) {
-        throw new Error("Invitation not found or invalid.");
-    }
-    
-    const inviteData = inviteSnap.data();
-    if (user.email !== inviteData.email) {
-        await deleteDoc(inviteRef);
-        throw new Error("Logged-in user does not match invitation email.");
-    }
-
-    const patientRef = doc(firestore, "patients", inviteData.patientId);
-
-    // ARCHITECTURAL NOTE: The following read-modify-write operation will fail for a new user
-    // if secure Firestore rules are in place (i.e., allow read only if user is already a caregiver).
-    // A new user doesn't have read permission yet, so getDoc() will be denied.
-    // The robust solution for this chicken-and-egg problem is to use a Cloud Function
-    // with admin privileges to handle the acceptance logic securely.
-    // For now, this code assumes either relaxed security rules or will fail gracefully.
-    try {
-        const patientSnap = await getDoc(patientRef);
-        if (!patientSnap.exists()) {
-            await deleteDoc(inviteRef);
-            throw new Error("Patient profile not found.");
-        }
-
-        const patientData = patientSnap.data() as Patient;
-        const updatedCaregivers = patientData.caregivers.map(c => {
-            if (c.email === inviteData.email && c.status === 'awaiting_confirmation') {
-                return { ...c, status: 'active' as const, userUid: user.uid };
-            }
-            return c;
-        });
-
-        await updateDoc(patientRef, {
-            caregivers: updatedCaregivers,
-            caregiversUids: arrayUnion(user.uid)
-        });
-
-        await deleteDoc(inviteRef);
-        return;
-    } catch (error) {
-        console.error("Permission error during invitation acceptance:", error);
-        toast.error("Impossible de rejoindre le cercle de soins. Le propriétaire du profil doit vous ajouter manuellement pour le moment.");
-        // We don't delete the invite here, maybe it can be retried.
-        throw error;
-    }
-  },
-
-  removeCaregiver: async (caregiverToRemove) => {
-    const { patient } = get();
-    if (!patient) return;
-
-    const caregiverInState = patient.caregivers.find(c => c.email === caregiverToRemove.email);
-    if (!caregiverInState) return;
-
-    const patientRef = doc(firestore, "patients", patient.id);
-    
-    const updatePayload: any = {
-        caregivers: arrayRemove(caregiverInState)
-    };
-    
-    if (caregiverInState.status === 'active' && caregiverInState.userUid) {
-        updatePayload.caregiversUids = arrayRemove(caregiverInState.userUid);
-    }
-    
-    await updateDoc(patientRef, updatePayload);
-  },
-  
-  updateCaregiverPermissions: async (caregiverEmail, newPermissions) => {
-    const { patient } = get();
-    if (!patient) return;
-
-    const updatedCaregivers = patient.caregivers.map(c => 
-        c.email === caregiverEmail ? { ...c, permissions: newPermissions } : c
-    );
-
-    const patientRef = doc(firestore, "patients", patient.id);
-    await updateDoc(patientRef, { caregivers: updatedCaregivers });
-  },
-
-  markMessagesAsRead: async () => {
-    const { patient, messages } = get();
-    const user = useAuthStore.getState().currentUser;
-    if (!patient || !user) return;
-
-    const unreadMessages = messages.filter(m => !m.read && m.toUid === user.uid);
-    if (unreadMessages.length === 0) return;
-
-    try {
+    addFullBolus: async (payload, ts) => {
+        const patient = get().patient;
+        if (!patient) return;
+        
         const batch = writeBatch(firestore);
-        unreadMessages.forEach(message => {
-            const msgRef = doc(firestore, `patients/${patient.id}/messages`, message.id);
+        
+        const mesureRef = doc(collection(firestore, `patients/${patient.id}/mesures`));
+        const repasRef = doc(collection(firestore, `patients/${patient.id}/repas`));
+        const injectionRef = doc(collection(firestore, `patients/${patient.id}/injections`));
+
+        const newMesure: Mesure = { ...payload.mesure, id: mesureRef.id, patient_id: patient.id, ts };
+        const newRepas: Repas = { ...payload.repas, id: repasRef.id, patient_id: patient.id, ts };
+        const newInjection: Injection = { ...payload.injection, id: injectionRef.id, patient_id: patient.id, ts, lien_repas_id: newRepas.id, lien_mesure_id: newMesure.id };
+
+        batch.set(mesureRef, newMesure);
+        batch.set(repasRef, newRepas);
+        batch.set(injectionRef, newInjection);
+
+        await batch.commit();
+
+        set(state => ({
+            mesures: [newMesure, ...state.mesures].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()),
+            repas: [newRepas, ...state.repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()),
+            injections: [newInjection, ...state.injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()),
+        }));
+    },
+
+    getLastCorrection: async () => {
+        const patient = get().patient;
+        if (!patient) return null;
+        const q = query(
+            collection(firestore, `patients/${patient.id}/injections`),
+            where('type', '==', 'correction'),
+            orderBy('ts', 'desc'),
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            return null;
+        }
+        return snapshot.docs[0].data() as Injection;
+    },
+    
+    addOrUpdateFood: async (food: Food) => {
+        await db.foodLibrary.put(food);
+        const foodLibrary = await db.foodLibrary.toArray();
+        set({ foodLibrary });
+    },
+    
+    generateInvitationLink: async (email, role) => {
+        const patient = get().patient;
+        if (!patient) {
+            throw new Error("Profil patient non chargé.");
+        }
+        
+        // Prevent re-inviting an active or pending user
+        const existingCaregiver = patient.caregivers.find(c => c.email.toLowerCase() === email.toLowerCase());
+        if (existingCaregiver) {
+             if (existingCaregiver.status === 'active') throw new Error("Cette personne fait déjà partie de votre cercle de soins.");
+             if (existingCaregiver.status === 'awaiting_confirmation') throw new Error("Une invitation est déjà en attente pour cette personne.");
+        }
+
+        const inviteRef = await addDoc(collection(firestore, 'invitations'), {
+            patientId: patient.id,
+            patientName: patient.prenom,
+            invitedEmail: email,
+            role: role,
+            createdAt: serverTimestamp(),
+        });
+        
+        const newCaregiver: Caregiver = {
+            userUid: null,
+            email,
+            role,
+            status: 'awaiting_confirmation',
+            inviteId: inviteRef.id,
+            permissions: { canViewJournal: true, canEditJournal: false, canEditPAI: false, canManageFamily: false }
+        };
+        
+        const patientRef = doc(firestore, "patients", patient.id);
+        await updateDoc(patientRef, {
+            caregivers: arrayUnion(newCaregiver)
+        });
+
+        set(state => ({
+            patient: state.patient ? { ...state.patient, caregivers: [...state.patient.caregivers, newCaregiver] } : null
+        }));
+
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/#/invite/${inviteRef.id}`;
+    },
+
+    getInvitationDetails: async (inviteId) => {
+        const inviteRef = doc(firestore, 'invitations', inviteId);
+        const inviteSnap = await getDoc(inviteRef);
+        if (inviteSnap.exists()) {
+            const data = inviteSnap.data();
+            return {
+                patientName: data.patientName,
+                role: data.role,
+                email: data.invitedEmail,
+            };
+        }
+        return null;
+    },
+    
+    acceptInvitation: async (inviteId, user) => {
+        const inviteRef = doc(firestore, 'invitations', inviteId);
+        const inviteSnap = await getDoc(inviteRef);
+
+        if (!inviteSnap.exists()) {
+            throw new Error("Invitation invalide ou expirée.");
+        }
+        
+        const inviteData = inviteSnap.data();
+        const patientRef = doc(firestore, 'patients', inviteData.patientId);
+        const patientSnap = await getDoc(patientRef);
+        
+        if (!patientSnap.exists()) {
+            throw new Error("Profil patient introuvable.");
+        }
+
+        const patient = { id: patientSnap.id, ...patientSnap.data() } as Patient;
+        
+        // Create the user profile doc first to establish the link. This should always succeed for an authenticated user.
+        const userProfileRef = doc(firestore, "users", user.uid);
+        await setDoc(userProfileRef, { patientId: patient.id });
+        
+        // Now, attempt to update the patient document to finalize the process. This might fail due to security rules.
+        try {
+            const updatedCaregivers = patient.caregivers.map(c => {
+                if (c.email.toLowerCase() === inviteData.invitedEmail.toLowerCase() && c.status === 'awaiting_confirmation') {
+                    return { ...c, userUid: user.uid, status: 'active' as const };
+                }
+                return c;
+            });
+            
+            const batch = writeBatch(firestore);
+            batch.update(patientRef, {
+                caregivers: updatedCaregivers,
+                caregiversUids: arrayUnion(user.uid)
+            });
+            batch.delete(inviteRef);
+            await batch.commit();
+
+        } catch (e) {
+             console.warn("Automatic activation failed due to permissions. Notifying owner for manual activation.");
+             const messageText = `L'utilisateur ${user.email} a accepté votre invitation mais une action manuelle est requise. Veuillez aller dans "Réglages" > "Cercle de soins", et activez le profil manuellement.`;
+
+             const owner = patient.caregivers.find(c => c.role === 'owner');
+             if (owner && owner.userUid) {
+                 const messagesRef = collection(firestore, `patients/${patient.id}/messages`);
+                 await addDoc(messagesRef, {
+                     patientId: patient.id, fromUid: 'system', fromEmail: 'Système', toUid: owner.userUid,
+                     text: messageText, ts: new Date().toISOString(), read: false,
+                 });
+             }
+             await deleteDoc(inviteRef);
+             // Non-blocking error notification for the user
+             toast.error("Activation en attente. Le propriétaire du profil a été notifié.", { duration: 6000 });
+        }
+        
+        // Reload data. This will now succeed because the user profile doc was created.
+        await get().loadPatientData(user);
+    },
+    
+    removeCaregiver: async (caregiverToRemove) => {
+        const patient = get().patient;
+        if (!patient) return;
+
+        const updatedCaregivers = patient.caregivers.filter(c => c.email !== caregiverToRemove.email);
+        const updatedUids = patient.caregiversUids?.filter(uid => uid !== caregiverToRemove.userUid);
+        
+        const batch = writeBatch(firestore);
+
+        // Update patient doc
+        const patientRef = doc(firestore, "patients", patient.id);
+        batch.update(patientRef, {
+            caregivers: updatedCaregivers,
+            caregiversUids: updatedUids
+        });
+
+        // Delete pending invite doc if it exists
+        if (caregiverToRemove.inviteId) {
+            const inviteRef = doc(firestore, 'invitations', caregiverToRemove.inviteId);
+            batch.delete(inviteRef);
+        }
+
+        // Delete user profile doc to remove their access
+        if (caregiverToRemove.userUid) {
+            const userProfileRef = doc(firestore, 'users', caregiverToRemove.userUid);
+            batch.delete(userProfileRef);
+        }
+
+        await batch.commit();
+
+        set(state => ({
+            patient: state.patient ? { ...state.patient, caregivers: updatedCaregivers, caregiversUids: updatedUids } : null
+        }));
+    },
+    
+    updateCaregiverPermissions: async (caregiverEmail, permissions) => {
+        const patient = get().patient;
+        if (!patient) return;
+        
+        const updatedCaregivers = patient.caregivers.map(c => c.email === caregiverEmail ? { ...c, permissions } : c);
+        const patientRef = doc(firestore, "patients", patient.id);
+        await updateDoc(patientRef, { caregivers: updatedCaregivers });
+
+        set(state => ({
+            patient: state.patient ? { ...state.patient, caregivers: updatedCaregivers } : null
+        }));
+        toast.success("Permissions mises à jour.");
+    },
+
+    getInvitationLinkForPendingCaregiver: (email) => {
+        const caregiver = get().patient?.caregivers.find(c => c.email === email && c.status === 'awaiting_confirmation');
+        if (caregiver?.inviteId) {
+            const baseUrl = window.location.origin;
+            return `${baseUrl}/#/invite/${caregiver.inviteId}`;
+        }
+        return null;
+    },
+
+    resendInvitation: async (caregiver) => {
+        const patient = get().patient;
+        if (!patient || caregiver.status !== 'awaiting_confirmation') return null;
+
+        // Delete old invitation doc if it exists
+        if (caregiver.inviteId) {
+            await deleteDoc(doc(firestore, 'invitations', caregiver.inviteId));
+        }
+
+        // Generate new link and update caregiver with new inviteId
+        const newLink = await get().generateInvitationLink(caregiver.email, caregiver.role);
+        return newLink;
+    },
+
+    addEvent: async (eventData) => {
+        const patient = get().patient;
+        if (!patient) return;
+        const newEvent: Event = { ...eventData, id: uuidv4(), patient_id: patient.id, status: 'pending' };
+        set(state => ({ events: [newEvent, ...state.events].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
+        await setDoc(doc(firestore, `patients/${patient.id}/events`, newEvent.id), newEvent);
+    },
+
+    updateEventStatus: async (eventId, status) => {
+        const patient = get().patient;
+        if (!patient) return;
+        set(state => ({
+            events: state.events.map(e => e.id === eventId ? { ...e, status } : e)
+        }));
+        await updateDoc(doc(firestore, `patients/${patient.id}/events`, eventId), { status });
+    },
+    
+    logWater: async (amount_ml) => {
+        const { patient, todayProgress } = get();
+        if (!patient || !todayProgress) return;
+        const newAmount = todayProgress.water_ml + amount_ml;
+        const updatedProgress = { ...todayProgress, water_ml: newAmount };
+        set({ todayProgress: updatedProgress });
+        const progressRef = doc(firestore, `patients/${patient.id}/dailyProgress`, todayProgress.date);
+        await updateDoc(progressRef, { water_ml: newAmount });
+    },
+
+    logActivity: async (duration_min) => {
+        const { patient, todayProgress } = get();
+        if (!patient || !todayProgress) return;
+        const newDuration = todayProgress.activity_min + duration_min;
+        const updatedProgress = { ...todayProgress, activity_min: newDuration };
+        set({ todayProgress: updatedProgress });
+        const progressRef = doc(firestore, `patients/${patient.id}/dailyProgress`, todayProgress.date);
+        await updateDoc(progressRef, { activity_min: newDuration });
+    },
+
+    logQuizCompleted: async () => {
+        const { patient, todayProgress } = get();
+        if (!patient || !todayProgress || todayProgress.quiz_completed) return;
+        const updatedProgress = { ...todayProgress, quiz_completed: true };
+        set({ todayProgress: updatedProgress });
+        const progressRef = doc(firestore, `patients/${patient.id}/dailyProgress`, todayProgress.date);
+        await updateDoc(progressRef, { quiz_completed: true });
+    },
+    
+    markMessagesAsRead: async () => {
+        const { patient, messages } = get();
+        const unreadMessages = messages.filter(m => !m.read);
+        if (!patient || unreadMessages.length === 0) return;
+
+        const batch = writeBatch(firestore);
+        unreadMessages.forEach(msg => {
+            const msgRef = doc(firestore, `patients/${patient.id}/messages`, msg.id);
             batch.update(msgRef, { read: true });
         });
         await batch.commit();
-    } catch (error) {
-        console.error("Failed to mark messages as read:", error);
+
+        set(state => ({
+            messages: state.messages.map(m => ({ ...m, read: true })),
+            unreadMessagesCount: 0,
+        }));
     }
-  },
 }));

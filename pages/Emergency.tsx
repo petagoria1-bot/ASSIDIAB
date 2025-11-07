@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import Card from '../components/Card.tsx';
 import PhoneIcon from '../components/icons/PhoneIcon.tsx';

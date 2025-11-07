@@ -1,6 +1,7 @@
 import React from 'react';
-import { Patient, Mesure, Repas, Injection } from '../types';
-import useTranslations from '../hooks/useTranslations';
+import { Patient, Mesure, Repas, Injection } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
 
 type ChartEvent = (Mesure | Repas | Injection) & { type: 'mesure' | 'repas' | 'injection' };
 

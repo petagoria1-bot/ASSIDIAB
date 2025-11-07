@@ -1,7 +1,8 @@
 import React from 'react';
-import { MealTime } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import PlusIcon from './icons/PlusIcon';
+import { MealTime } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import PlusIcon from './icons/PlusIcon.tsx';
 
 interface TimeSlotEvent {
     mealTime: MealTime;

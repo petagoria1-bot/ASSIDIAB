@@ -1,13 +1,14 @@
 import React from 'react';
-import useTranslations from '../hooks/useTranslations';
-import GlucoseDropIcon from './icons/GlucoseDropIcon';
-import BowlIcon from './icons/BowlIcon';
-import SyringeIcon from './icons/SyringeIcon';
-import WalkIcon from './icons/WalkIcon';
-import NoteIcon from './icons/NoteIcon';
-import ArrowUpIcon from './icons/ArrowUpIcon';
-import ArrowDownIcon from './icons/ArrowDownIcon';
-import ArrowStableIcon from './icons/ArrowStableIcon';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import GlucoseDropIcon from './icons/GlucoseDropIcon.tsx';
+import BowlIcon from './icons/BowlIcon.tsx';
+import SyringeIcon from './icons/SyringeIcon.tsx';
+import WalkIcon from './icons/WalkIcon.tsx';
+import NoteIcon from './icons/NoteIcon.tsx';
+import ArrowUpIcon from './icons/ArrowUpIcon.tsx';
+import ArrowDownIcon from './icons/ArrowDownIcon.tsx';
+import ArrowStableIcon from './icons/ArrowStableIcon.tsx';
 
 type EventType = 'mesure' | 'repas' | 'injection' | 'activity' | 'note';
 

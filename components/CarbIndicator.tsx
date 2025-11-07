@@ -1,7 +1,7 @@
-
 import React, { useMemo } from 'react';
-import useTranslations from '../hooks/useTranslations';
-import { Food } from '../types';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import { Food } from '../types.ts';
 
 interface CarbIndicatorProps {
     carbs_per_100g: number;

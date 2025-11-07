@@ -5,6 +5,7 @@ import CalculatorIcon from './icons/CalculatorIcon.tsx';
 import HistoryIcon from './icons/HistoryIcon.tsx';
 import ChartIcon from './icons/ChartIcon.tsx';
 import SettingsIcon from './icons/SettingsIcon.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 
 interface BottomNavProps {
@@ -36,7 +37,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
   const t = useTranslations();
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicatorStyle, setIndicatorStyle] = useState({ opacity: 0 });
+  const [indicatorStyle, setIndicatorStyle] = useState({ opacity: 0, left: '0px', width: '0px' });
 
   const navItems = React.useMemo(() => [
     { page: 'dashboard', label: t.nav_home, icon: <HomeIcon /> },
@@ -77,7 +78,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) =>
     
     return () => {
         clearTimeout(timeoutId);
-        resizeObserver.disconnect();
+        if (navRef.current) {
+            resizeObserver.unobserve(navRef.current);
+        }
     };
 
   }, [currentPage, navItems]);

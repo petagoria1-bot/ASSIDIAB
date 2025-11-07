@@ -1,5 +1,6 @@
 import React from 'react';
 import DropletLogoIcon from './icons/DropletLogoIcon.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 
 const LoadingScreen: React.FC<{ message?: string }> = ({ message }) => {

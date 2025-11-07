@@ -1,9 +1,7 @@
-
-
-
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import DropletIcon from './icons/DropletIcon.tsx';
 

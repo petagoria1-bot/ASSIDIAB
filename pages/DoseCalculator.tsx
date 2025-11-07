@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import { useUiStore } from '../store/uiStore.ts';
@@ -7,9 +5,12 @@ import { useSettingsStore } from '../store/settingsStore.ts';
 import { calculateDose } from '../services/calculator.ts';
 import { DoseCalculationOutput, MealTime, Page, MealItem } from '../types.ts';
 import toast from 'react-hot-toast';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import Card from '../components/Card.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import MealBuilderCard from '../components/MealBuilderCard.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import CustomSelect from '../components/CustomSelect.tsx';
 import CalculatorIcon from '../components/icons/CalculatorIcon.tsx';
 import InfoIcon from '../components/icons/InfoIcon.tsx';

@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import { Mesure, Repas, Injection, Page } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import TimelineEventCard from '../components/TimelineEventCard.tsx';
 import ArrowLeftIcon from '../components/icons/ArrowLeftIcon.tsx';

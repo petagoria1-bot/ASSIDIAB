@@ -1,10 +1,9 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { usePatientStore } from '../store/patientStore.ts';
 import Card from '../components/Card.tsx';
 import AddFoodModal from '../components/AddFoodModal.tsx'; // Import the new modal
 import { Food } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import EditIcon from '../components/icons/EditIcon.tsx';
 

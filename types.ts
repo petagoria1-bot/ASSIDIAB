@@ -18,7 +18,7 @@ export interface Ratios {
     dejeuner: number;
     gouter: number;
     diner: number;
-    collation: number;
+    collation?: number;
 }
 
 export interface CorrectionRule {
@@ -48,6 +48,7 @@ export interface Caregiver {
     email: string;
     role: CaregiverRole;
     status: CaregiverStatus;
+    inviteId?: string; // ID of the invitation document in Firestore
     permissions: CaregiverPermissions;
 }
 

@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { Food, MealItem } from '../types';
-import useTranslations from '../hooks/useTranslations';
-import CarbIndicator from './CarbIndicator';
+import { Food, MealItem } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import CarbIndicator from './CarbIndicator.tsx';
 
 interface AddFoodConfirmationModalProps {
   food: Food;

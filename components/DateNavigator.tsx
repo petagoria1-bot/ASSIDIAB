@@ -1,7 +1,8 @@
 import React from 'react';
-import useTranslations from '../hooks/useTranslations';
-import ArrowLeftIcon from './icons/ArrowLeftIcon';
-import ArrowRightIcon from './icons/ArrowRightIcon';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import ArrowLeftIcon from './icons/ArrowLeftIcon.tsx';
+import ArrowRightIcon from './icons/ArrowRightIcon.tsx';
 
 type ViewMode = 'day' | 'week' | 'month';
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import { Caregiver, CaregiverPermissions } from '../types.ts';
 import ToggleSwitch from './ToggleSwitch.tsx';

@@ -1,10 +1,8 @@
-
-
-
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { InjectionType } from '../types.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import InsulinPenAnimation from './animations/InsulinPenAnimation.tsx';
 

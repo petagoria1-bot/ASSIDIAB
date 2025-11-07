@@ -1,14 +1,13 @@
 import React, { useMemo } from 'react';
-import Card from './Card';
-import useTranslations from '../hooks/useTranslations';
-import { usePatientStore } from '../store/patientStore';
-import NurturePlantAnimation from './animations/NurturePlantAnimation';
-import WaterDropIcon from './icons/WaterDropIcon';
-import WalkIcon from './icons/WalkIcon';
-import GlucoseDropIcon from './icons/GlucoseDropIcon';
-import LightbulbIcon from './icons/LightbulbIcon';
-import SunIcon from './icons/SunIcon';
-import CheckCircleIcon from './icons/CheckCircleIcon';
+import Card from './Card.tsx';
+import useTranslations from '../hooks/useTranslations.ts';
+import { usePatientStore } from '../store/patientStore.ts';
+import NurturePlantAnimation from './animations/NurturePlantAnimation.tsx';
+import WaterDropIcon from './icons/WaterDropIcon.tsx';
+import WalkIcon from './icons/WalkIcon.tsx';
+import GlucoseDropIcon from './icons/GlucoseDropIcon.tsx';
+import LightbulbIcon from './icons/LightbulbIcon.tsx';
+import CheckCircleIcon from './icons/CheckCircleIcon.tsx';
 import toast from 'react-hot-toast';
 
 const DAILY_GOALS = {
@@ -18,112 +17,116 @@ const DAILY_GOALS = {
     quiz: 1,
 };
 
-const TaskItem: React.FC<{ title: string; progress: string; isCompleted: boolean; onAction?: () => void; children: React.ReactNode; }> = 
-({ title, progress, isCompleted, onAction, children }) => (
-    <div className={`flex items-center justify-between p-2 rounded-lg transition-all ${isCompleted ? 'bg-emerald-main/10' : 'bg-slate-100/70'}`}>
-        <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${isCompleted ? 'bg-emerald-main text-white' : 'bg-white'}`}>
-                {children}
+const TaskItem: React.FC<{ title: string; progress: string; isCompleted: boolean; onAction?: () => void; children: React.ReactNode; }> =
+    ({ title, progress, isCompleted, onAction, children }) => (
+        <div className={`flex items-center justify-between p-2 rounded-lg transition-all ${isCompleted ? 'bg-emerald-main/10' : 'bg-slate-100/70'}`}>
+            <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${isCompleted ? 'bg-emerald-main text-white' : 'bg-white'}`}>
+                    {isCompleted ? <CheckCircleIcon className="w-5 h-5" /> : children}
+                </div>
+                <div>
+                    <p className={`font-semibold text-sm ${isCompleted ? 'text-emerald-main' : 'text-text-main'}`}>{title}</p>
+                    <p className="text-xs text-text-muted">{progress}</p>
+                </div>
             </div>
-            <div>
-                <p className={`font-semibold text-sm ${isCompleted ? 'text-emerald-main' : 'text-text-main'}`}>{title}</p>
-                <p className="text-xs text-text-muted">{progress}</p>
-            </div>
+            {onAction && !isCompleted && (
+                <button
+                    onClick={onAction}
+                    className="text-lg font-bold bg-white text-emerald-main px-3 py-0 leading-none rounded-md border border-emerald-main/50 hover:bg-emerald-main/10 transition-colors"
+                    aria-label={`Ajouter ${title}`}
+                >
+                    +
+                </button>
+            )}
         </div>
-        {onAction && !isCompleted && (
-            <button onClick={onAction} className="text-xs font-bold bg-white text-emerald-main px-2 py-1 rounded-md border border-emerald-main/50 hover:bg-emerald-main/10 transition-colors">
-                +
-            </button>
-        )}
-        {isCompleted && (
-             <CheckCircleIcon className="w-6 h-6 text-emerald-main" />
-        )}
-    </div>
-);
-
+    );
 
 const ProgressCard: React.FC = () => {
-  const t = useTranslations();
-  const { todayProgress, mesures, logWater, logActivity } = usePatientStore();
+    const { todayProgress, logWater, logActivity, mesures } = usePatientStore();
+    const t = useTranslations();
 
-  const dailyChecks = useMemo(() => {
-    const today = new Date().toDateString();
-    return mesures.filter(m => new Date(m.ts).toDateString() === today).length;
-  }, [mesures]);
+    const todayMeasuresCount = useMemo(() => {
+        const today = new Date().toDateString();
+        return mesures.filter(m => new Date(m.ts).toDateString() === today).length;
+    }, [mesures]);
 
-  if (!todayProgress) return null;
-
-  const tasks = [
-    { 
-        id: 'water',
-        title: t.progress_water, 
-        progress: `${todayProgress.water_ml} / ${DAILY_GOALS.water_ml}ml`, 
-        isCompleted: todayProgress.water_ml >= DAILY_GOALS.water_ml,
-        onAction: () => { logWater(250); toast.success('+250ml !'); },
-        icon: <WaterDropIcon className="w-5 h-5 text-info" />
-    },
-    { 
-        id: 'activity',
-        title: t.progress_activity,
-        progress: `${todayProgress.activity_min} / ${DAILY_GOALS.activity_min}min`,
-        isCompleted: todayProgress.activity_min >= DAILY_GOALS.activity_min,
-        onAction: () => { logActivity(10); toast.success('+10min !'); },
-        icon: <WalkIcon className="w-5 h-5 text-coral" />
-    },
-    { 
-        id: 'checks',
-        title: t.progress_checks,
-        progress: `${dailyChecks} / ${DAILY_GOALS.glycemic_checks}`,
-        isCompleted: dailyChecks >= DAILY_GOALS.glycemic_checks,
-        icon: <GlucoseDropIcon className="w-5 h-5 text-turquoise-light" />
-    },
-    { 
-        id: 'quiz',
-        title: t.progress_quiz,
-        progress: todayProgress.quiz_completed ? t.progress_completed : t.progress_pending,
-        isCompleted: todayProgress.quiz_completed,
-        icon: <LightbulbIcon className="w-5 h-5 text-honey-yellow" />
-    },
-  ];
-
-  const completedTasks = tasks.filter(t => t.isCompleted).length;
-  const totalTasks = tasks.length;
-  const plantGrowth = completedTasks / totalTasks;
-
-  return (
-    <Card>
-      <h2 className="font-display font-semibold text-xl text-text-title text-center mb-2">{t.progress_gardenTitle}</h2>
-      
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        <div className="w-28 h-28 flex-shrink-0">
-          <NurturePlantAnimation progress={plantGrowth} />
-        </div>
-
-        <div className="w-full space-y-2">
-            <h3 className="font-semibold text-text-muted text-sm text-center">{t.progress_dailyGoals}</h3>
-            {tasks.map(task => (
-                <TaskItem key={task.id} {...task}>
-                    {task.icon}
-                </TaskItem>
-            ))}
-        </div>
-      </div>
-      
-      <div className="mt-4 pt-3 border-t border-slate-200/80">
-         <h3 className="font-semibold text-text-muted text-sm text-center mb-2">{t.progress_weeklyGoal}</h3>
-         <div className="flex justify-around items-center bg-slate-100 p-1 rounded-pill">
-            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, i) => (
-                <div key={i} className="flex flex-col items-center">
-                    <span className="text-xs font-bold text-text-muted">{day}</span>
-                    <div className={`w-7 h-7 mt-1 rounded-full flex items-center justify-center ${i < 3 ? 'bg-white' : 'bg-slate-200'}`}>
-                        {i < 2 && <SunIcon className="w-5 h-5 text-honey-yellow" />}
-                    </div>
+    if (!todayProgress) {
+        return (
+            <Card>
+                <div className="h-48 flex items-center justify-center text-text-muted">
+                    {t.common_loading}
                 </div>
-            ))}
-         </div>
-      </div>
-    </Card>
-  );
+            </Card>
+        );
+    }
+
+    const progressValues = {
+        water: todayProgress.water_ml,
+        activity: todayProgress.activity_min,
+        checks: todayMeasuresCount,
+        quiz: todayProgress.quiz_completed ? 1 : 0,
+    };
+
+    const overallProgress = useMemo(() => {
+        const waterProgress = Math.min(1, progressValues.water / DAILY_GOALS.water_ml);
+        const activityProgress = Math.min(1, progressValues.activity / DAILY_GOALS.activity_min);
+        const checksProgress = Math.min(1, progressValues.checks / DAILY_GOALS.glycemic_checks);
+        const quizProgress = Math.min(1, progressValues.quiz / DAILY_GOALS.quiz);
+        return (waterProgress + activityProgress + checksProgress + quizProgress) / 4;
+    }, [progressValues]);
+
+    const handleLogWater = () => {
+        logWater(250); // Log 250ml at a time
+        toast.success('+250ml ' + t.progress_water);
+    };
+
+    const handleLogActivity = () => {
+        logActivity(10); // Log 10 mins at a time
+        toast.success('+10min ' + t.progress_activity);
+    };
+
+    return (
+        <Card>
+            <h2 className="font-display font-semibold text-xl text-text-title mb-3">{t.progress_gardenTitle}</h2>
+            <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-1 flex items-center justify-center">
+                    <NurturePlantAnimation progress={overallProgress} />
+                </div>
+                <div className="col-span-2 space-y-2">
+                    <TaskItem
+                        title={t.progress_water}
+                        progress={`${progressValues.water} / ${DAILY_GOALS.water_ml}ml`}
+                        isCompleted={progressValues.water >= DAILY_GOALS.water_ml}
+                        onAction={handleLogWater}
+                    >
+                        <WaterDropIcon className="w-5 h-5 text-info" />
+                    </TaskItem>
+                    <TaskItem
+                        title={t.progress_activity}
+                        progress={`${progressValues.activity} / ${DAILY_GOALS.activity_min}min`}
+                        isCompleted={progressValues.activity >= DAILY_GOALS.activity_min}
+                        onAction={handleLogActivity}
+                    >
+                        <WalkIcon className="w-5 h-5 text-emerald-main" />
+                    </TaskItem>
+                    <TaskItem
+                        title={t.progress_checks}
+                        progress={`${progressValues.checks} / ${DAILY_GOALS.glycemic_checks}`}
+                        isCompleted={progressValues.checks >= DAILY_GOALS.glycemic_checks}
+                    >
+                        <GlucoseDropIcon className="w-6 h-6 text-turquoise-light" />
+                    </TaskItem>
+                    <TaskItem
+                        title={t.progress_quiz}
+                        progress={progressValues.quiz >= DAILY_GOALS.quiz ? t.progress_completed : t.progress_pending}
+                        isCompleted={progressValues.quiz >= DAILY_GOALS.quiz}
+                    >
+                        <LightbulbIcon className="w-5 h-5 text-warning" />
+                    </TaskItem>
+                </div>
+            </div>
+        </Card>
+    );
 };
 
 export default ProgressCard;

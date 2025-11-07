@@ -8,7 +8,6 @@ export const DEFAULT_PATIENT_SETTINGS: Omit<Patient, 'id' | 'userUid' | 'prenom'
       dejeuner: 9,
       gouter: 10,
       diner: 8,
-      collation: 10, // Default for snacks
     },
     corrections: [
       { max: 1.60, addU: 0 },

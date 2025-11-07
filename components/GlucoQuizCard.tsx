@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Card from './Card';
-import useTranslations from '../hooks/useTranslations';
-import type { QuizQuestion } from '../data/quizData';
-import LightbulbIcon from './icons/LightbulbIcon';
-import { usePatientStore } from '../store/patientStore';
+import Card from './Card.tsx';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import type { QuizQuestion } from '../data/quizData.ts';
+import LightbulbIcon from './icons/LightbulbIcon.tsx';
+import { usePatientStore } from '../store/patientStore.ts';
 
 
 const GlucoQuizCard: React.FC = () => {

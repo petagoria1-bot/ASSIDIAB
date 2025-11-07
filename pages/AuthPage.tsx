@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore.ts';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import DropletLogoIcon from '../components/icons/DropletLogoIcon.tsx';
 import toast from 'react-hot-toast';

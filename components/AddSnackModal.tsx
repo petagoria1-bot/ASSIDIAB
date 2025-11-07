@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import useTranslations from '../hooks/useTranslations';
-import { Repas } from '../types';
-import { usePatientStore } from '../store/patientStore';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import { Repas } from '../types.ts';
+import { usePatientStore } from '../store/patientStore.ts';
 
 interface AddSnackModalProps {
   onClose: () => void;

@@ -1,8 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import useTranslations from '../hooks/useTranslations';
-import GlucoseDropIcon from './icons/GlucoseDropIcon';
-import SnackIcon from './icons/SnackIcon';
+// FIX: Changed import to be a relative path and added file extension for proper module resolution.
+import useTranslations from '../hooks/useTranslations.ts';
+import GlucoseDropIcon from './icons/GlucoseDropIcon.tsx';
+import SnackIcon from './icons/SnackIcon.tsx';
 
 interface AddEventChoiceModalProps {
   onClose: () => void;

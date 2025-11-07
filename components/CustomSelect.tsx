@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import ChevronDownIcon from './icons/ChevronDownIcon';
+import ChevronDownIcon from './icons/ChevronDownIcon.tsx';
 
 interface Option {
   value: string;
@@ -29,36 +28,39 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, value, onChange })
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (newValue: string) => {
-    onChange(newValue);
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
     setIsOpen(false);
   };
+
+  const inputClasses = "w-full p-3 bg-white rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center text-lg";
 
   return (
     <div className="relative" ref={selectRef}>
       <button
+        type="button"
+        className={`${inputClasses} flex items-center justify-center gap-2`}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 bg-white rounded-input border border-black/10 text-text-title focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30"
       >
-        <span className="flex items-center gap-3">
-          {selectedOption?.icon}
-          <span className="text-lg">{selectedOption?.label}</span>
-        </span>
-        <ChevronDownIcon className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        {selectedOption?.icon}
+        <span className="font-semibold">{selectedOption?.label}</span>
+        <ChevronDownIcon className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border z-20 animate-fade-in-fast max-h-40 overflow-y-auto">
-          {options.map(option => (
-            <button
-              key={option.value}
-              onClick={() => handleSelect(option.value)}
-              className="w-full text-start p-3 hover:bg-slate-50 flex items-center gap-3"
-            >
-              {option.icon}
-              {option.label}
-            </button>
-          ))}
+        <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-slate-200 animate-fade-in-fast">
+          <ul className="py-1">
+            {options.map(option => (
+              <li
+                key={option.value}
+                className="px-4 py-2 hover:bg-slate-100 cursor-pointer flex items-center gap-3"
+                onClick={() => handleSelect(option.value)}
+              >
+                {option.icon}
+                <span className="font-semibold text-text-main">{option.label}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
