@@ -30,9 +30,9 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
       .filter(p => `${p.patient.prenom} ${p.patient.nom}`.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [doctorPatients, searchTerm, statusFilter]);
 
-  const handleResponse = (invitationId: string, status: 'accepted' | 'refused') => {
+  const handleResponse = (member: CircleMember, status: 'accepted' | 'refused') => {
       if (!userProfile) return;
-      respondToInvitation(invitationId, status, userProfile.uid);
+      respondToInvitation(member, status);
   }
 
   const openPatientRecord = (patient: PatientProfile) => {
@@ -92,8 +92,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ setCurrentPage }) => 
                   </div>
                   {member.status === 'pending' && (
                       <div className="mt-4 grid grid-cols-2 gap-3">
-                          <button onClick={() => handleResponse(member.id, 'refused')} className="w-full bg-white text-danger font-bold py-2 rounded-button border border-slate-300">Refuser</button>
-                          <button onClick={() => handleResponse(member.id, 'accepted')} className="w-full bg-emerald-main text-white font-bold py-2 rounded-button">Accepter</button>
+                          <button onClick={() => handleResponse(member, 'refused')} className="w-full bg-white text-danger font-bold py-2 rounded-button border border-slate-300">Refuser</button>
+                          <button onClick={() => handleResponse(member, 'accepted')} className="w-full bg-emerald-main text-white font-bold py-2 rounded-button">Accepter</button>
                       </div>
                   )}
                   {member.status === 'accepted' && (

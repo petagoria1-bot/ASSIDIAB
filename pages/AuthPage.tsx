@@ -24,17 +24,12 @@ const AuthPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
+    // We only need to handle the 'email-already-in-use' error to show the modal.
+    // The automatic redirect logic is removed to prevent loops.
     if (error === 'auth/email-already-in-use') {
       setShowEmailExistsModal(true);
-    } else if (error === 'app/user-not-found' && loginAttemptEmail) {
-      toast(t.toast_userNotFound_redirect, { icon: '🧑‍💻' });
-      setView('signup');
-      setEmail(loginAttemptEmail);
-      setPassword('');
-      setConfirmPassword('');
-      clearError();
     }
-  }, [error, loginAttemptEmail, t, clearError]);
+  }, [error]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

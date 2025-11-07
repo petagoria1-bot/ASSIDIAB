@@ -10,7 +10,7 @@ import { initialFoodData } from '../data/foodLibrary.ts';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants.ts';
 import { 
     doc, getDoc, setDoc, updateDoc,
-    collection, addDoc, query, where, getDocs, writeBatch, serverTimestamp, deleteDoc, orderBy
+    collection, addDoc, query, where, getDocs, writeBatch, serverTimestamp, deleteDoc, orderBy, collectionGroup
 } from 'firebase/firestore';
 import { firestore } from '../services/firebase.ts';
 
@@ -62,11 +62,11 @@ interface PatientState {
   
   // Circle of Care
   inviteToCircle: (email: string, role: CircleMemberRole, rights: CircleMemberRights) => Promise<void>;
-  respondToInvitation: (invitationId: string, status: 'accepted' | 'refused', memberUserId: string) => Promise<void>;
-  updateCircleMemberRights: (memberId: string, rights: CircleMemberRights) => Promise<void>;
+  respondToInvitation: (invitation: CircleMember, status: 'accepted' | 'refused') => Promise<void>;
+  updateCircleMemberRights: (member: CircleMember, rights: CircleMemberRights) => Promise<void>;
   removeCircleMember: (member: CircleMember) => Promise<void>;
-  getPendingInvitations: (email: string) => Promise<CircleMember[]>;
-  getInvitationDetails: (inviteId: string) => Promise<{ patientName: string; role: string; email: string; } | null>;
+  getPendingInvitations: (userId: string) => Promise<CircleMember[]>;
+  getInvitationDetails: (patientId: string, memberId: string) => Promise<{ patientName: string; role: string; email: string; } | null>;
 
   // Doctor functions
   fetchDoctorPatients: (doctorId: string) => Promise<void>;
@@ -122,7 +122,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             const patientData = { id: patientSnap.id, ...patientSnap.data() } as PatientProfile;
             
             const [membersSnap, mesuresSnap, repasSnap, injectionsSnap, eventsSnap] = await Promise.all([
-                getDocs(query(collection(firestore, 'circleMembers'), where('patientId', '==', patientId))),
+                getDocs(collection(firestore, 'patients', patientId, 'circleMembers')),
                 getDocs(query(collection(firestore, `patients/${patientId}/mesures`), orderBy('ts', 'desc'))),
                 getDocs(query(collection(firestore, `patients/${patientId}/repas`), orderBy('ts', 'desc'))),
                 getDocs(query(collection(firestore, `patients/${patientId}/injections`), orderBy('ts', 'desc'))),
@@ -159,7 +159,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             };
             batch.set(doc(firestore, 'patients', patientId), newPatientProfile);
 
-            const ownerMemberRef = doc(collection(firestore, 'circleMembers'));
+            const ownerMemberRef = doc(firestore, 'patients', patientId, 'circleMembers', user.uid);
             const ownerMember: CircleMember = {
                 id: ownerMemberRef.id,
                 patientId,
@@ -201,7 +201,6 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         const patient = get().patient;
         if (!patient) return;
 
-        // Check if user exists
         const userQuery = query(collection(firestore, 'users'), where('email', '==', email));
         const userSnap = await getDocs(userQuery);
         if (userSnap.empty) {
@@ -209,7 +208,13 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         }
         const memberUser = userSnap.docs[0].data() as UserProfile;
 
-        const inviteRef = doc(collection(firestore, 'circleMembers'));
+        const inviteRef = doc(firestore, 'patients', patient.id, 'circleMembers', memberUser.uid);
+
+        const existingDoc = await getDoc(inviteRef);
+        if (existingDoc.exists()) {
+            throw new Error("Cette personne est déjà dans votre cercle ou a une invitation en attente.");
+        }
+
         const newInvite: CircleMember = {
             id: inviteRef.id,
             patientId: patient.id,
@@ -223,26 +228,26 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         };
         await setDoc(inviteRef, newInvite);
 
-        set(state => ({ circleMembers: [...state.circleMembers, { ...newInvite, id: inviteRef.id }] }));
+        set(state => ({ circleMembers: [...state.circleMembers, newInvite] }));
     },
 
-    respondToInvitation: async (invitationId, status, memberUserId) => {
-        const memberRef = doc(firestore, 'circleMembers', invitationId);
+    respondToInvitation: async (invitation, status) => {
+        const memberRef = doc(firestore, 'patients', invitation.patientId, 'circleMembers', invitation.memberUserId);
         await updateDoc(memberRef, { status, respondedAt: serverTimestamp() });
-        await get().fetchDoctorPatients(memberUserId); // Refresh doctor's list
+        await get().fetchDoctorPatients(invitation.memberUserId); // Refresh doctor's list
     },
 
-    updateCircleMemberRights: async (memberId, rights) => {
-        const memberRef = doc(firestore, 'circleMembers', memberId);
+    updateCircleMemberRights: async (member, rights) => {
+        const memberRef = doc(firestore, 'patients', member.patientId, 'circleMembers', member.memberUserId);
         await updateDoc(memberRef, { rights });
         set(state => ({
-            circleMembers: state.circleMembers.map(m => m.id === memberId ? { ...m, rights } : m)
+            circleMembers: state.circleMembers.map(m => m.id === member.id ? { ...m, rights } : m)
         }));
         toast.success("Permissions mises à jour.");
     },
     
     removeCircleMember: async (member) => {
-        const memberRef = doc(firestore, 'circleMembers', member.id);
+        const memberRef = doc(firestore, 'patients', member.patientId, 'circleMembers', member.memberUserId);
         await deleteDoc(memberRef);
         set(state => ({
             circleMembers: state.circleMembers.filter(m => m.id !== member.id)
@@ -250,38 +255,44 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         toast.success("Membre retiré du cercle.");
     },
     
-    getPendingInvitations: async (email) => {
-        const q = query(collection(firestore, 'circleMembers'), where('memberEmail', '==', email), where('status', '==', 'pending'));
+    getPendingInvitations: async (userId: string) => {
+        const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', userId), where('status', '==', 'pending'));
         const snap = await getDocs(q);
         return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CircleMember));
     },
 
-    getInvitationDetails: async (inviteId: string) => {
-        const inviteRef = doc(firestore, 'circleMembers', inviteId);
-        const inviteSnap = await getDoc(inviteRef);
-        if (inviteSnap.exists()) {
-            const data = inviteSnap.data() as CircleMember;
-            if (data.status === 'pending') {
-                return {
-                    patientName: data.patientName,
-                    role: data.role,
-                    email: data.memberEmail,
-                };
+    getInvitationDetails: async (patientId: string, memberId: string) => {
+        // This flow is likely broken without a dedicated 'invitations' collection.
+        // For now, it will only work if the user is already logged in.
+        try {
+            const inviteRef = doc(firestore, 'patients', patientId, 'circleMembers', memberId);
+            const inviteSnap = await getDoc(inviteRef);
+            if (inviteSnap.exists()) {
+                const data = inviteSnap.data() as CircleMember;
+                if (data.status === 'pending') {
+                    return {
+                        patientName: data.patientName,
+                        role: data.role,
+                        email: data.memberEmail,
+                    };
+                }
             }
+        } catch (error) {
+            console.error("Error getting invitation details:", error);
         }
         return null;
     },
 
     fetchDoctorPatients: async (doctorId: string) => {
         set({ isLoading: true });
-        const q = query(collection(firestore, 'circleMembers'), where('memberUserId', '==', doctorId));
+        const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', doctorId));
         const membersSnap = await getDocs(q);
         
         const patientDataPromises = membersSnap.docs.map(async (memberDoc) => {
             const member = { id: memberDoc.id, ...memberDoc.data() } as CircleMember;
             const patientSnap = await getDoc(doc(firestore, 'patients', member.patientId));
             if (patientSnap.exists()) {
-                return { member, patient: patientSnap.data() as PatientProfile };
+                return { member, patient: { id: patientSnap.id, ...patientSnap.data() } as PatientProfile };
             }
             return null;
         });
@@ -291,17 +302,18 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     },
 
     loadSpecificPatientData: async (patientId) => {
-        // This is a simplified loader for a doctor viewing a patient's data.
-        // It does not populate the main store to avoid conflicts.
         const patientSnap = await getDoc(doc(firestore, 'patients', patientId));
-        return patientSnap.exists() ? patientSnap.data() as PatientProfile : null;
+        return patientSnap.exists() ? { id: patientSnap.id, ...patientSnap.data() } as PatientProfile : null;
     },
 
     getMemberRightsForPatient: async (patientId, memberId) => {
-        const q = query(collection(firestore, 'circleMembers'), where('patientId', '==', patientId), where('memberUserId', '==', memberId), where('status', '==', 'accepted'));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-            return (snap.docs[0].data() as CircleMember).rights;
+        const memberRef = doc(firestore, 'patients', patientId, 'circleMembers', memberId);
+        const memberSnap = await getDoc(memberRef);
+        if (memberSnap.exists()) {
+            const memberData = memberSnap.data() as CircleMember;
+            if (memberData.status === 'accepted') {
+                return memberData.rights;
+            }
         }
         return null;
     },

@@ -55,8 +55,8 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
   const [editingMember, setEditingMember] = useState<CircleMember | null>(null);
   const [isEditPaiModalOpen, setEditPaiModalOpen] = useState(false);
 
-  const handleSavePermissions = (memberId: string, rights: CircleMemberRights) => {
-    updateCircleMemberRights(memberId, rights);
+  const handleSavePermissions = (member: CircleMember, rights: CircleMemberRights) => {
+    updateCircleMemberRights(member, rights);
     setEditingMember(null);
   };
   

@@ -7,7 +7,7 @@ import ConfirmDeleteModal from './ConfirmDeleteModal.tsx';
 
 interface PermissionsModalProps {
   onClose: () => void;
-  onSave: (memberId: string, rights: CircleMemberRights) => void;
+  onSave: (member: CircleMember, rights: CircleMemberRights) => void;
   onRemove: (member: CircleMember) => void;
   member: CircleMember;
 }
@@ -33,7 +33,7 @@ const PermissionsModal: React.FC<PermissionsModalProps> = ({ onClose, onSave, on
   };
   
   const handleSave = () => {
-    onSave(member.id, rights);
+    onSave(member, rights);
   };
 
   const handleDelete = () => {

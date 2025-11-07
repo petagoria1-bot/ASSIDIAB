@@ -15,9 +15,9 @@ const InvitationResponsePage: React.FC<{ children: React.ReactNode }> = ({ child
 
     useEffect(() => {
         const fetchInvites = async () => {
-            if (userProfile?.email) {
+            if (userProfile?.uid) {
                 setIsLoading(true);
-                const pendingInvites = await getPendingInvitations(userProfile.email);
+                const pendingInvites = await getPendingInvitations(userProfile.uid);
                 setInvitations(pendingInvites);
                 setIsLoading(false);
             } else {
@@ -27,10 +27,10 @@ const InvitationResponsePage: React.FC<{ children: React.ReactNode }> = ({ child
         fetchInvites();
     }, [userProfile, getPendingInvitations]);
 
-    const handleResponse = async (invitationId: string, response: 'accepted' | 'refused') => {
+    const handleResponse = async (invitation: CircleMember, response: 'accepted' | 'refused') => {
         if (!userProfile) return;
-        await respondToInvitation(invitationId, response, userProfile.uid);
-        setInvitations(invites => invites.filter(i => i.id !== invitationId));
+        await respondToInvitation(invitation, response);
+        setInvitations(invites => invites.filter(i => i.id !== invitation.id));
     };
 
     if (isLoading) {
@@ -47,8 +47,8 @@ const InvitationResponsePage: React.FC<{ children: React.ReactNode }> = ({ child
                            dangerouslySetInnerHTML={{ __html: t.invitation_subtitle(invite.patientName, t[`role_${invite.role}` as keyof typeof t] as string).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
                         />
                         <div className="mt-6 grid grid-cols-2 gap-3">
-                            <button onClick={() => handleResponse(invite.id, 'refused')} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50">{t.common_cancel}</button>
-                            <button onClick={() => handleResponse(invite.id, 'accepted')} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark">{t.common_confirm}</button>
+                            <button onClick={() => handleResponse(invite, 'refused')} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50">{t.common_cancel}</button>
+                            <button onClick={() => handleResponse(invite, 'accepted')} className="w-full bg-emerald-main text-white font-bold py-3 rounded-button hover:bg-jade-deep-dark">{t.common_confirm}</button>
                         </div>
                     </Card>
                 ))}

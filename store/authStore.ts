@@ -99,8 +99,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({ firebaseUser: null, userProfile: null, isAuthenticated: false, error: null, status: 'ready' });
         }
       } catch (e: any) {
-        console.error("CRITICAL: Unhandled error in onAuthStateChanged. Logging out.", e);
-        toast.error("Une erreur critique est survenue. Veuillez vous reconnecter.");
+        let errorMessage = "Une erreur critique est survenue. Veuillez vous reconnecter.";
+        if (e.code === 'permission-denied') {
+            console.error("CRITICAL: Firestore permission denied during auth state change. This is likely due to misconfigured security rules or missing indexes.", e);
+            errorMessage = "Erreur de permissions. Vérifiez la configuration Firebase.";
+        } else {
+            console.error("CRITICAL: Unhandled error in onAuthStateChanged. Logging out.", e);
+        }
+        
+        toast.error(errorMessage);
         await signOut(auth);
         usePatientStore.getState().clearPatientData();
         set({
@@ -121,16 +128,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (nom, prenom, email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // Proactively check if the email is already in use
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (signInMethods.length > 0) {
-        const errorCode = 'auth/email-already-in-use';
-        const errorMessage = formatAuthError(errorCode);
-        set({ error: errorCode, isLoading: false });
-        toast.error(errorMessage);
-        return;
-      }
-
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUserProfile: UserProfile = {
           uid: userCredential.user.uid,
@@ -142,6 +139,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await setDoc(doc(firestore, 'users', userCredential.user.uid), newUserProfile);
       // onAuthStateChanged will handle the rest of the flow
     } catch (error: any) {
+      // If user already exists, set an error for the UI to handle (e.g., show modal)
+      if (error.code === 'auth/email-already-in-use') {
+        set({ error: error.code, isLoading: false });
+        return; // Don't toast, let the modal handle it
+      }
+      // Handle other signup errors
       const errorMessage = formatAuthError(error.code);
       set({ error: error.code, isLoading: false });
       toast.error(errorMessage);
@@ -151,16 +154,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (signInMethods.length === 0) {
-        // User does not exist, trigger redirect to signup
-        set({ error: 'app/user-not-found', loginAttemptEmail: email, isLoading: false });
-        return;
-      }
-      // User exists, proceed with login
       await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged handles success. No state change needed here.
     } catch (error: any) {
-      // Any error here is a login failure (e.g., wrong password), not a non-existent user.
+      // 'auth/invalid-credential' is a generic error for both user-not-found and wrong-password.
+      // We will show a generic message and let the user decide the next step.
+      // This avoids the confusing redirect loop.
       const errorMessage = formatAuthError(error.code);
       set({ error: error.code, isLoading: false });
       toast.error(errorMessage);
