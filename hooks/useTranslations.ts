@@ -30,6 +30,7 @@ const frTranslations = {
     toast_passwordsDoNotMatch: "Les mots de passe ne correspondent pas.",
     toast_invalidEmail: "Veuillez entrer une adresse e-mail valide.",
     toast_userNotFound: "Utilisateur non trouvé.",
+    toast_userNotFound_redirect: "Aucun compte trouvé pour cette adresse. Créez-en un maintenant !",
     toast_profileCreated: (name: string) => `Profil pour ${name} créé !`,
     toast_invitationLinkCreated: "Lien d'invitation créé !",
     toast_invitationLinkCopied: "Lien d'invitation copié !",

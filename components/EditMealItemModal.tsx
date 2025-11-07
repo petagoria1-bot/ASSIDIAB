@@ -19,7 +19,6 @@ const EditMealItemModal: React.FC<EditMealItemModalProps> = ({ itemToEdit, onClo
   const handleSave = () => {
     const poids_g = parseFloat(weight.replace(',', '.'));
     if (isNaN(poids_g) || poids_g < 0) {
-      // FIX: Changed `t.toast_invalidQuantity` to `t.toast_invalidWeight` to match existing translation key.
       toast.error(t.toast_invalidWeight);
       return;
     }

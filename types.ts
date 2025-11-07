@@ -1,11 +1,70 @@
-
-
-export type Page = 'dashboard' | 'glucides' | 'journal' | 'rapports' | 'settings' | 'emergency' | 'pai' | 'food' | 'history' | 'inbox' | 'illustrations';
+// types.ts
+export type Page = 'dashboard' | 'glucides' | 'journal' | 'rapports' | 'settings' | 'emergency' | 'pai' | 'food' | 'history' | 'inbox' | 'illustrations' | 'doctor_dashboard' | 'doctor_patient_view';
 
 export type MealTime = 'petit_dej' | 'dejeuner' | 'gouter' | 'diner' | 'collation';
-
 export type InjectionType = 'rapide' | 'lente' | 'correction';
 
+// --- NOUVEAU SYSTÈME DE RÔLES UNIFIÉ ---
+export type UserRole = 'patient' | 'famille' | 'medecin' | 'infirmier' | 'autre' | 'undetermined';
+
+export interface UserProfile {
+    uid: string;
+    email: string | null;
+    nom: string;
+    prenom: string;
+    role: UserRole;
+}
+
+export type User = UserProfile; // Alias for consistency
+
+export interface PatientProfile {
+    id: string; // Same as User UID for simplicity
+    userUid: string;
+    prenom: string;
+    nom: string;
+    naissance: string;
+    cibles: Cibles;
+    ratios: Ratios;
+    corrections: CorrectionRule[];
+    maxBolus: number;
+    correctionDelayHours: number;
+    contacts: EmergencyContact[];
+    notes_pai: string;
+}
+
+export type CircleMemberRole = 'famille' | 'medecin' | 'infirmier' | 'autre' | 'owner';
+export type CircleMemberStatus = 'pending' | 'accepted' | 'refused';
+
+export interface CircleMemberRights {
+    read: boolean;
+    write: boolean;
+    alerts: boolean;
+}
+
+export interface CircleMember {
+    id: string; // Firestore document ID
+    patientId: string; // UID of the patient
+    patientName: string; // Denormalized for doctor dashboard
+    memberUserId: string; // UID of the caregiver/doctor
+    memberEmail: string; // Denormalized for easy lookup & invites
+    role: CircleMemberRole;
+    rights: CircleMemberRights;
+    status: CircleMemberStatus;
+    invitedAt: any; // Firestore Timestamp
+    respondedAt?: any; // Firestore Timestamp
+}
+
+export interface AuditLog {
+    id?: string;
+    userId: string; // Who performed the action
+    patientId: string; // On which patient's circle
+    action: 'invitation_sent' | 'invitation_accepted' | 'invitation_refused' | 'rights_changed' | 'member_removed';
+    details: any;
+    ts: any; // Firestore Timestamp
+}
+
+
+// --- STRUCTURES DE DONNÉES PATIENT ---
 export interface Cibles {
     gly_min: number;
     gly_max: number;
@@ -33,40 +92,7 @@ export interface EmergencyContact {
     tel: string;
 }
 
-export type CaregiverRole = 'owner' | 'parent' | 'health_professional' | 'family' | 'school';
-export type CaregiverStatus = 'awaiting_confirmation' | 'active' | 'declined';
-
-export interface CaregiverPermissions {
-    canViewJournal: boolean;
-    canEditJournal: boolean;
-    canEditPAI: boolean;
-    canManageFamily: boolean;
-}
-
-export interface Caregiver {
-    userUid: string | null; // Null until user confirms
-    email: string;
-    role: CaregiverRole;
-    status: CaregiverStatus;
-    inviteId?: string; // ID of the invitation document in Firestore
-    permissions: CaregiverPermissions;
-}
-
-export interface Patient {
-    id: string;
-    userUid: string; // The owner's UID
-    prenom: string;
-    naissance: string;
-    cibles: Cibles;
-    ratios: Ratios;
-    corrections: CorrectionRule[];
-    maxBolus: number;
-    correctionDelayHours: number;
-    contacts: EmergencyContact[];
-    notes_pai: string;
-    caregivers: Caregiver[];
-    caregiversUids?: string[]; // For querying
-}
+export type Patient = PatientProfile;
 
 export interface Mesure {
     id: string;
@@ -75,13 +101,6 @@ export interface Mesure {
     gly: number;
     cetone?: number;
     source: 'doigt' | 'capteur';
-}
-
-export interface MealItem {
-    listId: string;
-    food: Food;
-    poids_g: number;
-    carbs_g: number;
 }
 
 export interface RepasItem {
@@ -132,6 +151,12 @@ export interface FavoriteMeal {
     items: MealItem[];
     total_carbs_g: number;
 }
+export interface MealItem {
+    listId: string;
+    food: Food;
+    poids_g: number;
+    carbs_g: number;
+}
 
 export type EventType = 'rdv' | 'note' | 'activity' | 'other';
 
@@ -143,27 +168,6 @@ export interface Event {
     title: string;
     description?: string;
     status: 'pending' | 'completed';
-}
-
-export interface DoseCalculationInput {
-    gly_pre: number;
-    moment: MealTime;
-    carbs_g: number;
-    patient: Patient;
-    lastCorrection: Injection | null;
-}
-  
-export interface DoseCalculationOutput {
-    doseRepas_U: number;
-    addCorr_U: number;
-    doseTotale: number;
-    warning?: string;
-}
-
-export interface User {
-    id?: number;
-    uid: string;
-    email: string | null;
 }
 
 export interface DailyProgress {
@@ -189,4 +193,19 @@ export interface Message {
     text: string;
     ts: string;
     read: boolean;
+}
+
+export interface DoseCalculationInput {
+    gly_pre: number;
+    moment: MealTime;
+    carbs_g: number;
+    patient: Patient;
+    lastCorrection: Injection | null;
+}
+  
+export interface DoseCalculationOutput {
+    doseRepas_U: number;
+    addCorr_U: number;
+    doseTotale: number;
+    warning?: string;
 }

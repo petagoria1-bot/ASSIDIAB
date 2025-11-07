@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Patient, Cibles, Ratios, CorrectionRule } from '../types.ts';
@@ -8,7 +7,7 @@ import TrashIcon from './icons/TrashIcon.tsx';
 
 interface EditPaiModalProps {
   onClose: () => void;
-  onSave: (updatedPatient: Patient) => void;
+  onSave: (updatedPatient: Partial<Patient>) => void;
   patient: Patient;
 }
 
@@ -22,8 +21,7 @@ const EditPaiModal: React.FC<EditPaiModalProps> = ({ onClose, onSave, patient })
     const [notesPai, setNotesPai] = useState(patient.notes_pai);
 
     const handleSave = () => {
-        const updatedPatient = {
-            ...patient,
+        const updatedPatientData: Partial<Patient> = {
             cibles,
             ratios,
             corrections,
@@ -31,7 +29,7 @@ const EditPaiModal: React.FC<EditPaiModalProps> = ({ onClose, onSave, patient })
             correctionDelayHours,
             notes_pai: notesPai,
         };
-        onSave(updatedPatient);
+        onSave(updatedPatientData);
     };
 
     const handleCorrectionChange = (index: number, field: keyof CorrectionRule, value: number) => {

@@ -1,7 +1,7 @@
-import { Patient } from './types.ts';
+import { PatientProfile } from './types.ts';
 
 // This is now a template of settings, not a full patient object.
-export const DEFAULT_PATIENT_SETTINGS: Omit<Patient, 'id' | 'userUid' | 'prenom' | 'naissance'> = {
+export const DEFAULT_PATIENT_SETTINGS: Omit<PatientProfile, 'id' | 'userUid' | 'prenom' | 'nom' | 'naissance'> = {
     cibles: { gly_min: 0.80, gly_max: 1.60, unit: "gL" },
     ratios: {
       petit_dej: 7,
@@ -19,5 +19,4 @@ export const DEFAULT_PATIENT_SETTINGS: Omit<Patient, 'id' | 'userUid' | 'prenom'
     correctionDelayHours: 3,
     contacts: [],
     notes_pai: "",
-    caregivers: [],
 };

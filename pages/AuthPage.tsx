@@ -1,28 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore.ts';
-// FIX: Changed import to be a relative path and added file extension for proper module resolution.
 import useTranslations from '../hooks/useTranslations.ts';
 import DropletLogoIcon from '../components/icons/DropletLogoIcon.tsx';
 import toast from 'react-hot-toast';
 import PaperPlaneIcon from '../components/icons/PaperPlaneIcon.tsx';
 import EmailExistsModal from '../components/EmailExistsModal.tsx';
+import EyeIcon from '../components/icons/EyeIcon.tsx';
+import EyeOffIcon from '../components/icons/EyeOffIcon.tsx';
 
 const AuthPage: React.FC = () => {
-  const { isLoading, login, signup, resetPassword, error, clearError } = useAuthStore();
+  const { isLoading, login, signup, resetPassword, error, clearError, loginAttemptEmail } = useAuthStore();
   const t = useTranslations();
   
   const [view, setView] = useState<'login' | 'signup' | 'reset' | 'reset-success'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [nom, setNom] = useState('');
+  const [prenom, setPrenom] = useState('');
   const [showEmailExistsModal, setShowEmailExistsModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (error === 'auth/email-already-in-use') {
       setShowEmailExistsModal(true);
+    } else if (error === 'app/user-not-found' && loginAttemptEmail) {
+      toast(t.toast_userNotFound_redirect, { icon: '🧑‍💻' });
+      setView('signup');
+      setEmail(loginAttemptEmail);
+      setPassword('');
+      setConfirmPassword('');
+      clearError();
     }
-  }, [error]);
+  }, [error, loginAttemptEmail, t, clearError]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +47,7 @@ const AuthPage: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword || !nom || !prenom) {
       toast.error(t.toast_fillAllFields);
       return;
     }
@@ -43,7 +55,7 @@ const AuthPage: React.FC = () => {
       toast.error(t.toast_passwordsDoNotMatch);
       return;
     }
-    await signup(email, password);
+    await signup(nom, prenom, email, password);
   };
   
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -63,7 +75,6 @@ const AuthPage: React.FC = () => {
   const switchView = (targetView: 'login' | 'signup') => {
     if (view !== targetView) {
         setView(targetView);
-        // Do not clear email when switching, it's a common UX pattern
         setPassword('');
         setConfirmPassword('');
     }
@@ -77,15 +88,11 @@ const AuthPage: React.FC = () => {
   const handleGoToLoginFromModal = () => {
       handleCloseEmailExistsModal();
       setView('login');
-      setPassword('');
-      setConfirmPassword('');
   };
 
   const handleGoToResetFromModal = () => {
       handleCloseEmailExistsModal();
       setView('reset');
-      setPassword('');
-      setConfirmPassword('');
   };
   
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150";
@@ -108,31 +115,50 @@ const AuthPage: React.FC = () => {
       </div>
 
       <form onSubmit={view === 'login' ? handleLogin : handleSignup} className="space-y-4">
-        <input
-          type="email"
-          placeholder={t.auth_emailPlaceholder}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={inputClasses}
-          required
-        />
-        <input
-          type="password"
-          placeholder={t.auth_passwordPlaceholder}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={inputClasses}
-          required
-        />
         {view === 'signup' && (
-          <input
-            type="password"
-            placeholder={t.auth_confirmPasswordPlaceholder}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className={inputClasses}
-            required
+          <div className="grid grid-cols-2 gap-4">
+            <input type="text" placeholder="Nom" value={nom} onChange={(e) => setNom(e.target.value)} className={inputClasses} required />
+            <input type="text" placeholder="Prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)} className={inputClasses} required />
+          </div>
+        )}
+        <input type="email" placeholder={t.auth_emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} required />
+        <div className="relative">
+          <input 
+            type={showPassword ? "text" : "password"} 
+            placeholder={t.auth_passwordPlaceholder} 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            className={`${inputClasses} pr-10`} 
+            required 
           />
+          <button 
+            type="button" 
+            onClick={() => setShowPassword(!showPassword)} 
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-icon-inactive hover:text-text-title"
+            aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+          >
+            {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+          </button>
+        </div>
+        {view === 'signup' && (
+          <div className="relative">
+            <input 
+              type={showConfirmPassword ? "text" : "password"} 
+              placeholder={t.auth_confirmPasswordPlaceholder} 
+              value={confirmPassword} 
+              onChange={(e) => setConfirmPassword(e.target.value)} 
+              className={`${inputClasses} pr-10`} 
+              required 
+            />
+            <button 
+              type="button" 
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-icon-inactive hover:text-text-title"
+              aria-label={showConfirmPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+            >
+              {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+            </button>
+          </div>
         )}
         
         {view === 'login' && (
@@ -144,6 +170,7 @@ const AuthPage: React.FC = () => {
         )}
 
         <button
+          id="login-form-submit-button"
           type="submit"
           disabled={isLoading}
           className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
@@ -158,29 +185,14 @@ const AuthPage: React.FC = () => {
     <div key="reset" className="animate-fade-in-fast">
         <h2 className="text-xl font-display font-bold text-center text-text-title mb-2">{t.auth_resetTitle}</h2>
         <p className="text-sm text-center text-text-muted mb-6">{t.auth_resetSubtitle}</p>
-
         <form onSubmit={handlePasswordReset} className="space-y-4">
-            <input
-              type="email"
-              placeholder={t.auth_emailPlaceholder}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClasses}
-              required
-              autoFocus
-            />
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60"
-            >
+            <input type="email" placeholder={t.auth_emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} required autoFocus />
+            <button type="submit" disabled={isSubmitting} className="w-full btn-interactive group flex items-center justify-center text-lg font-bold py-3 px-6 rounded-button bg-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60">
               {isSubmitting ? t.common_loading : t.auth_resetButton}
             </button>
         </form>
         <div className="text-center mt-4">
-            <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">
-                {t.auth_backToLogin}
-            </button>
+            <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">{t.auth_backToLogin}</button>
         </div>
     </div>
   );
@@ -191,16 +203,10 @@ const AuthPage: React.FC = () => {
             <PaperPlaneIcon className="w-10 h-10 text-emerald-main"/>
         </div>
         <h2 className="text-xl font-display font-bold text-text-title mb-2">{t.auth_resetSuccessTitle}</h2>
-        <p 
-            className="text-sm text-text-muted mb-6"
-            dangerouslySetInnerHTML={{ __html: t.auth_resetSuccessSubtitle(email) }}
-        />
-        <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">
-            {t.auth_backToLogin}
-        </button>
+        <p className="text-sm text-text-muted mb-6" dangerouslySetInnerHTML={{ __html: t.auth_resetSuccessSubtitle(email) }} />
+        <button type="button" onClick={() => setView('login')} className="text-sm font-semibold text-emerald-main hover:underline">{t.auth_backToLogin}</button>
     </div>
   );
-
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-main-gradient font-sans">

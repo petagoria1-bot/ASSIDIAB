@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import useTranslations from '../hooks/useTranslations.ts';
-import { Caregiver } from '../types.ts';
+// FIX: Changed non-existent 'Caregiver' type to 'CircleMember' to match the application's types.
+import { CircleMember } from '../types.ts';
 import { usePatientStore } from '../store/patientStore.ts';
 import UsersIcon from './icons/UsersIcon.tsx';
 import CheckCircleIcon from './icons/CheckCircleIcon.tsx';
@@ -10,19 +11,21 @@ import ConfirmDeleteModal from './ConfirmDeleteModal.tsx';
 
 interface ViewInvitationModalProps {
   onClose: () => void;
-  caregiver: Caregiver;
+  // FIX: Renamed prop from 'caregiver' to 'member' for consistency with 'CircleMember' type.
+  member: CircleMember;
 }
 
-const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, caregiver }) => {
+const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, member }) => {
   const t = useTranslations();
-  const { getInvitationLinkForPendingCaregiver, removeCaregiver } = usePatientStore();
+  // FIX: Use 'removeCircleMember' from the store, as 'removeCaregiver' does not exist.
+  const { removeCircleMember } = usePatientStore();
   
   const [copied, setCopied] = useState(false);
   const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const canShare = typeof navigator.share === 'function';
 
-  // The link is now fetched synchronously from the patient state
-  const invitationLink = getInvitationLinkForPendingCaregiver(caregiver.email);
+  // FIX: Replaced non-existent store function 'getInvitationLinkForPendingCaregiver' with manual link construction.
+  const invitationLink = `${window.location.origin}/invitation/${member.id}`;
 
   const handleCopy = () => {
     if (!invitationLink) return;
@@ -48,7 +51,8 @@ const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, care
 
   const handleDelete = async () => {
     try {
-        await removeCaregiver(caregiver);
+        // FIX: Call the correct store function 'removeCircleMember'.
+        await removeCircleMember(member);
         toast.success(t.toast_invitationDeleted);
         onClose();
     } catch (error) {
@@ -56,11 +60,6 @@ const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, care
     }
     setConfirmDeleteOpen(false);
   };
-  
-  const getRoleLabel = (role: string) => {
-    const key = `role_${role}` as keyof typeof t;
-    return t[key] || role;
-  }
 
   const modalContent = (
     <>
@@ -70,7 +69,8 @@ const ViewInvitationModal: React.FC<ViewInvitationModalProps> = ({ onClose, care
             <div className="w-16 h-16 flex items-center justify-center bg-amber-100 rounded-full mb-3">
               <UsersIcon className="w-8 h-8 text-amber-600" />
             </div>
-            <h3 className="text-xl font-display font-semibold text-text-title">{t.viewInvite_pendingTitle(caregiver.email)}</h3>
+            {/* FIX: Use 'member.memberEmail' instead of non-existent 'caregiver.email'. */}
+            <h3 className="text-xl font-display font-semibold text-text-title">{t.viewInvite_pendingTitle(member.memberEmail)}</h3>
             <p className="text-text-muted text-sm mt-2">{t.viewInvite_pendingDesc}</p>
           </div>
 
