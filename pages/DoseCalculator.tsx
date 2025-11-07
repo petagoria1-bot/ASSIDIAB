@@ -129,7 +129,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
     { value: 'diner', label: t.mealTimes.diner, icon: <DinnerIcon className="w-6 h-6" /> },
   ];
   
-  const inputClasses = "w-full p-3 bg-white rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-emerald-main focus:ring-2 focus:ring-emerald-main/30 transition-all duration-150 text-center text-lg";
+  const inputClasses = "w-full p-3 bg-white rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150 text-center text-lg";
 
 
   return (
@@ -138,7 +138,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
         <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.calculator_title}</h1>
       </header>
       
-      <Card>
+      <Card className="bg-mint/20">
         <h2 className="text-lg font-semibold text-text-title mb-3">{t.calculator_glycemiaAndTimeTitle}</h2>
         <div className="grid grid-cols-2 gap-4">
             <div>
@@ -167,7 +167,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
       <MealBuilderCard onTotalCarbsChange={setTotalCarbs} onMealItemsChange={setMealItems} />
       
       {calculation === null && (
-        <button onClick={handleCalculate} className="w-full text-jade-deep font-bold text-lg py-4 rounded-button mt-4 bg-gradient-to-b from-mint-soft to-[#c3f6e2] transition-all duration-300 disabled:opacity-50 shadow-md hover:shadow-lg flex items-center justify-center gap-2 border border-black/5">
+        <button onClick={handleCalculate} className="w-full text-white font-bold text-lg py-4 rounded-button mt-4 bg-jade transition-all duration-300 disabled:opacity-50 shadow-button-jade hover:shadow-button-jade-hover flex items-center justify-center gap-2 transform hover:-translate-y-1">
             <CalculatorIcon className="w-8 h-8"/>
             <span>{t.dashboard_action_calculate}</span>
         </button>
@@ -180,15 +180,15 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
               <CheckmarkPopAnimation className="w-20 h-20" />
             </div>
           )}
-          <Card className="animate-fade-in-lift">
+          <Card className="animate-fade-in-lift bg-mint/20">
             <h2 className="text-lg font-semibold text-text-title mb-3 text-center">{t.calculator_resultTitle}</h2>
-            <div className="text-center bg-mint-soft/50 p-4 rounded-xl space-y-2">
+            <div className="text-center bg-white/50 p-4 rounded-xl space-y-2">
               <p className="font-semibold text-text-main">{t.calculator_resultMealDose(calculation.doseRepas_U, totalCarbs)}</p>
               {calculation.addCorr_U > 0 && (
                   <p className="font-semibold text-text-main">{t.calculator_resultCorrectionDose(calculation.addCorr_U, glyPre)}</p>
               )}
               <div className="flex items-center justify-center gap-2">
-                <p className="font-display font-bold text-5xl text-emerald-main py-2">{calculation.doseTotale} <span className="text-3xl text-text-muted">U</span></p>
+                <p className="font-display font-bold text-5xl text-jade py-2 animate-success-bounce">{calculation.doseTotale} <span className="text-3xl text-text-muted">U</span></p>
                 <button onClick={() => setExplanationOpen(true)} aria-label={t.doseExplanation_title}>
                   <InfoIcon />
                 </button>
@@ -197,7 +197,7 @@ const DoseCalculator: React.FC<DoseCalculatorProps> = ({ setCurrentPage }) => {
                 <p className="text-xs text-amber-700 font-semibold bg-amber-100 p-2 rounded-md">{calculation.warning}</p>
               )}
             </div>
-            <button onClick={handleSaveBolus} className="w-full mt-4 bg-emerald-main text-white text-sm font-bold py-3 rounded-button hover:bg-jade-deep-dark transition-colors">
+            <button onClick={handleSaveBolus} className="w-full mt-4 bg-jade text-white text-sm font-bold py-3 rounded-button hover:bg-opacity-90 transition-colors">
               {t.calculator_saveButton}
             </button>
           </Card>

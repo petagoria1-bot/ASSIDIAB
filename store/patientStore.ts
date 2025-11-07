@@ -4,15 +4,17 @@ import toast from 'react-hot-toast';
 import { db } from '../services/db.ts';
 import { 
     PatientProfile, UserProfile, Mesure, Repas, Injection, Food, FullBolusPayload, 
-    Event, DailyProgress, Message, CircleMember, CircleMemberRole, CircleMemberRights, AuditLog
+    Event, EventType, DailyProgress, Message, CircleMember, CircleMemberRole, CircleMemberRights, AuditLog
 } from '../types.ts';
 import { initialFoodData } from '../data/foodLibrary.ts';
 import { DEFAULT_PATIENT_SETTINGS } from '../constants.ts';
 import { 
     doc, getDoc, setDoc, updateDoc,
-    collection, addDoc, query, where, getDocs, writeBatch, serverTimestamp, deleteDoc, orderBy, collectionGroup
+    collection, addDoc, query, where, getDocs, writeBatch, serverTimestamp, deleteDoc, orderBy, collectionGroup, limit
 } from 'firebase/firestore';
-import { firestore } from '../services/firebase.ts';
+import { firestore, functions, storage } from '../services/firebase.ts';
+import { httpsCallable } from 'firebase/functions';
+import { ref, getDownloadURL } from "firebase/storage";
 
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
@@ -37,6 +39,9 @@ interface PatientState {
   isLoading: boolean;
   error: string | null;
   loadStatus: LoadStatus;
+
+  // For Patient Reports
+  reportData: { summary: any; entries: (Mesure | Repas | Injection)[] };
 
   // For Doctor Dashboard
   doctorPatients: DoctorPatientData[];
@@ -73,6 +78,9 @@ interface PatientState {
   loadSpecificPatientData: (patientId: string) => Promise<PatientProfile | null>;
   getMemberRightsForPatient: (patientId: string, memberId: string) => Promise<CircleMemberRights | null>;
 
+  // Reports
+  loadReportDataForDay: (dayId: string) => Promise<void>;
+  exportPatientPdf: (range: { from: string, to: string }) => Promise<void>;
 
   // Progress, Messages, etc.
   logWater: (amount_ml: number) => Promise<void>;
@@ -82,6 +90,13 @@ interface PatientState {
 
   clearPatientData: () => void;
 }
+
+const createEntry = httpsCallable(functions, 'createEntry');
+// Assumes a backend function that can atomically handle the full bolus logic
+const createFullBolus = httpsCallable(functions, 'createFullBolus');
+const dailySummary = httpsCallable(functions, 'dailySummary');
+const exportPdf = httpsCallable(functions, 'exportPdf');
+
 
 export const usePatientStore = create<PatientState>((set, get) => ({
     patient: null,
@@ -98,6 +113,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     error: null,
     loadStatus: 'idle',
     doctorPatients: [],
+    reportData: { summary: null, entries: [] },
     
     clearPatientData: () => set({
         patient: null, circleMembers: [], mesures: [], repas: [], injections: [], events: [],
@@ -121,21 +137,71 @@ export const usePatientStore = create<PatientState>((set, get) => ({
 
             const patientData = { id: patientSnap.id, ...patientSnap.data() } as PatientProfile;
             
-            const [membersSnap, mesuresSnap, repasSnap, injectionsSnap, eventsSnap] = await Promise.all([
-                getDocs(collection(firestore, 'patients', patientId, 'circleMembers')),
-                getDocs(query(collection(firestore, `patients/${patientId}/mesures`), orderBy('ts', 'desc'))),
-                getDocs(query(collection(firestore, `patients/${patientId}/repas`), orderBy('ts', 'desc'))),
-                getDocs(query(collection(firestore, `patients/${patientId}/injections`), orderBy('ts', 'desc'))),
-                getDocs(query(collection(firestore, `patients/${patientId}/events`), orderBy('ts', 'desc'))),
-            ]);
-
+            const membersSnap = await getDocs(collection(firestore, 'patients', patientId, 'circleMembers'));
             const circleMembers = membersSnap.docs.map(d => ({ id: d.id, ...d.data() } as CircleMember));
-            const mesures = mesuresSnap.docs.map(d => ({ id: d.id, ...d.data() } as Mesure));
-            const repas = repasSnap.docs.map(d => ({ id: d.id, ...d.data() } as Repas));
-            const injections = injectionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Injection));
-            const events = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Event));
+
+            const entriesQuery = query(collection(firestore, 'entries'), where('uid', '==', patientId), orderBy('ts', 'desc'), limit(50));
+            const entriesSnap = await getDocs(entriesQuery);
+
+            const newMesures: Mesure[] = [];
+            const newRepas: Repas[] = [];
+            const newInjections: Injection[] = [];
+            const newEvents: Event[] = [];
+
+            entriesSnap.forEach(docSnap => {
+                const entry = { id: docSnap.id, ...docSnap.data() };
+                const { type, ts, value, meta, uid } = entry;
+                
+                switch(type) {
+                    case 'glucose':
+                        newMesures.push({
+                            id: docSnap.id,
+                            patient_id: uid,
+                            ts,
+                            gly: value,
+                            cetone: meta?.cetone,
+                            source: meta?.source || 'doigt',
+                        });
+                        break;
+                    case 'meal':
+                        newRepas.push({
+                            id: docSnap.id,
+                            patient_id: uid,
+                            ts,
+                            moment: meta?.moment,
+                            items: meta?.items || [],
+                            total_carbs_g: value,
+                            note: meta?.note,
+                        });
+                        break;
+                    case 'bolus':
+                        newInjections.push({
+                            id: docSnap.id,
+                            patient_id: uid,
+                            ts,
+                            type: meta?.subType,
+                            dose_U: value,
+                            calc_details: meta?.calc_details,
+                            lien_repas_id: meta?.lien_repas_id,
+                            lien_mesure_id: meta?.lien_mesure_id,
+                        });
+                        break;
+                    case 'note':
+                    case 'activity':
+                        newEvents.push({
+                            id: docSnap.id,
+                            patient_id: uid,
+                            ts,
+                            type: meta?.originalType || type, // Use original type if available
+                            title: value,
+                            description: meta?.description,
+                            status: meta?.status || 'pending',
+                        });
+                        break;
+                }
+            });
             
-            set({ patient: patientData, circleMembers, mesures, repas, injections, events, isLoading: false, loadStatus: 'success' });
+            set({ patient: patientData, circleMembers, mesures: newMesures, repas: newRepas, injections: newInjections, events: newEvents, isLoading: false, loadStatus: 'success' });
 
         } catch (e: any) {
             console.error("Error loading patient data:", e);
@@ -155,7 +221,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
                 prenom: user.prenom,
                 nom: user.nom,
                 naissance,
-                ...DEFAULT_PATIENT_SETTINGS
+                ...DEFAULT_PATIENT_SETTINGS,
+                createdAt: serverTimestamp(),
             };
             batch.set(doc(firestore, 'patients', patientId), newPatientProfile);
 
@@ -318,70 +385,175 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         return null;
     },
 
-
-    // --- Other functions (unchanged for brevity, but would need updates for new patientId logic) ---
     addMesure: async (mesureData, ts) => {
         const patient = get().patient;
         if (!patient) return;
-        const newMesure: Omit<Mesure, 'id'> = { ...mesureData, patient_id: patient.id, ts };
-        const docRef = await addDoc(collection(firestore, `patients/${patient.id}/mesures`), newMesure);
-        set(state => ({ mesures: [{...newMesure, id: docRef.id}, ...state.mesures] }));
+        
+        const payload = {
+            type: 'glucose',
+            ts,
+            value: mesureData.gly,
+            unit: patient.cibles.unit,
+            meta: {
+                cetone: mesureData.cetone,
+                source: mesureData.source,
+            },
+        };
+
+        const result: any = await createEntry(payload);
+        const newMesure: Mesure = { ...mesureData, patient_id: patient.id, ts, id: result.data.id };
+        set(state => ({ mesures: [newMesure, ...state.mesures].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
     },
+
     addRepas: async (repasData, ts) => {
         const patient = get().patient;
         if (!patient) return;
-        const newRepas: Omit<Repas, 'id'> = { ...repasData, patient_id: patient.id, ts };
-        const docRef = await addDoc(collection(firestore, `patients/${patient.id}/repas`), newRepas);
-        set(state => ({ repas: [{...newRepas, id: docRef.id}, ...state.repas] }));
+
+        const payload = {
+            type: 'meal',
+            ts,
+            value: repasData.total_carbs_g,
+            unit: 'g',
+            meta: {
+                moment: repasData.moment,
+                items: repasData.items,
+                note: repasData.note,
+            },
+        };
+        const result: any = await createEntry(payload);
+        const newRepas: Repas = { ...repasData, patient_id: patient.id, ts, id: result.data.id };
+        set(state => ({ repas: [newRepas, ...state.repas].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
     },
+
     addInjection: async (injectionData, ts) => {
         const patient = get().patient;
         if (!patient) return;
-        const newInjection: Omit<Injection, 'id'> = { ...injectionData, patient_id: patient.id, ts };
-        const docRef = await addDoc(collection(firestore, `patients/${patient.id}/injections`), newInjection);
-        set(state => ({ injections: [{...newInjection, id: docRef.id}, ...state.injections] }));
+
+        const payload = {
+            type: 'bolus',
+            ts,
+            value: injectionData.dose_U,
+            unit: 'U',
+            meta: {
+                subType: injectionData.type,
+                calc_details: injectionData.calc_details,
+                lien_repas_id: injectionData.lien_repas_id,
+                lien_mesure_id: injectionData.lien_mesure_id,
+            },
+        };
+        const result: any = await createEntry(payload);
+        const newInjection: Injection = { ...injectionData, patient_id: patient.id, ts, id: result.data.id };
+        set(state => ({ injections: [newInjection, ...state.injections].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()) }));
     },
+
     addFullBolus: async (payload, ts) => {
-        const patient = get().patient;
-        if (!patient) return;
-        const batch = writeBatch(firestore);
-        const mesureRef = doc(collection(firestore, `patients/${patient.id}/mesures`));
-        const repasRef = doc(collection(firestore, `patients/${patient.id}/repas`));
-        const injectionRef = doc(collection(firestore, `patients/${patient.id}/injections`));
-        batch.set(mesureRef, { ...payload.mesure, patient_id: patient.id, ts });
-        batch.set(repasRef, { ...payload.repas, patient_id: patient.id, ts });
-        batch.set(injectionRef, { ...payload.injection, patient_id: patient.id, ts, lien_mesure_id: mesureRef.id, lien_repas_id: repasRef.id });
-        await batch.commit();
-        await get().loadPatientData(patient as unknown as UserProfile);
+        await createFullBolus({ ...payload, ts });
+        // After an atomic operation, reload data to ensure consistency
+        const user = get().patient as unknown as UserProfile;
+        if(user) await get().loadPatientData(user);
     },
+
     getLastCorrection: async () => {
         const patient = get().patient;
         if (!patient) return null;
-        const q = query(collection(firestore, `patients/${patient.id}/injections`), where('type', '==', 'correction'), orderBy('ts', 'desc'), where('ts', '<', new Date().toISOString()));
+        const q = query(
+            collection(firestore, 'entries'), 
+            where('uid', '==', patient.id),
+            where('type', '==', 'bolus'),
+            where('meta.subType', '==', 'correction'),
+            orderBy('ts', 'desc'),
+            limit(1)
+        );
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-            return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Injection;
+            const doc = querySnapshot.docs[0];
+            const data = doc.data();
+            return {
+                id: doc.id,
+                patient_id: data.uid,
+                ts: data.ts,
+                type: data.meta.subType,
+                dose_U: data.value,
+                calc_details: data.meta.calc_details,
+                lien_mesure_id: data.meta.lien_mesure_id,
+                lien_repas_id: data.meta.lien_repas_id,
+            } as Injection;
         }
         return null;
     },
+
     addEvent: async (eventData) => {
         const patient = get().patient;
         if (!patient) return;
-        const newEvent: Omit<Event, 'id'> = { ...eventData, patient_id: patient.id, status: 'pending' };
-        const docRef = await addDoc(collection(firestore, `patients/${patient.id}/events`), newEvent);
-        set(state => ({ events: [{...newEvent, id: docRef.id}, ...state.events].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())}));
+        
+        let entryType: 'note' | 'activity' = 'note';
+        if (eventData.type === 'activity') entryType = 'activity';
+
+        const payload = {
+            type: entryType,
+            ts: eventData.ts,
+            value: eventData.title,
+            meta: {
+                description: eventData.description,
+                status: 'pending',
+                originalType: eventData.type,
+            },
+        };
+        const result: any = await createEntry(payload);
+        const newEvent: Event = { ...eventData, patient_id: patient.id, status: 'pending', id: result.data.id };
+        set(state => ({ events: [newEvent, ...state.events].sort((a,b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())}));
     },
+
     updateEventStatus: async (eventId, status) => {
         const patient = get().patient;
         if (!patient) return;
     
-        const eventRef = doc(firestore, `patients/${patient.id}/events`, eventId);
-        await updateDoc(eventRef, { status });
+        const eventRef = doc(firestore, 'entries', eventId);
+        await updateDoc(eventRef, { 'meta.status': status });
     
         set(state => ({
             events: state.events.map(e => e.id === eventId ? { ...e, status } : e)
         }));
     },
+
+    loadReportDataForDay: async (dayId) => {
+        const patient = get().patient;
+        if (!patient) return;
+        set(state => ({ reportData: { ...state.reportData, summary: null, entries: [] }, isLoading: true }));
+        
+        const summaryResult: any = await dailySummary({ dayId });
+        
+        // This is inefficient but necessary with the subcollection model.
+        // A better backend would provide an endpoint for this.
+        const dayEntriesRef = collection(firestore, 'entries');
+        const q = query(dayEntriesRef, where('uid', '==', patient.id), where('dayId', '==', dayId), orderBy('ts', 'asc'));
+        const entriesSnap = await getDocs(q);
+        
+        const entries: (Mesure | Repas | Injection)[] = [];
+        entriesSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.type === 'glucose') entries.push({ id: doc.id, ...data, type: 'mesure' } as unknown as Mesure);
+            if (data.type === 'meal') entries.push({ id: doc.id, ...data, type: 'repas' } as unknown as Repas);
+            if (data.type === 'bolus') entries.push({ id: doc.id, ...data, type: 'injection' } as unknown as Injection);
+        });
+
+        set({ reportData: { summary: summaryResult.data, entries }, isLoading: false });
+    },
+
+    exportPatientPdf: async (range) => {
+        const patient = get().patient;
+        if (!patient) return;
+        try {
+            const result: any = await exportPdf({ uid: patient.id, ...range });
+            const url = await getDownloadURL(ref(storage, result.data.path));
+            window.open(url, '_blank');
+            toast.success("Rapport PDF généré !");
+        } catch (e: any) {
+            console.error(e);
+            toast.error("Erreur lors de la génération du PDF.");
+        }
+    },
+
     addOrUpdateFood: async (food) => {
         await db.foodLibrary.put(food);
         const foodLibrary = await db.foodLibrary.toArray();

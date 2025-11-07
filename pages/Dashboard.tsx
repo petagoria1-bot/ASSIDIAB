@@ -61,11 +61,11 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
     return (
         <div className={`p-3 rounded-lg flex items-center justify-between transition-all duration-300 ${event.status === 'completed' ? 'opacity-60 bg-slate-50' : 'bg-white/50'}`}>
             <div className="flex items-center gap-3">
-                 <button onClick={handleStatusChange} className="focus:outline-none focus:ring-2 focus:ring-emerald-main/50 rounded-full" aria-label={event.status === 'pending' ? t.dashboard_markCompleted : t.dashboard_markPending}>
+                 <button onClick={handleStatusChange} className="focus:outline-none focus:ring-2 focus:ring-jade/50 rounded-full" aria-label={event.status === 'pending' ? t.dashboard_markCompleted : t.dashboard_markPending}>
                     {event.status === 'pending' ? (
-                        <CircleIcon className="w-7 h-7 text-slate-400 hover:text-emerald-main transition-colors" />
+                        <CircleIcon className="w-7 h-7 text-slate-400 hover:text-jade transition-colors" />
                     ) : (
-                        <CheckCircleIcon className="w-7 h-7 text-emerald-main" />
+                        <CheckCircleIcon className="w-7 h-7 text-jade" />
                     )}
                 </button>
                 <div>
@@ -182,7 +182,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <InboxIcon className={`w-12 h-12 transition-colors ${hasUnread ? 'text-emerald-main' : 'text-slate-400'}`} />
+              <InboxIcon className={`w-12 h-12 transition-colors ${hasUnread ? 'text-jade' : 'text-slate-400'}`} />
               <div>
                 <h2 className="font-display font-semibold text-xl text-text-title">{t.dashboard_inbox_title}</h2>
                 <p className="text-sm text-text-muted">{message}</p>
@@ -205,37 +205,34 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
 
       <div className="px-4 space-y-5">
         <Card className="animate-card-open">
-          <div className="flex justify-between items-start">
-            <div>
+          <div className="flex justify-center items-center flex-col">
               <p className="text-sm font-semibold text-text-muted">{t.dashboard_currentGlucose}</p>
-              {lastMeasure ? (
-                <p className="text-4xl font-display font-bold text-emerald-main">{lastMeasure.gly.toFixed(2)} <span className="text-xl text-text-muted">g/L</span></p>
-              ) : (
-                <p className="text-lg font-semibold text-text-muted">{t.dashboard_noMeasure}</p>
-              )}
-              <p className="text-xs text-text-muted/80 mt-1">{t.dashboard_todayChecks(todayMeasuresCount)}</p>
+              <div className="relative flex items-center justify-center my-2 h-40 w-40">
+                  <div className="absolute inset-0 bg-mint/50 rounded-full animate-pulse " style={{animationDuration: '3s'}}/>
+                  <div className="absolute inset-2 bg-white/50 rounded-full"/>
+                  {lastMeasure ? (
+                    <p className="relative text-5xl font-display font-bold text-jade">{lastMeasure.gly.toFixed(2)}</p>
+                  ) : (
+                    <p className="relative text-lg font-semibold text-text-muted">{t.dashboard_noMeasure}</p>
+                  )}
+              </div>
+              <p className="text-xs text-text-muted/80 -mt-2">{t.dashboard_todayChecks(todayMeasuresCount)}</p>
             </div>
-            {lastMeasure ? (
-                <GlucosePulseAnimation className="w-16 h-16 flex-shrink-0 -mt-2" />
-            ) : (
-                <div className="w-16 h-16 flex-shrink-0" />
-            )}
-          </div>
           <div className="mt-4 space-y-4">
-              <button onClick={handleSmartAction} className="w-full btn-interactive group flex flex-col items-center justify-center text-lg font-bold py-4 px-6 rounded-card bg-gradient-to-br from-jade-deep-dark to-emerald-main text-white transition-all duration-300 ease-fast disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl transform hover:-translate-y-1">
+              <button onClick={handleSmartAction} className="w-full btn-interactive group flex flex-col items-center justify-center text-lg font-bold py-4 px-6 rounded-card bg-jade text-white transition-all duration-300 ease-fast disabled:opacity-60 disabled:cursor-not-allowed shadow-button-jade hover:shadow-button-jade-hover transform hover:-translate-y-1">
                   {smartAction.icon}
                   <span className="mt-2 text-base">{smartAction.label}</span>
               </button>
               <div className="grid grid-cols-3 gap-3 text-center">
-                  <button onClick={() => setMeasureModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-white/60 rounded-lg hover:bg-white transition-colors space-y-1 text-text-muted hover:text-jade-deep-dark btn-interactive">
+                  <button onClick={() => setMeasureModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-white/60 rounded-lg hover:bg-white transition-colors space-y-1 text-text-muted hover:text-jade btn-interactive">
                       <GlucoseDropIcon className="w-7 h-7"/>
                       <span className="text-xs font-semibold">{t.dashboard_quickMeasure}</span>
                   </button>
-                  <button onClick={() => setBolusModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-white/60 rounded-lg hover:bg-white transition-colors space-y-1 text-text-muted hover:text-jade-deep-dark btn-interactive">
+                  <button onClick={() => setBolusModalOpen(true)} className="flex flex-col items-center justify-center p-2 bg-white/60 rounded-lg hover:bg-white transition-colors space-y-1 text-text-muted hover:text-jade btn-interactive">
                       <SyringeIcon className="w-7 h-7"/>
                       <span className="text-xs font-semibold">{t.dashboard_manualBolus}</span>
                   </button>
-                  <button onClick={() => setCurrentPage('emergency')} className="flex flex-col items-center justify-center p-2 bg-danger-soft/50 rounded-lg hover:bg-danger-soft transition-colors space-y-1 text-danger-dark btn-interactive">
+                  <button onClick={() => setCurrentPage('emergency')} className="flex flex-col items-center justify-center p-2 bg-coral/20 rounded-lg hover:bg-coral/30 transition-colors space-y-1 text-coral btn-interactive">
                       <EmergencyIcon className="w-7 h-7"/>
                       <span className="text-xs font-semibold">{t.dashboard_action_emergency}</span>
                   </button>
@@ -261,7 +258,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
                    <p className="text-center text-sm text-text-muted p-4">{t.dashboard_noEvents}</p>
                )}
            </div>
-           <button onClick={() => setEventModalOpen(true)} className="w-full mt-3 text-emerald-main text-sm font-bold py-2 rounded-button hover:bg-mint-soft transition-colors btn-interactive">
+           <button onClick={() => setEventModalOpen(true)} className="w-full mt-3 text-jade text-sm font-bold py-2 rounded-button hover:bg-mint/50 transition-colors btn-interactive">
                {t.dashboard_addEvent}
            </button>
         </Card>
@@ -271,7 +268,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
              <GlucoseTrackingIllustration />
             <h2 className="font-display font-semibold text-xl text-center text-text-title">{t.dashboard_dataAnalysisTitle}</h2>
             <p className="text-sm text-text-muted text-center mt-1">{t.dashboard_dataAnalysisText}</p>
-            <button className="w-full mt-3 bg-emerald-main text-white text-sm font-bold py-2 rounded-button hover:bg-jade-deep-dark transition-colors btn-interactive">
+            <button className="w-full mt-3 bg-jade text-white text-sm font-bold py-2 rounded-button hover:bg-opacity-90 transition-colors btn-interactive">
               {t.dashboard_dataAnalysisButton}
             </button>
           </Card>
@@ -287,7 +284,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setCurrentPage }) => {
 
          {showNotification && (
           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-sm p-4 z-50">
-            <div className="bg-mint-soft p-4 rounded-card shadow-xl border border-turquoise-light/50 text-center text-jade-deep-dark font-semibold animate-notification-pop-up">
+            <div className="bg-mint p-4 rounded-card shadow-xl border border-turquoise/50 text-center text-jade font-semibold animate-notification-pop-up">
               Ceci est une notification douce !
             </div>
           </div>

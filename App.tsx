@@ -1,21 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore.ts';
 import AuthPage from './pages/AuthPage.tsx';
 import PostAuthFlow from './pages/PostAuthFlow.tsx';
 import LoadingScreen from './components/LoadingScreen.tsx';
 import DynamicBackground from './components/DynamicBackground.tsx';
+import PasswordResetHandlerPage from './pages/PasswordResetHandlerPage.tsx';
 
 const App: React.FC = () => {
   const { initializeAuth, isAuthenticated, status } = useAuthStore();
+  const [action, setAction] = useState<{ mode: string; code: string } | null>(null);
 
   useEffect(() => {
-    const unsubscribe = initializeAuth();
-    return () => unsubscribe();
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+
+    if (mode === 'resetPassword' && oobCode) {
+      setAction({ mode, code: oobCode });
+      // Clean up the URL to prevent the action from being re-triggered on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      const unsubscribe = initializeAuth();
+      return () => unsubscribe();
+    }
   }, [initializeAuth]);
 
   let content;
-  if (status === 'loading' || status === 'idle') {
+  if (action?.mode === 'resetPassword') {
+    content = <PasswordResetHandlerPage oobCode={action.code} />;
+  } else if (status === 'loading' || status === 'idle') {
     content = <LoadingScreen />;
   } else if (isAuthenticated) {
     content = <PostAuthFlow />;

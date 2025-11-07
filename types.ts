@@ -13,6 +13,8 @@ export interface UserProfile {
     nom: string;
     prenom: string;
     role: UserRole;
+    createdAt?: any; // Firestore Timestamp
+    lastSeen?: any; // Firestore Timestamp
 }
 
 export type User = UserProfile; // Alias for consistency
@@ -30,6 +32,7 @@ export interface PatientProfile {
     correctionDelayHours: number;
     contacts: EmergencyContact[];
     notes_pai: string;
+    createdAt?: any; // Firestore Timestamp
 }
 
 export type CircleMemberRole = 'famille' | 'medecin' | 'infirmier' | 'autre' | 'owner';

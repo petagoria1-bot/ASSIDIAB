@@ -13,10 +13,7 @@ import PlaceholderCard from '../components/PlaceholderCard.tsx';
 import AddEventChoiceModal from '../components/AddEventChoiceModal.tsx';
 import AddSnackModal from '../components/AddSnackModal.tsx';
 import QuickAddItemModal from '../components/QuickAddItemModal.tsx';
-import MorningIcon from '../components/icons/MorningIcon.tsx';
-import NoonIcon from '../components/icons/NoonIcon.tsx';
-import AfternoonIcon from '../components/icons/AfternoonIcon.tsx';
-import NightIcon from '../components/icons/NightIcon.tsx';
+import PlusIcon from '../components/icons/PlusIcon.tsx';
 
 type JournalEvent = { 
     type: 'mealgroup' | 'mesure' | 'injection' | 'snack' | 'placeholder';
@@ -32,27 +29,6 @@ const MEAL_SLOTS_CONFIG: { mealTime: MealTime, hour: number }[] = [
     { mealTime: 'diner', hour: 20 },
 ];
 
-const AddBetweenButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-    <div className="relative h-10">
-        <div className="absolute left-1/2 -translate-x-1/2 h-full w-0.5 bg-emerald-main/20 border border-dashed border-emerald-main/30" />
-        <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2">
-            <button
-                onClick={onClick}
-                className="w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-emerald-main hover:scale-110 transition-transform"
-            >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-        </div>
-    </div>
-);
-
-const TimeSlotHeader: React.FC<{ title: string; icon: React.ReactNode }> = ({ title, icon }) => (
-    <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm">{icon}</div>
-        <h2 className="font-display font-bold text-xl text-text-title">{title}</h2>
-    </div>
-);
-
 const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurrentPage }) => {
   const { mesures, repas, injections } = usePatientStore();
   const { setCalculatorMealTime } = useUiStore();
@@ -62,14 +38,7 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
   const [isAddChoiceModalOpen, setAddChoiceModalOpen] = useState(false);
   const [isAddSnackModalOpen, setAddSnackModalOpen] = useState(false);
   const [isAddMeasureModalOpen, setAddMeasureModalOpen] = useState(false);
-  const [modalTimeHints, setModalTimeHints] = useState<{ before: string, after: string } | null>(null);
   
-  const timeSlots = useMemo(() => [
-    { id: 'morning', title: "Matin", startHour: 5, endHour: 12, icon: <MorningIcon className="w-6 h-6 text-amber-500"/> },
-    { id: 'afternoon', title: "Midi", startHour: 12, endHour: 16, icon: <NoonIcon className="w-6 h-6 text-yellow-500"/> },
-    { id: 'evening', title: "Après-midi & Soir", startHour: 16, endHour: 24, icon: <AfternoonIcon className="w-6 h-6 text-orange-500"/> },
-  ], []);
-
   const timelineItems: JournalEvent[] = useMemo(() => {
     const dayStart = new Date(currentDate); dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(currentDate); dayEnd.setHours(23, 59, 59, 999);
@@ -130,21 +99,22 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
     return [...loggedEvents, ...placeholderEvents].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
   }, [currentDate, mesures, repas, injections, t]);
   
-  const handleOpenAddChoice = (beforeTs: string, afterTs: string) => {
-    setModalTimeHints({ before: beforeTs, after: afterTs });
-    setAddChoiceModalOpen(true);
-  };
-  
   const closeAllModals = () => {
     setAddChoiceModalOpen(false);
     setAddSnackModalOpen(false);
     setAddMeasureModalOpen(false);
-    setModalTimeHints(null);
+  };
+  
+  const getTimestampForNewEvent = () => {
+      const now = new Date();
+      const today = new Date(currentDate);
+      today.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+      return today.toISOString();
   };
 
   return (
-    <div className="pb-24 min-h-screen bg-off-white">
-      <header className="sticky top-0 bg-emerald-main/90 backdrop-blur-md py-4 z-20 shadow-md">
+    <div className="pb-24 min-h-screen bg-history-gradient">
+      <header className="sticky top-0 bg-jade/90 backdrop-blur-md py-4 z-20 shadow-md">
         <div className="px-4 flex items-center justify-center relative">
           <h1 className="text-3xl font-display font-bold text-white text-shadow text-center">{t.journal_title}</h1>
         </div>
@@ -153,69 +123,73 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
         </div>
       </header>
 
-      <div className="p-4">
-        {timeSlots.map(slot => {
-            const slotStart = new Date(currentDate); slotStart.setHours(slot.startHour, 0, 0, 0);
-            const slotEnd = new Date(currentDate); slotEnd.setHours(slot.endHour, 0, 0, -1);
-            const slotEvents = timelineItems.filter(e => {
-                const eventDate = new Date(e.ts);
-                return eventDate >= slotStart && eventDate < slotEnd;
-            });
-
-            if (slotEvents.length === 0 && slot.id === 'evening') return null; // Hide empty evening slot unless there are events
-
-            return (
-                <div key={slot.id} className="mb-6">
-                    <TimeSlotHeader title={slot.title} icon={slot.icon} />
-                    <div className="relative">
-                        <div className="absolute left-6 -translate-x-1/2 top-0 h-full w-0.5 bg-emerald-main/20 border border-dashed border-emerald-main/30" />
-                        
-                        <AddBetweenButton onClick={() => handleOpenAddChoice(slotStart.toISOString(), slotEvents[0]?.ts || slotEnd.toISOString())} />
-                        
-                        {slotEvents.map((event, index) => (
-                            <div key={event.id}>
-                                <div className="ml-12">
-                                    {event.type === 'placeholder' ? (
-                                        <PlaceholderCard 
-                                            mealTime={event.data.mealTime}
-                                            onAdd={() => {
-                                                setCalculatorMealTime(event.data.mealTime);
-                                                setCurrentPage('glucides');
-                                            }}
-                                        />
-                                    ) : (
-                                        <MealGroupCard event={event.data} />
-                                    )}
-                                </div>
-                                <AddBetweenButton onClick={() => handleOpenAddChoice(event.ts, slotEvents[index+1]?.ts || slotEnd.toISOString())} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        })}
-         {timelineItems.length === 0 && (
+      <div className="relative px-2 py-4">
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-turquoise/30" />
+        
+        {timelineItems.length === 0 && (
             <div className="text-center p-8 bg-white/50 rounded-card mt-10">
                 <p className="font-semibold text-text-muted">{t.journal_emptyDay}</p>
             </div>
-          )}
+        )}
+
+        {timelineItems.map((event, index) => {
+            const position = index % 2 === 0 ? 'left' : 'right';
+            const animationClass = position === 'left' ? 'animate-timeline-card-left' : 'animate-timeline-card-right';
+            return (
+                 <div key={event.id} className="relative flex items-center my-2">
+                    <div className="absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-2 border-turquoise rounded-full z-10 animate-timeline-point-pop" style={{animationDelay: `${index * 100}ms`}} />
+                    
+                    {position === 'left' ? (
+                        <>
+                            <div className={`w-[calc(50%-1.5rem)] pr-3 ${animationClass}`} style={{animationDelay: `${index * 100}ms`}}>
+                                {event.type === 'placeholder' ? (
+                                    <PlaceholderCard mealTime={event.data.mealTime} onAdd={() => { setCalculatorMealTime(event.data.mealTime); setCurrentPage('glucides'); }} />
+                                ) : (
+                                    <MealGroupCard event={event.data} />
+                                )}
+                            </div>
+                            <div className="w-[calc(50%+1.5rem)]" />
+                        </>
+                    ) : (
+                        <>
+                            <div className="w-[calc(50%+1.5rem)]" />
+                            <div className={`w-[calc(50%-1.5rem)] pl-3 ${animationClass}`} style={{animationDelay: `${index * 100}ms`}}>
+                                {event.type === 'placeholder' ? (
+                                    <PlaceholderCard mealTime={event.data.mealTime} onAdd={() => { setCalculatorMealTime(event.data.mealTime); setCurrentPage('glucides'); }} />
+                                ) : (
+                                    <MealGroupCard event={event.data} />
+                                )}
+                            </div>
+                        </>
+                    )}
+                 </div>
+            );
+        })}
       </div>
 
-      {isAddChoiceModalOpen && modalTimeHints && (
+      <button
+        onClick={() => setAddChoiceModalOpen(true)}
+        className="fixed bottom-24 right-5 bg-jade text-white rounded-full p-2 shadow-xl z-30 transform hover:scale-110 transition-transform duration-200"
+        aria-label="Ajouter un événement"
+      >
+        <PlusIcon className="w-12 h-12" />
+      </button>
+
+      {isAddChoiceModalOpen && (
         <AddEventChoiceModal
           onClose={closeAllModals}
           onSelectMeasure={() => { setAddChoiceModalOpen(false); setAddMeasureModalOpen(true); }}
           onSelectSnack={() => { setAddChoiceModalOpen(false); setAddSnackModalOpen(true); }}
         />
       )}
-      {isAddSnackModalOpen && modalTimeHints && (
+      {isAddSnackModalOpen && (
         <AddSnackModal
           onClose={closeAllModals}
-          beforeTs={modalTimeHints.before}
-          afterTs={modalTimeHints.after}
+          beforeTs={getTimestampForNewEvent()}
+          afterTs={getTimestampForNewEvent()}
         />
       )}
-      {isAddMeasureModalOpen && modalTimeHints && (
+      {isAddMeasureModalOpen && (
         <QuickAddItemModal
           onClose={closeAllModals}
           onConfirm={(gly, cetone, ts) => {
@@ -223,7 +197,7 @@ const Journal: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurren
             toast.success(t.toast_measureAdded(gly));
             closeAllModals();
           }}
-          initialTs={new Date((new Date(modalTimeHints.before).getTime() + new Date(modalTimeHints.after).getTime()) / 2).toISOString()}
+          initialTs={getTimestampForNewEvent()}
         />
       )}
     </div>

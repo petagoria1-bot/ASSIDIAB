@@ -31,11 +31,11 @@ const SettingsRow: React.FC<{
   action?: React.ReactNode;
 }> = ({ title, description, onClick, children, action }) => (
   <div
-    className={`flex items-center justify-between p-4 bg-white rounded-lg transition-colors ${onClick ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+    className={`flex items-center justify-between p-4 bg-grey-light/40 rounded-lg transition-colors ${onClick ? 'cursor-pointer hover:bg-grey-light/80' : ''}`}
     onClick={onClick}
   >
     <div className="flex items-center gap-4">
-      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-input-bg rounded-full">{children}</div>
+      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-mint/50 rounded-full">{children}</div>
       <div>
         <p className="font-semibold text-text-title">{title}</p>
         {description && <p className="text-sm text-text-muted">{description}</p>}
@@ -77,17 +77,22 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
       <header className="py-4 text-center">
         <h1 className="text-3xl font-display font-bold text-white text-shadow">{t.settings_title}</h1>
       </header>
+      
+      <Card className="flex items-center gap-4">
+        <UserIcon className="w-16 h-16 text-jade p-2 bg-mint/40 rounded-full" />
+        <div>
+            <h2 className="text-2xl font-bold font-display text-text-title">{patient.prenom} {patient.nom}</h2>
+            <p className="text-text-muted">{userProfile?.email || ''}</p>
+        </div>
+      </Card>
 
       <div className="space-y-2">
         <h2 className="text-sm font-bold uppercase text-text-muted px-2">{t.settings_profile}</h2>
-        <SettingsRow title={`${patient.prenom} ${patient.nom}`} description={userProfile?.email || ''} onClick={() => setCurrentPage('pai')}>
-          <UserIcon className="w-6 h-6 text-emerald-main" />
-        </SettingsRow>
         <SettingsRow title={t.settings_pai} description="Ratios, cibles, corrections..." onClick={() => setEditPaiModalOpen(true)}>
-          <RatioIcon className="w-6 h-6 text-emerald-main" />
+          <RatioIcon className="w-6 h-6 text-jade" />
         </SettingsRow>
          <SettingsRow title={t.settings_food} description="Gérer la bibliothèque d'aliments" onClick={() => setCurrentPage('food')}>
-          <StatsIcon className="w-6 h-6 text-emerald-main" />
+          <StatsIcon className="w-6 h-6 text-jade" />
         </SettingsRow>
       </div>
       
@@ -97,12 +102,12 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
            <div key={member.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
                 <div>
                     <p className="font-semibold text-text-title">{member.memberEmail}</p>
-                    <p className="text-xs text-text-muted">{t[`role_${member.role}` as keyof typeof t]} - <span className={member.status === 'accepted' ? 'text-emerald-main' : 'text-amber-600'}>{member.status}</span></p>
+                    <p className="text-xs text-text-muted">{t[`role_${member.role}` as keyof typeof t]} - <span className={member.status === 'accepted' ? 'text-jade' : 'text-amber-600'}>{member.status}</span></p>
                 </div>
-                <button onClick={() => setEditingMember(member) } className="text-text-muted hover:text-emerald-main p-1"><EditIcon /></button>
+                <button onClick={() => setEditingMember(member) } className="text-text-muted hover:text-jade p-1"><EditIcon /></button>
            </div>
         ))}
-        <button onClick={() => setInviteModalOpen(true)} className="w-full mt-2 text-emerald-main text-sm font-bold py-2 rounded-button bg-white hover:bg-mint-soft transition-colors">
+        <button onClick={() => setInviteModalOpen(true)} className="w-full mt-2 text-jade text-sm font-bold py-2 rounded-button bg-white hover:bg-mint/50 transition-colors">
             + {t.invite_title}
         </button>
       </div>
@@ -110,7 +115,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
       <div className="space-y-2">
         <h2 className="text-sm font-bold uppercase text-text-muted px-2">{t.settings_display}</h2>
         <SettingsRow title={t.settings_language} description={languages.find(l => l.code === language)?.name}>
-            <LanguageIcon className="w-6 h-6 text-emerald-main" />
+            <LanguageIcon className="w-6 h-6 text-jade" />
             <select value={language} onChange={e => setLanguage(e.target.value as Language)} className="bg-transparent font-semibold text-text-title focus:outline-none">
                 {languages.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
             </select>
@@ -118,7 +123,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
       </div>
 
       <div className="pt-4">
-        <button onClick={logout} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-danger-soft/50 transition-colors">
+        <button onClick={logout} className="w-full bg-white text-coral font-bold py-3 rounded-button border border-slate-300 hover:bg-coral/10 transition-colors">
           {t.settings_logout}
         </button>
       </div>

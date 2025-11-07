@@ -7,9 +7,10 @@ import {
   signOut, 
   onAuthStateChanged,
   sendPasswordResetEmail,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
+  updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { UserProfile, UserRole } from '../types.ts';
 import { usePatientStore } from './patientStore.ts';
 
@@ -68,6 +69,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               const userProfile = userSnap.data() as UserProfile;
               set({ userProfile });
 
+              // Update lastSeen timestamp
+              await updateDoc(userRef, { lastSeen: serverTimestamp() });
+
               if(userProfile.role === 'undetermined') {
                   set({ status: 'needs_role' });
               } else if (userProfile.role === 'patient') {
@@ -84,12 +88,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                   set({ status: 'ready' });
               }
           } else {
-            console.warn("User authenticated but profile document not found. Assuming new user, directing to role selection.");
+            console.warn("User authenticated but profile document not found. Directing to role selection.");
+            
+            let prenom = '', nom = '';
+            if (user.displayName) {
+                const nameParts = user.displayName.split(' ');
+                prenom = nameParts[0] || '';
+                nom = nameParts.slice(1).join(' ') || '';
+            }
+            
             const tempProfile: UserProfile = {
                 uid: user.uid,
                 email: user.email,
-                nom: '', 
-                prenom: '',
+                nom, 
+                prenom,
                 role: 'undetermined',
             };
             set({ userProfile: tempProfile, status: 'needs_role' });
@@ -129,15 +141,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUserProfile: UserProfile = {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          nom,
-          prenom,
-          role: 'undetermined',
-      };
-      await setDoc(doc(firestore, 'users', userCredential.user.uid), newUserProfile);
-      // onAuthStateChanged will handle the rest of the flow
+      // Update the auth user's profile with their name to persist it until the Firestore doc is created.
+      await updateProfile(userCredential.user, {
+        displayName: `${prenom} ${nom}`
+      });
+      // onAuthStateChanged will handle the rest of the flow, see the user has no Firestore doc, and route to role selection.
     } catch (error: any) {
       // If user already exists, set an error for the UI to handle (e.g., show modal)
       if (error.code === 'auth/email-already-in-use') {
@@ -172,13 +180,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   setUserRole: async (role: UserRole) => {
       const user = get().userProfile;
-      if (!user) return;
+      if (!user || user.role !== 'undetermined') return;
       
       const userRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userRef, { role });
       
-      const updatedProfile = { ...user, role };
-      set({ userProfile: updatedProfile });
+      const finalProfile: UserProfile = {
+          ...user,
+          role,
+          createdAt: serverTimestamp(),
+          lastSeen: serverTimestamp(),
+      };
+      
+      // Create the user document for the first time with the selected role.
+      // This will be allowed by the `allow create` rule.
+      await setDoc(userRef, finalProfile);
+      
+      set({ userProfile: finalProfile });
 
       if (role === 'patient') {
           set({ status: 'needs_patient_profile' });

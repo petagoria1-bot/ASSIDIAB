@@ -1,7 +1,10 @@
 
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getFunctions } from "firebase/functions";
+import { getStorage } from "firebase/storage";
 
 // --- IMPORTANT NOTE FOR DEVELOPERS ---
 // If you are encountering an `auth/unauthorized-domain` error when using Google Sign-In,
@@ -40,3 +43,5 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize and export Firebase services
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
+export const functions = getFunctions(app);
+export const storage = getStorage(app);
