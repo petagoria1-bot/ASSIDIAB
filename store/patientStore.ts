@@ -73,7 +73,7 @@ interface PatientState {
   updateCircleMemberRights: (member: CircleMember, rights: CircleMemberRights) => Promise<void>;
   removeCircleMember: (member: CircleMember) => Promise<void>;
   getPendingInvitations: (userId: string) => Promise<CircleMember[]>;
-  getInvitationDetails: (patientId: string, memberId: string) => Promise<{ patientName: string; role: string; email: string; } | null>;
+  getInvitationDetails: (invitationId: string) => Promise<{ patientName: string; role: string; email: string; } | null>;
 
   // Doctor functions
   fetchDoctorPatients: (doctorId: string) => Promise<void>;
@@ -283,15 +283,15 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         }
         const memberUser = userSnap.docs[0].data() as UserProfile;
 
-        const inviteRef = doc(firestore, 'patients', patient.id, 'circleMembers', memberUser.uid);
-
-        const existingDoc = await getDoc(inviteRef);
+        const batch = writeBatch(firestore);
+        const memberRef = doc(firestore, 'patients', patient.id, 'circleMembers', memberUser.uid);
+        
+        const existingDoc = await getDoc(memberRef); // Check must be done before batch
         if (existingDoc.exists()) {
             throw new Error("Cette personne est déjà dans votre cercle ou a une invitation en attente.");
         }
-
-        const newInvite: CircleMember = {
-            id: inviteRef.id,
+        
+        const newCircleMemberData: Omit<CircleMember, 'id'> = {
             patientId: patient.id,
             patientName: `${patient.prenom} ${patient.nom}`,
             memberUserId: memberUser.uid,
@@ -301,14 +301,39 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             status: 'pending',
             invitedAt: serverTimestamp(),
         };
-        await setDoc(inviteRef, newInvite);
 
-        set(state => ({ circleMembers: [...state.circleMembers, newInvite] }));
+        // 1. Write to subcollection
+        batch.set(memberRef, newCircleMemberData);
+
+        // 2. Write to top-level invitations collection for easy querying
+        const invitationRef = doc(collection(firestore, 'invitations'));
+        batch.set(invitationRef, newCircleMemberData);
+
+        await batch.commit();
+        
+        const finalCircleMember: CircleMember = { id: memberRef.id, ...newCircleMemberData as any };
+        set(state => ({ circleMembers: [...state.circleMembers, finalCircleMember] }));
     },
 
     respondToInvitation: async (invitation, status) => {
+        const batch = writeBatch(firestore);
+    
+        // 1. Update the document in the subcollection
         const memberRef = doc(firestore, 'patients', invitation.patientId, 'circleMembers', invitation.memberUserId);
-        await updateDoc(memberRef, { status, respondedAt: serverTimestamp() });
+        batch.update(memberRef, { status, respondedAt: serverTimestamp() });
+        
+        // 2. Delete the document from the top-level invitations collection
+        const q = query(collection(firestore, 'invitations'), 
+            where('memberUserId', '==', invitation.memberUserId),
+            where('patientId', '==', invitation.patientId)
+        );
+        const inviteSnap = await getDocs(q);
+        inviteSnap.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+    
+        await batch.commit();
+    
         await get().fetchDoctorPatients(invitation.memberUserId); // Refresh doctor's list
     },
 
@@ -322,8 +347,25 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     },
     
     removeCircleMember: async (member) => {
+        const batch = writeBatch(firestore);
+    
         const memberRef = doc(firestore, 'patients', member.patientId, 'circleMembers', member.memberUserId);
-        await deleteDoc(memberRef);
+        batch.delete(memberRef);
+        
+        // If it was a pending invitation, delete from top-level collection too
+        if (member.status === 'pending') {
+            const q = query(collection(firestore, 'invitations'), 
+                where('memberUserId', '==', member.memberUserId),
+                where('patientId', '==', member.patientId)
+            );
+            const inviteSnap = await getDocs(q);
+            inviteSnap.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+        }
+        
+        await batch.commit();
+        
         set(state => ({
             circleMembers: state.circleMembers.filter(m => m.id !== member.id)
         }));
@@ -332,33 +374,36 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     
     getPendingInvitations: async (userId: string) => {
         try {
-            const q = query(collectionGroup(firestore, 'circleMembers'), where('memberUserId', '==', userId), where('status', '==', 'pending'));
+            // FIX: Query the top-level 'invitations' collection to avoid collection group permission issues.
+            const q = query(collection(firestore, 'invitations'), where('memberUserId', '==', userId));
             const snap = await getDocs(q);
-            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CircleMember));
+            // The document data should be compatible with the CircleMember type.
+            return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CircleMember));
         } catch (e: any) {
             console.error("Error getting pending invitations:", e);
+            let errorMsg = "Erreur lors de la récupération des invitations.";
             if (e.code === 'permission-denied') {
-                const errorMsg = "Erreur de permission en cherchant les invitations. Les règles de sécurité ou les index Firestore sont probablement manquants. Détails: " + e.message;
-                toast.error(errorMsg, { duration: 15000 });
-                set({ error: errorMsg });
+                errorMsg = "Erreur de permission en cherchant les invitations. Les règles de sécurité ou les index Firestore sont probablement manquants. Détails: " + e.message;
             }
+            toast.error(errorMsg, { duration: 15000 });
+            set({ error: errorMsg });
             return [];
         }
     },
 
-    getInvitationDetails: async (patientId: string, memberId: string) => {
+    getInvitationDetails: async (invitationId: string) => { // FIX: Changed signature to accept a single invitationId
         try {
-            const inviteRef = doc(firestore, 'patients', patientId, 'circleMembers', memberId);
+            // FIX: Read from the top-level 'invitations' collection
+            const inviteRef = doc(firestore, 'invitations', invitationId);
             const inviteSnap = await getDoc(inviteRef);
             if (inviteSnap.exists()) {
                 const data = inviteSnap.data() as CircleMember;
-                if (data.status === 'pending') {
-                    return {
-                        patientName: data.patientName,
-                        role: data.role,
-                        email: data.memberEmail,
-                    };
-                }
+                // An invitation exists only if it's pending.
+                return {
+                    patientName: data.patientName,
+                    role: data.role,
+                    email: data.memberEmail,
+                };
             }
         } catch (error) {
             console.error("Error getting invitation details:", error);

@@ -182,29 +182,64 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   setUserRole: async (role: UserRole) => {
-      const user = get().userProfile;
-      if (!user || user.role !== 'undetermined') return;
+    const user = get().userProfile;
+    if (!user || user.role !== 'undetermined') return;
+  
+    const { getPendingInvitations, respondToInvitation } = usePatientStore.getState();
+    const pendingInvites = await getPendingInvitations(user.uid);
+  
+    if (pendingInvites.length > 0) {
+      const matchingInvite = pendingInvites.find(invite => invite.role === role);
       
-      const userRef = doc(firestore, 'users', user.uid);
-      
-      const finalProfile: UserProfile = {
+      if (matchingInvite) {
+        // Role matches invitation, accept it and set up the user
+        await respondToInvitation(matchingInvite, 'accepted');
+  
+        const userRef = doc(firestore, 'users', user.uid);
+        const finalProfile: UserProfile = {
           ...user,
           role,
           createdAt: serverTimestamp(),
           lastSeen: serverTimestamp(),
-      };
-      
-      // Create the user document for the first time with the selected role.
-      // This will be allowed by the `allow create` rule.
-      await setDoc(userRef, finalProfile);
-      
-      set({ userProfile: finalProfile });
-
-      if (role === 'patient') {
-          set({ status: 'needs_patient_profile' });
+        };
+        await setDoc(userRef, finalProfile);
+  
+        set({ userProfile: finalProfile, status: 'ready' });
+        toast.success(`Invitation pour ${matchingInvite.patientName} acceptée !`);
       } else {
-          set({ status: 'ready' });
+        // Role mismatch
+        const expectedRole = pendingInvites[0].role;
+        const roleTranslations: Record<string, string> = {
+          famille: 'Famille / Proche',
+          medecin: 'Médecin',
+          infirmier: 'Infirmier',
+          autre: 'Autre',
+        };
+        toast.error(`Le rôle sélectionné ne correspond pas à votre invitation. Veuillez sélectionner "${roleTranslations[expectedRole] || expectedRole}".`);
+        return; // Stay on role selection page
       }
+    } else {
+      // No pending invitations, proceed with normal role setting
+      const userRef = doc(firestore, 'users', user.uid);
+  
+      const finalProfile: UserProfile = {
+        ...user,
+        role,
+        createdAt: serverTimestamp(),
+        lastSeen: serverTimestamp(),
+      };
+  
+      // Create the user document for the first time
+      await setDoc(userRef, finalProfile);
+      set({ userProfile: finalProfile });
+  
+      if (role === 'patient') {
+        set({ status: 'needs_patient_profile' });
+      } else {
+        // For other roles without an invite, they'll land on a page telling them they need one.
+        set({ status: 'ready' });
+      }
+    }
   },
 
   resetPassword: async (email: string): Promise<boolean> => {
