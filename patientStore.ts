@@ -95,6 +95,7 @@ interface PatientState {
   clearPatientData: () => void;
 }
 
+// Assumes a backend function that can atomically handle the full bolus logic
 const dailySummary = httpsCallable(functions, 'dailySummary');
 const exportPdf = httpsCallable(functions, 'exportPdf');
 
@@ -347,6 +348,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     },
 
     getInvitationDetails: async (patientId: string, memberId: string) => {
+        // This flow is likely broken without a dedicated 'invitations' collection.
+        // For now, it will only work if the user is already logged in.
         try {
             const inviteRef = doc(firestore, 'patients', patientId, 'circleMembers', memberId);
             const inviteSnap = await getDoc(inviteRef);
@@ -381,7 +384,6 @@ export const usePatientStore = create<PatientState>((set, get) => ({
                 return null;
             });
     
-            // FIX: Removed redundant `Promise.all` call which was causing a TypeScript error. The `patientDataPromises` array was being wrapped in an extra `Promise.all` unnecessarily.
             const doctorPatients = (await Promise.all(patientDataPromises)).filter(Boolean) as DoctorPatientData[];
             set({ doctorPatients, isLoading: false });
         } catch (e: any) {
@@ -709,10 +711,10 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         const foodLibrary = await db.foodLibrary.toArray();
         set({ foodLibrary });
     },
-    logWater: async (amount_ml: number) => {
+    logWater: async (amount_ml) => {
         // Implementation needed
     },
-    logActivity: async (duration_min: number) => {
+    logActivity: async (duration_min) => {
         // Implementation needed
     },
     logQuizCompleted: async () => {

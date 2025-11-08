@@ -2,37 +2,32 @@
 
 An offline-first Progressive Web App to help parents of children with Type 1 Diabetes manage insulin doses, track meals, and monitor blood glucose levels. It includes a dose calculator, a logbook, and emergency protocols.
 
-## Firebase Setup (CRITICAL)
+---
 
-This project uses Firebase for authentication and data storage (Firestore). For the application to function correctly, you **must** deploy the provided security rules and database indexes to your Firebase project.
+> [!CAUTION]
+> **ACTION REQUISE CRITIQUE : CONFIGURATION DE FIREBASE**
+> 
+> **NE PAS IGNORER CETTE ÉTAPE.** L'application **NE FONCTIONNERA PAS** sans une configuration correcte de Firebase. Des erreurs critiques de permission (`permission-denied`) bloqueront toutes les fonctionnalités si les étapes ci-dessous ne sont pas suivies.
+>
+> Vous devez impérativement déployer les règles de sécurité et les index de base de données fournis dans votre projet Firebase.
+>
+> 1.  **Déployer les règles de sécurité :**
+>     ```bash
+>     firebase deploy --only firestore:rules
+>     ```
+> 2.  **Déployer les index :**
+>     ```bash
+>     firebase deploy --only firestore:indexes
+>     ```
+>
+> **La création des index peut prendre plusieurs minutes.** Si des erreurs persistent, patientez et rafraîchissez la page.
 
-**Failing to complete these steps will result in `permission-denied` errors and prevent the app from loading or saving data.**
+---
 
-You will need the [Firebase CLI](https://firebase.google.com/docs/cli) installed and authenticated with your Google account.
-
-### 1. Deploy Firestore Security Rules
-
-The `firestore.rules` file contains essential security rules to protect user data while allowing the application's features to work.
-
-To deploy the rules, run the following command from your project's root directory:
-```bash
-firebase deploy --only firestore:rules
-```
-
-### 2. Deploy Firestore Indexes
-
-The application performs several complex queries that require composite indexes in Firestore. The `firestore.indexes.json` file defines these indexes.
-
-To deploy the indexes, run the following command:
-```bash
-firebase deploy --only firestore:indexes
-```
-> **Note:** It may take several minutes for Firebase to build the indexes after you deploy them.
-
-### Troubleshooting
-If you still see "permission denied" or "missing or insufficient permissions" errors after deploying:
-1.  **Wait a few minutes:** Index creation is not instantaneous.
-2.  **Check your `firebase.json` file:** Ensure that a `firebase.json` file exists in your root directory and that its content correctly points to the rules and indexes files. It should look like this:
+## Dépannage
+Si vous rencontrez toujours des erreurs de "permission denied" après le déploiement :
+1.  **Patientez quelques minutes :** La création des index n'est pas instantanée.
+2.  **Vérifiez votre fichier `firebase.json`:** Assurez-vous qu'un fichier `firebase.json` existe à la racine de votre projet et que son contenu pointe correctement vers les fichiers de règles et d'index. Il doit ressembler à ceci :
     ```json
     {
       "firestore": {
@@ -41,7 +36,7 @@ If you still see "permission denied" or "missing or insufficient permissions" er
       }
     }
     ```
-3.  **Verify Deployment:** Go to your Firebase project in the console. Under "Firestore Database" -> "Rules", you should see the content of `firestore.rules`. Under "Indexes", you should see your indexes being built or in an "Enabled" state.
+3.  **Vérifiez le déploiement dans la console Firebase :** Allez dans votre projet sur la console Firebase. Sous "Firestore Database" -> "Règles", vous devriez voir le contenu de `firestore.rules`. Sous "Index", vous devriez voir vos index en cours de création ou avec le statut "Activé".
 
 ---
 
