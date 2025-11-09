@@ -11,20 +11,20 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Vérifie si l'utilisateur est un membre accepté du cercle du patient
+    // Vérifie si l'utilisateur est un membre ACCEPTÉ du cercle du patient
     function isAcceptedMember(patientId) {
       return isAuthenticated() && 
              exists(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)).data.status == 'accepted';
     }
     
-    // Vérifie si un membre a les droits de lecture
+    // Vérifie si un membre a les droits de LECTURE
     function hasReadRights(patientId) {
         return isAcceptedMember(patientId) && 
                get(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)).data.rights.read == true;
     }
     
-    // Vérifie si un membre a les droits d'écriture
+    // Vérifie si un membre a les droits d'ÉCRITURE
     function hasWriteRights(patientId) {
         return isAcceptedMember(patientId) &&
                get(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)).data.rights.write == true;
@@ -32,10 +32,9 @@ service cloud.firestore {
 
     // --- Profils Utilisateurs (/users) ---
     // Un utilisateur peut lire et mettre à jour son propre profil.
-    // La création est gérée par une Cloud Function à l'inscription.
     match /users/{uid} {
       allow read, update: if isUser(uid);
-      allow create: if false; // Interdit la création côté client
+      allow create: if false; // La création est gérée par une Cloud Function (onAuthUserCreate)
     }
 
     // --- Collection des Patients (/patients) ---
@@ -51,42 +50,36 @@ service cloud.firestore {
 
       // --- Sous-collection des Membres du Cercle (/circleMembers) ---
       match /circleMembers/{memberId} {
-          // Le patient, le membre lui-même, ou un autre membre accepté peut voir la liste des membres.
+          // Le patient (propriétaire), le membre lui-même, ou un autre membre accepté peut voir la liste des membres.
           allow read: if isUser(patientId) || isUser(memberId) || isAcceptedMember(patientId);
           
-          // La création, la mise à jour et la suppression sont gérées par des Cloud Functions sécurisées.
-          allow write: if false; 
+          // Le patient (propriétaire) peut créer/gérer les membres.
+          // CORRECTION CRITIQUE: Permet la création du membre 'owner' lors de l'initialisation du profil.
+          allow write: if isUser(patientId); 
       }
     }
 
     // --- Groupe de Collections pour 'circleMembers' ---
-    // RÈGLE CRITIQUE : Permet à un soignant (médecin, etc.) de trouver les patients auxquels il est rattaché.
-    // Conçue pour la requête : query(collectionGroup('circleMembers'), where('memberUserId', '==', auth.uid))
+    // Règle pour les soignants : leur permet de trouver les patients auxquels ils sont rattachés.
     match /{path=**}/circleMembers/{memberId} {
       allow read: if isAuthenticated() && resource.data.memberUserId == request.auth.uid;
     }
 
     // --- Collection des Invitations (/invitations) ---
-    // Stockage temporaire des invitations.
+    // Gérée entièrement par des Cloud Functions sécurisées.
     match /invitations/{invitationId} {
-        // Seul l'utilisateur invité peut lire son invitation.
         allow read: if isAuthenticated() && resource.data.memberUserId == request.auth.uid;
-        
-        // Toutes les écritures (création, màj, suppression) sont gérées par des Cloud Functions.
         allow write: if false;
     }
 
     // --- Collection des Entrées de Journal (/entries) ---
     match /entries/{entryId} {
       // Permet la lecture au patient ou aux membres avec droits de lecture.
-      // Cette règle est compatible avec la requête `where('uid', '==', patientId)`.
+      // Compatible avec la requête `where('uid', '==', patientId)`.
       allow read: if isUser(resource.data.uid) || hasReadRights(resource.data.uid);
       
-      // Permet la création au patient ou aux membres avec droits d'écriture.
-      allow create: if isUser(request.resource.data.uid) || hasWriteRights(request.resource.data.uid);
-
-      // Seuls le patient ou les membres avec droits d'écriture peuvent modifier/supprimer.
-      allow update, delete: if isUser(resource.data.uid) || hasWriteRights(resource.data.uid);
+      // Permet l'écriture (création, mise à jour, suppression) au patient ou aux membres avec droits d'écriture.
+      allow write: if isUser(request.resource.data.uid) || hasWriteRights(request.resource.data.uid);
     }
   }
 }
