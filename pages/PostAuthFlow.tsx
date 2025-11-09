@@ -21,10 +21,12 @@ import useTranslations from '../hooks/useTranslations.ts';
 import InvitationResponsePage from './InvitationResponsePage.tsx';
 import CaregiverDashboard from './CaregiverDashboard.tsx';
 import PatientReports from './PatientReports.tsx';
+import Card from '../components/Card.tsx';
+import ErrorIcon from '../components/icons/ErrorIcon.tsx';
 
 const PostAuthFlow: React.FC = () => {
   const { userProfile, status } = useAuthStore();
-  const { patient, loadStatus, error: patientError } = usePatientStore();
+  const { patient, loadPatientData, loadStatus, error: patientError } = usePatientStore();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const t = useTranslations();
 
@@ -45,7 +47,17 @@ const PostAuthFlow: React.FC = () => {
       return <LoadingScreen />;
     }
     if (loadStatus === 'error') {
-      return <div className="p-4 text-center text-danger">{patientError}</div>;
+      return (
+          <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-danger-soft">
+              <Card className="w-full max-w-sm text-center border-danger">
+                  <ErrorIcon className="w-20 h-20 mx-auto" />
+                  <h1 className="text-2xl font-display font-bold text-danger-dark mt-4">{t.error_criticalTitle}</h1>
+                  <p className="text-sm text-text-muted mt-2">{t.error_loadDataBody}</p>
+                  <p className="text-xs bg-red-100 p-2 rounded-md mt-2 text-red-800 break-words">{patientError}</p>
+                  <button onClick={() => loadPatientData(userProfile)} className="mt-6 w-full bg-danger text-white font-bold py-3 rounded-button hover:bg-danger-dark transition-colors shadow-sm">{t.error_retry}</button>
+              </Card>
+          </div>
+      );
     }
     if (patient) {
       const renderPage = () => {

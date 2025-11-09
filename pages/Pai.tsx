@@ -73,7 +73,8 @@ const Pai: React.FC = () => {
       
        <Card>
         <h2 className="text-lg font-semibold text-text-title mb-2">{t.pai_notes}</h2>
-        <p className="text-text-main whitespace-pre-wrap">{patient.notes_pai || t.pai_noNotes}</p>
+        {/* FIX: Explicitly cast content to string to avoid 'unknown' type error assignable to ReactNode. */}
+        <p className="text-text-main whitespace-pre-wrap">{String(patient.notes_pai || t.pai_noNotes)}</p>
       </Card>
     </div>
   );

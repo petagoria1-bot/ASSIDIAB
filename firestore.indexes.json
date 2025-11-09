@@ -8,6 +8,13 @@
       ]
     },
     {
+      "collectionId": "invitations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "memberUserId", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "circleMembers",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

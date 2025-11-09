@@ -100,7 +100,7 @@ const Settings: React.FC<SettingsProps> = ({ setCurrentPage }) => {
            <div key={member.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
                 <div>
                     <p className="font-semibold text-text-title">{member.memberEmail}</p>
-                    <p className="text-xs text-text-muted">{t[`role_${member.role}` as keyof typeof t]} - <span className={member.status === 'accepted' ? 'text-jade' : 'text-amber-600'}>{member.status}</span></p>
+                    <p className="text-xs text-text-muted">{t.roles[member.role as keyof typeof t.roles]} - <span className={member.status === 'accepted' ? 'text-jade' : 'text-amber-600'}>{member.status}</span></p>
                 </div>
                 <button onClick={() => setEditingMember(member) } className="text-text-muted hover:text-jade p-1"><EditIcon /></button>
            </div>

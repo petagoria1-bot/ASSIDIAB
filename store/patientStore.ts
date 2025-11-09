@@ -709,18 +709,25 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         set(state => ({ reportData: { ...state.reportData, summary: null, entries: [] }, isLoading: true, error: null }));
         
         try {
-            const summaryResult: any = await dailySummary({ dayId });
+            const summaryResult: any = await dailySummary({ dayId, uid: patient.id });
             
             const dayEntriesRef = collection(firestore, 'entries');
             const q = query(dayEntriesRef, where('uid', '==', patient.id), where('dayId', '==', dayId), orderBy('ts', 'asc'));
             const entriesSnap = await getDocs(q);
             
-            const entries: (Mesure | Repas | Injection)[] = [];
+            const entries: any[] = [];
             entriesSnap.forEach(doc => {
                 const data = doc.data();
-                if (data.type === 'glucose') entries.push({ id: doc.id, ...data, type: 'mesure' } as unknown as Mesure);
-                if (data.type === 'meal') entries.push({ id: doc.id, ...data, type: 'repas' } as unknown as Repas);
-                if (data.type === 'bolus') entries.push({ id: doc.id, ...data, type: 'injection' } as unknown as Injection);
+                const common = { id: doc.id, ts: data.ts };
+                if (data.type === 'glucose') {
+                    entries.push({ ...common, gly: data.value, type: 'mesure' });
+                }
+                if (data.type === 'meal') {
+                    entries.push({ ...common, total_carbs_g: data.value, type: 'repas' });
+                }
+                if (data.type === 'bolus') {
+                    entries.push({ ...common, dose_U: data.value, type: 'injection' });
+                }
             });
     
             set({ reportData: { summary: summaryResult.data, entries }, isLoading: false });

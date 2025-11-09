@@ -14,12 +14,12 @@ const RoleSelectionPage: React.FC = () => {
         setUserRole(role);
     };
 
-    const roles: { role: UserRole; label: string; description: string; icon: React.ReactNode }[] = [
-        { role: 'patient', label: 'Patient', description: "Je suis le patient et je souhaite gérer mon suivi.", icon: <UserIcon className="w-10 h-10 text-jade"/> },
-        { role: 'famille', label: 'Famille / Proche', description: "Je souhaite rejoindre le cercle d'un patient.", icon: <UsersIcon className="w-10 h-10 text-info"/> },
-        { role: 'medecin', label: 'Médecin', description: "Je suis un professionnel de santé.", icon: <UsersIcon className="w-10 h-10 text-info"/> },
-        { role: 'infirmier', label: 'Infirmier', description: "Je suis un professionnel de santé.", icon: <UsersIcon className="w-10 h-10 text-info"/> },
-        { role: 'autre', label: 'Autre', description: "Personnel scolaire, etc.", icon: <UsersIcon className="w-10 h-10 text-info"/> },
+    const roles: { role: UserRole; icon: React.ReactNode }[] = [
+        { role: 'patient', icon: <UserIcon className="w-10 h-10 text-jade"/> },
+        { role: 'famille', icon: <UsersIcon className="w-10 h-10 text-info"/> },
+        { role: 'medecin', icon: <UsersIcon className="w-10 h-10 text-info"/> },
+        { role: 'infirmier', icon: <UsersIcon className="w-10 h-10 text-info"/> },
+        { role: 'autre', icon: <UsersIcon className="w-10 h-10 text-info"/> },
     ];
 
     return (
@@ -33,7 +33,7 @@ const RoleSelectionPage: React.FC = () => {
                 <div className="bg-white/[.85] rounded-card p-6 shadow-glass border border-black/5 animate-fade-in-fast">
                     <h2 className="text-xl font-display font-bold text-center text-text-title mb-2">Êtes-vous...</h2>
                     <div className="space-y-3 mt-4">
-                        {roles.filter(r => r.role !== 'undetermined').map(({ role, label, description, icon }) => (
+                        {roles.map(({ role, icon }) => (
                             <button 
                                 key={role}
                                 onClick={() => handleRoleSelect(role)}
@@ -41,8 +41,8 @@ const RoleSelectionPage: React.FC = () => {
                             >
                                 <div className="mr-4">{icon}</div>
                                 <div>
-                                    <span className="font-bold text-text-title">{label}</span>
-                                    <p className="text-sm text-text-muted">{description}</p>
+                                    <span className="font-bold text-text-title">{t.roles[role as keyof typeof t.roles]}</span>
+                                    <p className="text-sm text-text-muted">{t.role_descriptions[role as keyof typeof t.role_descriptions]}</p>
                                 </div>
                             </button>
                         ))}

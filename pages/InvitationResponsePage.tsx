@@ -44,7 +44,7 @@ const InvitationResponsePage: React.FC<{ children: React.ReactNode }> = ({ child
                     <Card key={invite.id} className="w-full max-w-sm animate-card-open mb-4">
                         <h2 className="text-xl font-display font-bold text-center text-text-title">Invitation</h2>
                         <p className="text-center text-text-muted mt-2"
-                           dangerouslySetInnerHTML={{ __html: t.invitation_subtitle(invite.patientName, t[`role_${invite.role}` as keyof typeof t] as string).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                           dangerouslySetInnerHTML={{ __html: t.invitation_subtitle(invite.patientName, t.roles[invite.role as keyof typeof t.roles] as string).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
                         />
                         <div className="mt-6 grid grid-cols-2 gap-3">
                             <button onClick={() => handleResponse(invite, 'refused')} className="w-full bg-white text-danger font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50">{t.common_cancel}</button>

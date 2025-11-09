@@ -15,6 +15,8 @@ const InviteCaregiverModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   const [rights, setRights] = useState<CircleMemberRights>({ read: true, write: false, alerts: false });
   const [isLoading, setIsLoading] = useState(false);
 
+  const caregiverRoles: CircleMemberRole[] = ['famille', 'medecin', 'infirmier', 'autre'];
+
   const handleToggle = (right: keyof CircleMemberRights) => {
     setRights(prev => ({ ...prev, [right]: !prev[right] }));
   };
@@ -49,10 +51,9 @@ const InviteCaregiverModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           <div>
             <label className="block text-sm font-medium text-text-muted mb-1">{t.invite_role_label}</label>
             <select value={role} onChange={e => setRole(e.target.value as CircleMemberRole)} className={inputClasses}>
-              <option value="famille">{t.role_family}</option>
-              <option value="medecin">{t.role_health_professional}</option>
-              <option value="infirmier">Infirmier/ère</option>
-              <option value="autre">{t.role_school}</option>
+                {caregiverRoles.map(r => (
+                    <option key={r} value={r}>{t.roles[r as keyof typeof t.roles]}</option>
+                ))}
             </select>
           </div>
           <div>

@@ -48,7 +48,8 @@ const GlucoseChart: React.FC<GlucoseChartProps> = ({ events, patient }) => {
 
   const mesures = events.filter(e => e.type === 'mesure') as Mesure[];
   const repas = events.filter(e => e.type === 'repas') as Repas[];
-  const injections = events.filter(e => e.type === 'injection') as Injection[];
+  // FIX: Cast to `unknown` first to resolve complex type mismatch where `ChartEvent`'s `type` property conflicts with `Injection`'s own `type` property.
+  const injections = events.filter(e => e.type === 'injection') as unknown as Injection[];
 
   const pathData = mesures
     .sort((a,b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())

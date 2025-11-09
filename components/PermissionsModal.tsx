@@ -46,7 +46,7 @@ const PermissionsModal: React.FC<PermissionsModalProps> = ({ onClose, onSave, on
       <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
         <div className="bg-off-white rounded-card shadow-2xl p-6 w-full max-w-md border border-slate-200/75 animate-card-open" onClick={(e) => e.stopPropagation()}>
           <h3 className="text-xl font-display font-semibold text-text-title mb-1 text-center">{t.permissions_title(member.memberEmail)}</h3>
-          <p className="text-center text-text-muted text-sm mb-4">{t[`role_${member.role}` as keyof typeof t]}</p>
+          <p className="text-center text-text-muted text-sm mb-4">{t.roles[member.role as keyof typeof t.roles]}</p>
 
           <div className="space-y-3">
               <PermissionRow label="Lecture des données" isOn={rights.read} onToggle={() => handleToggle('read')} />

@@ -54,7 +54,7 @@ const InvitationAcceptancePage: React.FC<InvitationAcceptancePageProps> = ({ inv
                 <h1 className="text-2xl font-display font-bold text-white mt-4">{t.invitation_title(invitation.patientName)}</h1>
                 <p 
                     className="text-white/80 mt-2"
-                    dangerouslySetInnerHTML={{ __html: t.invitation_subtitle(invitation.patientName, t[`role_${invitation.role}` as keyof typeof t] as string).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                    dangerouslySetInnerHTML={{ __html: t.invitation_subtitle(invitation.patientName, t.roles[invitation.role as keyof typeof t.roles] as string).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
                 />
                 <p className="font-semibold text-white mt-4">{t.invitation_createAccount_prompt}</p>
             </>

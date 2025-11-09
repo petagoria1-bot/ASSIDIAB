@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSettingsStore, Language } from '../store/settingsStore';
+import { useSettingsStore, Language } from '../store/settingsStore.ts';
 import { QuizQuestion } from '../data/quizData.ts';
 
 // In a real app, these would be in separate JSON files per language.
@@ -342,13 +342,23 @@ const frTranslations = {
     invite_title: "Inviter un proche",
     invite_email_label: "E-mail de la personne à inviter",
     invite_email_placeholder: "exemple@email.com",
-    invite_role_label: "Son rôle",
+    invite_role_label: "Son rôle dans le cercle",
     invite_button: "Générer l'invitation",
-    role_parent: "Parent / Tuteur",
-    role_family: "Famille / Proche",
-    role_health_professional: "Professionnel de santé",
-    role_school: "Personnel scolaire",
-    role_owner: "Propriétaire",
+    roles: {
+        patient: "Patient",
+        famille: "Famille / Proche",
+        medecin: "Médecin",
+        infirmier: "Infirmier / Infirmière",
+        autre: "Autre",
+        owner: "Propriétaire"
+    },
+    role_descriptions: {
+        patient: "Je suis le patient et je souhaite gérer mon suivi.",
+        famille: "Je souhaite rejoindre le cercle d'un patient.",
+        medecin: "Je suis un professionnel de santé.",
+        infirmier: "Je suis un professionnel de santé.",
+        autre: "Personnel scolaire, aide à domicile, etc."
+    },
     shareInvite_title: "Invitation prête !",
     shareInvite_description: "Partagez ce lien unique avec la personne que vous souhaitez inviter. Le lien est à usage unique.",
     shareInvite_copyLink: "Copier le lien",
@@ -379,7 +389,7 @@ const frTranslations = {
     inbox_title: "Boîte de réception",
     inbox_empty: "Vous n'avez aucun message.",
     error_criticalTitle: "Oups !",
-    error_loadDataBody: "Nous n'avons pas pu charger les données de votre profil. Veuillez vérifier votre connexion et réessayer.",
+    error_loadDataBody: "Nous n'avons pas pu charger les données de votre profil. C'est probablement dû à un problème de permissions avec la base de données. Assurez-vous d'avoir bien exécuté `firebase deploy` et que les index sont créés.",
     error_retry: "Réessayer",
     quizData: [
         {
