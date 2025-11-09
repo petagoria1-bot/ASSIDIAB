@@ -11,7 +11,8 @@
       "collectionId": "invitations",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "memberUserId", "order": "ASCENDING" }
+        { "fieldPath": "memberUserId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     },
     {

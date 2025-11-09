@@ -332,7 +332,11 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     
     getPendingInvitations: async (userId: string) => {
         try {
-            const q = query(collection(firestore, 'invitations'), where('memberUserId', '==', userId));
+            const q = query(
+                collection(firestore, 'invitations'), 
+                where('memberUserId', '==', userId), 
+                where('status', '==', 'pending')
+            );
             const snap = await getDocs(q);
             return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CircleMember));
         } catch (e: any) {
