@@ -1,1 +1,86 @@
-��^
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Checks if the user is an accepted member of the patient's circle
+    function isAcceptedMember(patientId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)).data.status == 'accepted';
+    }
+
+    // Checks if a member has read rights
+    function hasReadRights(patientId) {
+        return isAcceptedMember(patientId) && 
+               get(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)).data.rights.read == true;
+    }
+    
+    // Checks if a member has write rights
+    function hasWriteRights(patientId) {
+        return isAcceptedMember(patientId) &&
+               get(/databases/$(database)/documents/patients/$(patientId)/circleMembers/$(request.auth.uid)).data.rights.write == true;
+    }
+
+    // --- User Profiles ---
+    // A user can read, create, and update their own profile.
+    match /users/{uid} {
+      allow read, write: if isUser(uid);
+    }
+
+    // --- Patients Collection ---
+    match /patients/{patientId} {
+      // Only a user can create their own patient profile
+      allow create: if isUser(patientId);
+      
+      // The patient themselves or an accepted member with read rights can read the profile
+      allow read: if isUser(patientId) || hasReadRights(patientId);
+      
+      // Only the patient can update their core profile data (PAI, etc.)
+      allow update: if isUser(patientId);
+    }
+
+    // --- Circle Members Subcollection ---
+    match /patients/{patientId}/circleMembers/{memberId} {
+        // The patient (owner), the member themselves, or any other member with read rights can view the circle.
+        allow read: if isUser(patientId) || isUser(memberId) || hasReadRights(patientId);
+        
+        // Creation is handled by a secure Cloud Function, so client creation is denied.
+        allow create: if false; 
+        
+        // Only the patient (owner) can update rights or remove a member.
+        // Responding to an invitation (status update) is handled by a Cloud Function.
+        allow update, delete: if isUser(patientId);
+    }
+    
+    // --- Top-level Invitations Collection ---
+    // This collection is temporary and holds invites until they are accepted/refused.
+    match /invitations/{invitationId} {
+        // Only the invited user can read their own pending invitation document.
+        // This is crucial for the post-signup flow.
+        allow read: if isAuthenticated() && resource.data.memberUserId == request.auth.uid;
+        
+        // Creation, update, and deletion are all handled by secure Cloud Functions.
+        allow create, update, delete: if false;
+    }
+
+    // --- Journal Entries Collection ---
+    match /entries/{entryId} {
+      // The patient or an accepted member with read rights can read entries.
+      // Use `resource.data.uid` for existing documents.
+      allow read: if isUser(resource.data.uid) || hasReadRights(resource.data.uid);
+      
+      // The patient or an accepted member with write rights can create, update, or delete entries.
+      // Use `request.resource.data.uid` for incoming documents on create/update.
+      allow write: if isUser(request.resource.data.uid) || hasWriteRights(request.resource.data.uid);
+    }
+  }
+}
