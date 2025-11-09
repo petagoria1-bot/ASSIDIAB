@@ -5,6 +5,7 @@ import { usePatientStore } from '../store/patientStore.ts';
 import { CircleMemberRole, CircleMemberRights } from '../types.ts';
 import useTranslations from '../hooks/useTranslations.ts';
 import ToggleSwitch from './ToggleSwitch.tsx';
+import ShareInvitationModal from './ShareInvitationModal.tsx';
 
 const InviteCaregiverModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { inviteToCircle } = usePatientStore();
@@ -14,6 +15,7 @@ const InviteCaregiverModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   const [role, setRole] = useState<CircleMemberRole>('famille');
   const [rights, setRights] = useState<CircleMemberRights>({ read: true, write: false, alerts: false });
   const [isLoading, setIsLoading] = useState(false);
+  const [invitationId, setInvitationId] = useState<string | null>(null);
 
   const caregiverRoles: CircleMemberRole[] = ['famille', 'medecin', 'infirmier', 'autre'];
 
@@ -28,16 +30,27 @@ const InviteCaregiverModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     }
     setIsLoading(true);
     try {
-      await inviteToCircle(email, role, rights);
-      toast.success(`Invitation envoyée à ${email}`);
-      onClose();
+      const newInvitationId = await inviteToCircle(email, role, rights);
+      if (newInvitationId) {
+        setInvitationId(newInvitationId);
+      }
     } catch (error: any) {
       toast.error(error.message || t.toast_inviteError);
     }
     setIsLoading(false);
   };
   
+  const handleFinalClose = () => {
+    setInvitationId(null);
+    onClose();
+  }
+  
   const inputClasses = "w-full p-3 bg-input-bg rounded-input border border-black/10 text-text-title placeholder-placeholder-text focus:outline-none focus:border-jade focus:ring-2 focus:ring-jade/30 transition-all duration-150";
+
+  if (invitationId) {
+    const invitationLink = `${window.location.origin}/invitation/${invitationId}`;
+    return <ShareInvitationModal onClose={handleFinalClose} invitationLink={invitationLink} />;
+  }
 
   const modalContent = (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
@@ -77,7 +90,7 @@ const InviteCaregiverModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button onClick={onClose} className="w-full bg-white text-text-muted font-bold py-3 rounded-button border border-slate-300 hover:bg-slate-50 transition-colors">{t.common_cancel}</button>
           <button onClick={handleInvite} disabled={isLoading} className="w-full bg-jade text-white font-bold py-3 rounded-button hover:opacity-90 transition-colors shadow-sm disabled:opacity-50">
-            {isLoading ? t.common_loading : "Envoyer l'invitation"}
+            {isLoading ? t.common_loading : t.invite_button}
           </button>
         </div>
       </div>

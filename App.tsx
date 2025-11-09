@@ -6,15 +6,27 @@ import PostAuthFlow from './pages/PostAuthFlow.tsx';
 import LoadingScreen from './components/LoadingScreen.tsx';
 import DynamicBackground from './components/DynamicBackground.tsx';
 import PasswordResetHandlerPage from './pages/PasswordResetHandlerPage.tsx';
+import InvitationAcceptancePage from './pages/InvitationAcceptancePage.tsx';
 
 const App: React.FC = () => {
   const { initializeAuth, isAuthenticated, status } = useAuthStore();
   const [action, setAction] = useState<{ mode: string; code: string } | null>(null);
+  const [inviteId, setInviteId] = useState<string | null>(null);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const mode = urlParams.get('mode');
     const oobCode = urlParams.get('oobCode');
+
+    // Handle invitation links first, e.g., /invitation/xyz
+    const path = window.location.pathname;
+    const inviteMatch = path.match(/\/invitation\/([^/]+)/);
+    if (inviteMatch && inviteMatch[1]) {
+      setInviteId(inviteMatch[1]);
+      // Clean up the URL
+      window.history.replaceState({}, document.title, '/');
+      return; // Stop further processing to show invite page
+    }
 
     if (mode === 'resetPassword' && oobCode) {
       setAction({ mode, code: oobCode });
@@ -27,7 +39,10 @@ const App: React.FC = () => {
   }, [initializeAuth]);
 
   let content;
-  if (action?.mode === 'resetPassword') {
+  if (inviteId) {
+    content = <InvitationAcceptancePage inviteId={inviteId} />;
+  }
+  else if (action?.mode === 'resetPassword') {
     content = <PasswordResetHandlerPage oobCode={action.code} />;
   } else if (status === 'loading' || status === 'idle') {
     content = <LoadingScreen />;

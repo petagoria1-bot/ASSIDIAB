@@ -65,7 +65,7 @@ exports.createInvitation = functions.region("europe-west1").https.onCall(async (
 
   const memberRef = db.collection("patients").doc(patientId).collection("circleMembers").doc(memberUid);
   const existingDoc = await memberRef.get();
-  if (existingDoc.exists) {
+  if (existingDoc.exists()) {
     throw new functions.https.HttpsError("already-exists", "Cette personne est déjà dans votre cercle ou a une invitation en attente.");
   }
 
@@ -104,14 +104,13 @@ exports.respondToInvitation = functions.region("europe-west1").https.onCall(asyn
     const { invitationId, status } = data; // status: 'accepted' | 'refused'
     const memberUid = context.auth.uid;
 
-    const q = db.collection("invitations").where("invitationId", "==", invitationId).where("memberUserId", "==", memberUid);
-    const invitationQuery = await q.get();
+    const invitationRef = db.collection("invitations").doc(invitationId);
+    const invitationDoc = await invitationRef.get();
 
-    if (invitationQuery.empty) {
+    if (!invitationDoc.exists || invitationDoc.data().memberUserId !== memberUid) {
         throw new functions.https.HttpsError("not-found", "Invitation non valide ou non trouvée.");
     }
 
-    const invitationDoc = invitationQuery.docs[0];
     const { memberDocPath } = invitationDoc.data();
     const memberRef = db.doc(memberDocPath);
 

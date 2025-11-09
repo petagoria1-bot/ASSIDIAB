@@ -68,7 +68,7 @@ interface PatientState {
   addOrUpdateFood: (food: Food) => Promise<void>;
   
   // Circle of Care
-  inviteToCircle: (email: string, role: CircleMemberRole, rights: CircleMemberRights) => Promise<void>;
+  inviteToCircle: (email: string, role: CircleMemberRole, rights: CircleMemberRights) => Promise<string | null>;
   respondToInvitation: (invitation: CircleMember, status: 'accepted' | 'refused') => Promise<void>;
   updateCircleMemberRights: (member: CircleMember, rights: CircleMemberRights) => Promise<void>;
   removeCircleMember: (member: CircleMember) => Promise<void>;
@@ -258,7 +258,7 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             
         } catch (e: any) {
             console.error("Error creating patient profile:", e);
-            toast.error("Erreur lors de la création du profil.");
+            toast.error("Erreur de permission. Règles de sécurité ou index manquants? Détails: " + e.message, { duration: 15000 });
             set({ isLoading: false, loadStatus: 'error', error: e.message });
         }
     },
@@ -278,13 +278,14 @@ export const usePatientStore = create<PatientState>((set, get) => ({
 
     inviteToCircle: async (email, role, rights) => {
         const patient = get().patient;
-        if (!patient) return;
+        if (!patient) return null;
     
         try {
             const result: any = await createInvitation({ email, role, rights });
             if (result.data.success) {
                 const newMember: CircleMember = result.data.memberData;
                 set(state => ({ circleMembers: [...state.circleMembers, newMember] }));
+                return result.data.invitationId;
             } else {
                 throw new Error(result.data.error || "La fonction Cloud a retourné un échec.");
             }
@@ -335,7 +336,6 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             const q = query(
                 collection(firestore, 'invitations'), 
                 where('memberUserId', '==', userId), 
-                where('status', '==', 'pending')
             );
             const snap = await getDocs(q);
             return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CircleMember));
