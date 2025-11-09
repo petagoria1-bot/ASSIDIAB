@@ -144,6 +144,48 @@ exports.getPublicInvitationDetails = functions.region("europe-west1").https.onCa
     return { patientName, role, email: memberEmail };
 });
 
+
+/**
+ * Callable HTTPS function for caregivers to securely fetch a patient's journal entries.
+ */
+exports.getEntriesForPatient = functions.region("europe-west1").https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Authentification requise.");
+  }
+  
+  const { patientId, limit: queryLimit = 100 } = data;
+  const memberId = context.auth.uid;
+
+  if (!patientId) {
+    throw new functions.https.HttpsError("invalid-argument", "L'ID du patient est manquant.");
+  }
+
+  // Security Check: Verify the caller is an accepted member with read rights.
+  const memberRef = db.collection("patients").doc(patientId).collection("circleMembers").doc(memberId);
+  const memberDoc = await memberRef.get();
+
+  if (!memberDoc.exists) {
+    throw new functions.https.HttpsError("permission-denied", "Vous ne faites pas partie du cercle de soins de ce patient.");
+  }
+  
+  const memberData = memberDoc.data();
+  if (memberData.status !== "accepted" || memberData.rights.read !== true) {
+      throw new functions.https.HttpsError("permission-denied", "Vous n'avez pas les droits de lecture pour ce patient.");
+  }
+
+  // If security check passes, fetch the entries.
+  const entriesQuery = db.collection("entries")
+    .where("uid", "==", patientId)
+    .orderBy("ts", "desc")
+    .limit(queryLimit);
+    
+  const entriesSnap = await entriesQuery.get();
+  const entries = entriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  return entries;
+});
+
+
 // Placeholder for dailySummary function
 exports.dailySummary = functions.region("europe-west1").https.onCall(async (data, context) => {
     functions.logger.info("dailySummary called with:", data);

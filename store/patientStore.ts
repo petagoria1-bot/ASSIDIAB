@@ -97,6 +97,10 @@ interface PatientState {
 
 const dailySummary = httpsCallable(functions, 'dailySummary');
 const exportPdf = httpsCallable(functions, 'exportPdf');
+const createInvitation = httpsCallable(functions, 'createInvitation');
+const getPublicInvitationDetails = httpsCallable(functions, 'getPublicInvitationDetails');
+const respondToInvitationFunction = httpsCallable(functions, 'respondToInvitation');
+const getEntriesForPatient = httpsCallable(functions, 'getEntriesForPatient');
 
 
 export const usePatientStore = create<PatientState>((set, get) => ({
@@ -275,66 +279,27 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     inviteToCircle: async (email, role, rights) => {
         const patient = get().patient;
         if (!patient) return;
-
-        const userQuery = query(collection(firestore, 'users'), where('email', '==', email));
-        const userSnap = await getDocs(userQuery);
-        if (userSnap.empty) {
-            throw new Error("Aucun utilisateur trouvé avec cet email.");
+    
+        try {
+            const result: any = await createInvitation({ email, role, rights });
+            if (result.data.success) {
+                const newMember: CircleMember = result.data.memberData;
+                set(state => ({ circleMembers: [...state.circleMembers, newMember] }));
+            } else {
+                throw new Error(result.data.error || "La fonction Cloud a retourné un échec.");
+            }
+        } catch (error: any) {
+            console.error("Erreur lors de l'invitation via la fonction Cloud:", error);
+            // Les HttpsError de Firebase ont une propriété `message` explicite.
+            throw new Error(error.message || "Une erreur est survenue lors de l'invitation.");
         }
-        const memberUser = userSnap.docs[0].data() as UserProfile;
-
-        const batch = writeBatch(firestore);
-        const memberRef = doc(firestore, 'patients', patient.id, 'circleMembers', memberUser.uid);
-        
-        const existingDoc = await getDoc(memberRef); // Check must be done before batch
-        if (existingDoc.exists()) {
-            throw new Error("Cette personne est déjà dans votre cercle ou a une invitation en attente.");
-        }
-        
-        const newCircleMemberData: Omit<CircleMember, 'id'> = {
-            patientId: patient.id,
-            patientName: `${patient.prenom} ${patient.nom}`,
-            memberUserId: memberUser.uid,
-            memberEmail: email,
-            role,
-            rights,
-            status: 'pending',
-            invitedAt: serverTimestamp(),
-        };
-
-        // 1. Write to subcollection
-        batch.set(memberRef, newCircleMemberData);
-
-        // 2. Write to top-level invitations collection for easy querying
-        const invitationRef = doc(collection(firestore, 'invitations'));
-        batch.set(invitationRef, newCircleMemberData);
-
-        await batch.commit();
-        
-        const finalCircleMember: CircleMember = { id: memberRef.id, ...newCircleMemberData as any };
-        set(state => ({ circleMembers: [...state.circleMembers, finalCircleMember] }));
     },
 
     respondToInvitation: async (invitation, status) => {
-        const batch = writeBatch(firestore);
-    
-        // 1. Update the document in the subcollection
-        const memberRef = doc(firestore, 'patients', invitation.patientId, 'circleMembers', invitation.memberUserId);
-        batch.update(memberRef, { status, respondedAt: serverTimestamp() });
-        
-        // 2. Delete the document from the top-level invitations collection
-        const q = query(collection(firestore, 'invitations'), 
-            where('memberUserId', '==', invitation.memberUserId),
-            where('patientId', '==', invitation.patientId)
-        );
-        const inviteSnap = await getDocs(q);
-        inviteSnap.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-    
-        await batch.commit();
-    
-        await get().fetchDoctorPatients(invitation.memberUserId); // Refresh doctor's list
+        const invitationId = invitation.invitationId || invitation.id; // Handle both structures
+        await respondToInvitationFunction({ invitationId, status });
+        // Refresh relevant data after responding
+        await get().fetchDoctorPatients(invitation.memberUserId);
     },
 
     updateCircleMemberRights: async (member, rights) => {
@@ -352,16 +317,9 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         const memberRef = doc(firestore, 'patients', member.patientId, 'circleMembers', member.memberUserId);
         batch.delete(memberRef);
         
-        // If it was a pending invitation, delete from top-level collection too
-        if (member.status === 'pending') {
-            const q = query(collection(firestore, 'invitations'), 
-                where('memberUserId', '==', member.memberUserId),
-                where('patientId', '==', member.patientId)
-            );
-            const inviteSnap = await getDocs(q);
-            inviteSnap.forEach(doc => {
-                batch.delete(doc.ref);
-            });
+        if (member.status === 'pending' && member.invitationId) {
+            const inviteRef = doc(firestore, 'invitations', member.invitationId);
+            batch.delete(inviteRef);
         }
         
         await batch.commit();
@@ -374,10 +332,8 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     
     getPendingInvitations: async (userId: string) => {
         try {
-            // FIX: Query the top-level 'invitations' collection to avoid collection group permission issues.
             const q = query(collection(firestore, 'invitations'), where('memberUserId', '==', userId));
             const snap = await getDocs(q);
-            // The document data should be compatible with the CircleMember type.
             return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CircleMember));
         } catch (e: any) {
             console.error("Error getting pending invitations:", e);
@@ -391,24 +347,14 @@ export const usePatientStore = create<PatientState>((set, get) => ({
         }
     },
 
-    getInvitationDetails: async (invitationId: string) => { // FIX: Changed signature to accept a single invitationId
+    getInvitationDetails: async (invitationId: string) => {
         try {
-            // FIX: Read from the top-level 'invitations' collection
-            const inviteRef = doc(firestore, 'invitations', invitationId);
-            const inviteSnap = await getDoc(inviteRef);
-            if (inviteSnap.exists()) {
-                const data = inviteSnap.data() as CircleMember;
-                // An invitation exists only if it's pending.
-                return {
-                    patientName: data.patientName,
-                    role: data.role,
-                    email: data.memberEmail,
-                };
-            }
+            const result = await getPublicInvitationDetails({ invitationId });
+            return result.data as { patientName: string; role: string; email: string; };
         } catch (error) {
-            console.error("Error getting invitation details:", error);
+            console.error("Error getting invitation details via function:", error);
+            return null;
         }
-        return null;
     },
 
     fetchDoctorPatients: async (doctorId: string) => {
@@ -426,7 +372,6 @@ export const usePatientStore = create<PatientState>((set, get) => ({
                 return null;
             });
     
-            // FIX: Removed redundant `Promise.all` call which was causing a TypeScript error. The `patientDataPromises` array was being wrapped in an extra `Promise.all` unnecessarily.
             const doctorPatients = (await Promise.all(patientDataPromises)).filter(Boolean) as DoctorPatientData[];
             set({ doctorPatients, isLoading: false });
         } catch (e: any) {
@@ -462,20 +407,19 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     loadEntriesForDoctorView: async (patientId: string) => {
         set({ isLoading: true, doctorViewedPatientEntries: [], error: null });
         try {
-            const entriesQuery = query(collection(firestore, 'entries'), where('uid', '==', patientId), orderBy('ts', 'desc'), limit(100));
-            const entriesSnap = await getDocs(entriesQuery);
+            const result: any = await getEntriesForPatient({ patientId, limit: 100 });
+            const entriesSnap = result.data;
             
             const dayMesures: Mesure[] = [];
             const dayRepas: Repas[] = [];
             const dayInjections: Injection[] = [];
             
-            entriesSnap.forEach(docSnap => {
-                const entry = { id: docSnap.id, ...docSnap.data() };
-                const { type, ts, value, meta, uid } = entry;
+            entriesSnap.forEach((entry: any) => {
+                const { type, ts, value, meta, uid, id } = entry;
                 switch(type) {
-                    case 'glucose': dayMesures.push({ id: docSnap.id, patient_id: uid, ts, gly: value, source: meta?.source || 'doigt', cetone: meta?.cetone }); break;
-                    case 'meal': dayRepas.push({ id: docSnap.id, patient_id: uid, ts, moment: meta?.moment, items: meta?.items || [], total_carbs_g: value, note: meta?.note }); break;
-                    case 'bolus': dayInjections.push({ id: docSnap.id, patient_id: uid, ts, type: meta?.subType, dose_U: value, calc_details: meta?.calc_details, lien_repas_id: meta?.lien_repas_id, lien_mesure_id: meta?.lien_mesure_id }); break;
+                    case 'glucose': dayMesures.push({ id, patient_id: uid, ts, gly: value, source: meta?.source || 'doigt', cetone: meta?.cetone }); break;
+                    case 'meal': dayRepas.push({ id, patient_id: uid, ts, moment: meta?.moment, items: meta?.items || [], total_carbs_g: value, note: meta?.note }); break;
+                    case 'bolus': dayInjections.push({ id, patient_id: uid, ts, type: meta?.subType, dose_U: value, calc_details: meta?.calc_details, lien_repas_id: meta?.lien_repas_id, lien_mesure_id: meta?.lien_mesure_id }); break;
                 }
             });
     
@@ -507,8 +451,10 @@ export const usePatientStore = create<PatientState>((set, get) => ({
             let errorMsg = "Erreur lors du chargement du journal du patient.";
             if (e.code === 'permission-denied') {
                 errorMsg = "Erreur de permission. Règles de sécurité ou index manquants? Détails: " + e.message;
-                toast.error(errorMsg, { duration: 15000 });
+            } else {
+                errorMsg = e.message || errorMsg;
             }
+            toast.error(errorMsg, { duration: 15000 });
             set({ isLoading: false, error: errorMsg });
         }
     },
